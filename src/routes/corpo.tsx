@@ -5,6 +5,7 @@ import { daysAgoISO, fmtDate, kg, todayISO, WORKOUT_TYPES } from "@/lib/format";
 import { GlassCard, KpiCard, PageHeader, Section } from "@/components/primitives";
 import { Pencil, Trash2 } from "lucide-react";
 import { Modal, ConfirmButton, inpCls, btnGold } from "@/components/Modal";
+import { toast } from "sonner";
 import {
   LineChart,
   Line,
@@ -63,9 +64,13 @@ function Corpo() {
   const submitWeight = (e: React.FormEvent) => {
     e.preventDefault();
     const v = parseFloat(wf.weight.replace(",", "."));
-    if (!v) return;
+    if (!Number.isFinite(v) || v <= 0) {
+      toast.error("Informe um peso válido, maior que zero.");
+      return;
+    }
     addWeight({ weight: v, date: wf.date, notes: wf.notes });
     setWf({ weight: "", date: todayISO(), notes: "" });
+    toast.success("Peso registrado.");
   };
 
   const historyRows = useMemo(() => {
@@ -80,9 +85,13 @@ function Corpo() {
   const submitWorkout = (e: React.FormEvent) => {
     e.preventDefault();
     const d = parseInt(wo.duration, 10);
-    if (!d) return;
+    if (!Number.isFinite(d) || d <= 0) {
+      toast.error("Informe a duração do treino em minutos.");
+      return;
+    }
     addWorkout({ date: wo.date, type: wo.type, duration: d, notes: wo.notes });
     setWo({ date: todayISO(), type: "Musculação", duration: "", notes: "" });
+    toast.success("Treino salvo.");
   };
 
   return (

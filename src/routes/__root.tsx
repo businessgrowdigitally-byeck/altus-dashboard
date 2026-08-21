@@ -11,6 +11,7 @@ import {
 import appCss from "../styles.css?url";
 import { AppLayout } from "@/components/AppLayout";
 import { AuthGate } from "@/components/AuthGate";
+import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider } from "@/lib/auth";
 import { useStore } from "@/lib/store";
 import { useEffect } from "react";
@@ -140,6 +141,7 @@ function RootComponent() {
           </AppLayout>
         </AuthGate>
       </AuthProvider>
+      <Toaster position="bottom-right" richColors closeButton />
     </QueryClientProvider>
   );
 }

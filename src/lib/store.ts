@@ -139,7 +139,8 @@ type State = {
   setProfile: (p: Partial<Profile>) => void;
   setSettings: (s: Partial<Settings>) => void;
   exportAll: () => string;
-  importAll: (json: string) => void;
+  /** Devolve o que deu errado, ou null em caso de sucesso. */
+  importAll: (json: string) => string | null;
   clearAll: () => void;
 };
 
@@ -312,14 +313,54 @@ export const useStore = create<State>()(
       clearChat: () => set({ chat: [] }),
       setProfile: (p) => set((s) => ({ profile: { ...s.profile, ...p } })),
       setSettings: (sx) => set((s) => ({ settings: { ...s.settings, ...sx } })),
-      exportAll: () => JSON.stringify(get(), null, 2),
-      importAll: (json) => {
-        try {
-          const data = JSON.parse(json);
-          set({ ...get(), ...data });
-        } catch {}
+      exportAll: () => {
+        const s = get() as unknown as Record<string, unknown>;
+        const out: Record<string, unknown> = {};
+        for (const k of SYNC_KEYS) out[k] = s[k];
+        return JSON.stringify(out, null, 2);
       },
-      clearAll: () => set({ ...initial }),
+
+      importAll: (json) => {
+        let data: unknown;
+        try {
+          data = JSON.parse(json);
+        } catch {
+          return "Isso não é um JSON válido. Cole o conteúdo completo do arquivo exportado.";
+        }
+        if (!data || typeof data !== "object" || Array.isArray(data)) {
+          return "O arquivo não tem o formato esperado.";
+        }
+
+        // Copia apenas as chaves conhecidas e com o tipo certo. Sem isso, um
+        // arquivo com uma chave chamada "addTransaction" substituiria a função
+        // do store por texto e quebraria o app de forma permanente.
+        const src = data as Record<string, unknown>;
+        const patch: Record<string, unknown> = {};
+        let encontrou = false;
+
+        for (const k of SYNC_KEYS) {
+          if (!(k in src)) continue;
+          const valor = src[k];
+          const esperaLista = Array.isArray((emptyState as Record<string, unknown>)[k]);
+          if (esperaLista) {
+            if (!Array.isArray(valor)) continue;
+          } else if (k === "version") {
+            if (typeof valor !== "number") continue;
+          } else if (valor === null || typeof valor !== "object" || Array.isArray(valor)) {
+            continue;
+          }
+          patch[k] = valor;
+          encontrou = true;
+        }
+
+        if (!encontrou) return "Nenhum dado reconhecido no arquivo.";
+
+        set({ ...emptyState, ...patch });
+        get().recomputeLinkedGoals();
+        return null;
+      },
+
+      clearAll: () => set({ ...emptyState }),
     }),
     { name: "altus-v2" }
   )

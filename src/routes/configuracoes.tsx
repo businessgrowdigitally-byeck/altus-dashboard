@@ -2,8 +2,10 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { useStore } from "@/lib/store";
 import { GlassCard, PageHeader, Section } from "@/components/primitives";
+import { Modal } from "@/components/Modal";
 import { todayISO } from "@/lib/format";
 import { Moon, Sun } from "lucide-react";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/configuracoes")({ component: Config });
 
@@ -17,6 +19,9 @@ const ACCENTS = [
 function Config() {
   const { profile, setProfile, settings, setSettings, exportAll, importAll, clearAll } = useStore();
   const [importText, setImportText] = useState("");
+  const [clearOpen, setClearOpen] = useState(false);
+  const [clearConfirm, setClearConfirm] = useState("");
+  const [backupFeito, setBackupFeito] = useState(false);
 
   const download = () => {
     const blob = new Blob([exportAll()], { type: "application/json" });
@@ -24,11 +29,34 @@ function Config() {
     const a = document.createElement("a");
     a.href = url;
     a.download = `altus-export-${todayISO()}.json`;
+    document.body.appendChild(a);
     a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    setBackupFeito(true);
+    toast.success("Backup baixado.");
   };
 
-  const confirmClear = () => {
-    if (confirm("Tem certeza? Todos os dados serão apagados permanentemente.")) clearAll();
+  const handleImport = () => {
+    if (!importText.trim()) {
+      toast.error("Cole o conteúdo do arquivo antes de importar.");
+      return;
+    }
+    const erro = importAll(importText);
+    if (erro) {
+      toast.error(erro);
+      return;
+    }
+    setImportText("");
+    toast.success("Dados importados. Tudo que estava aqui foi substituído.");
+  };
+
+  const executarLimpeza = () => {
+    clearAll();
+    setClearOpen(false);
+    setClearConfirm("");
+    setBackupFeito(false);
+    toast.success("Todos os dados foram apagados.");
   };
 
   return (
@@ -83,15 +111,78 @@ function Config() {
       <Section title="Dados">
         <GlassCard className="space-y-3">
           <div className="flex flex-wrap gap-2">
-            <button onClick={download} className="btn-gold">Exportar JSON</button>
-            <button onClick={confirmClear} className="px-4 py-2 rounded-lg bg-coral text-white font-semibold hover:brightness-110">Limpar Todos os Dados</button>
+            <button onClick={download} className="btn-gold">Baixar backup (JSON)</button>
+            <button
+              onClick={() => setClearOpen(true)}
+              className="px-4 py-2 rounded-lg bg-coral text-white font-semibold hover:brightness-110"
+            >
+              Apagar todos os dados
+            </button>
           </div>
-          <Field label="Importar de JSON">
-            <textarea className="inp" rows={3} placeholder="Cole o JSON exportado..." value={importText} onChange={(e) => setImportText(e.target.value)} />
+          <p className="text-xs text-muted-foreground">
+            O backup é um arquivo comum no seu computador. Guarde num lugar seguro — ele não tem senha.
+          </p>
+          <Field label="Restaurar de um backup">
+            <textarea
+              className="inp"
+              rows={3}
+              placeholder="Cole aqui o conteúdo do arquivo .json..."
+              value={importText}
+              onChange={(e) => setImportText(e.target.value)}
+            />
           </Field>
-          <button onClick={() => { importAll(importText); setImportText(""); }} className="text-sm text-gold hover:underline">Importar →</button>
+          <p className="text-xs text-muted-foreground">
+            Restaurar <strong>substitui</strong> tudo que está aqui hoje pelo conteúdo do arquivo.
+          </p>
+          <button onClick={handleImport} className="text-sm text-gold hover:underline">Restaurar →</button>
         </GlassCard>
       </Section>
+
+      <Modal open={clearOpen} onClose={() => { setClearOpen(false); setClearConfirm(""); }} title="Apagar todos os dados">
+        <div className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            Isso apaga suas transações, pesos, treinos, livros, estudos e metas —
+            <strong className="text-foreground"> inclusive a cópia na nuvem</strong>. Não há como desfazer
+            e não existe lixeira.
+          </p>
+
+          <div className="rounded-lg border border-white/10 p-3 space-y-2">
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-sm">1. Baixe um backup antes</span>
+              <button onClick={download} className="text-sm text-gold hover:underline shrink-0">
+                {backupFeito ? "Baixar de novo" : "Baixar agora"}
+              </button>
+            </div>
+            {backupFeito && <p className="text-xs text-emerald-bgt">Backup baixado.</p>}
+          </div>
+
+          <Field label={`2. Digite APAGAR para confirmar`}>
+            <input
+              className="inp"
+              value={clearConfirm}
+              onChange={(e) => setClearConfirm(e.target.value)}
+              placeholder="APAGAR"
+              autoComplete="off"
+            />
+          </Field>
+
+          <div className="flex justify-end gap-2 pt-1">
+            <button
+              onClick={() => { setClearOpen(false); setClearConfirm(""); }}
+              className="px-4 py-2 rounded-lg border border-white/10 text-sm hover:bg-white/5 transition"
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={executarLimpeza}
+              disabled={clearConfirm.trim().toUpperCase() !== "APAGAR"}
+              className="px-4 py-2 rounded-lg bg-coral text-white font-semibold text-sm hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              Apagar tudo
+            </button>
+          </div>
+        </div>
+      </Modal>
 
       <Section title="Aparência">
         <GlassCard className="space-y-4">

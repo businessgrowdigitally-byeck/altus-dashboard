@@ -3,6 +3,7 @@ import { Plus, Wallet, HeartPulse, BookOpen, GraduationCap, Dumbbell, Check } fr
 import { Modal, inpCls, btnGold } from "./Modal";
 import { useStore } from "@/lib/store";
 import { todayISO, CATEGORIES, WORKOUT_TYPES, STUDY_AREAS, STUDY_TYPES, GENRES } from "@/lib/format";
+import { toast } from "sonner";
 
 type QuickActionType = "menu" | "transaction" | "weight" | "workout" | "study" | "book";
 
@@ -86,7 +87,10 @@ export function QuickAddFab() {
               e.preventDefault();
               const fd = new FormData(e.currentTarget);
               const val = parseFloat(String(fd.get("value")).replace(",", "."));
-              if (!val) return;
+              if (!Number.isFinite(val) || val <= 0) {
+                toast.error("Informe um valor maior que zero.");
+                return;
+              }
               addTransaction({
                 type: String(fd.get("type")) as "entrada" | "saida",
                 value: val,
@@ -150,7 +154,10 @@ export function QuickAddFab() {
               e.preventDefault();
               const fd = new FormData(e.currentTarget);
               const val = parseFloat(String(fd.get("weight")).replace(",", "."));
-              if (!val) return;
+              if (!Number.isFinite(val) || val <= 0) {
+                toast.error("Informe um peso válido, maior que zero.");
+                return;
+              }
               addWeight({
                 weight: val,
                 date: String(fd.get("date") || todayISO()),
@@ -192,7 +199,10 @@ export function QuickAddFab() {
               e.preventDefault();
               const fd = new FormData(e.currentTarget);
               const dur = parseInt(String(fd.get("duration")), 10);
-              if (!dur) return;
+              if (!Number.isFinite(dur) || dur <= 0) {
+                toast.error("Informe a duração do treino em minutos.");
+                return;
+              }
               addWorkout({
                 type: String(fd.get("type") || "Musculação"),
                 duration: dur,
@@ -245,9 +255,17 @@ export function QuickAddFab() {
               e.preventDefault();
               const fd = new FormData(e.currentTarget);
               const dur = parseInt(String(fd.get("duration")), 10);
-              if (!dur) return;
+              const tema = String(fd.get("topic") ?? "").trim();
+              if (!tema) {
+                toast.error("Informe o tema que você estudou.");
+                return;
+              }
+              if (!Number.isFinite(dur) || dur <= 0) {
+                toast.error("Informe a duração do estudo em minutos.");
+                return;
+              }
               addStudy({
-                topic: String(fd.get("topic")),
+                topic: tema,
                 area: String(fd.get("area") || "Tecnologia"),
                 type: String(fd.get("type") || "Leitura"),
                 duration: dur,
@@ -299,9 +317,15 @@ export function QuickAddFab() {
             onSubmit={(e) => {
               e.preventDefault();
               const fd = new FormData(e.currentTarget);
+              const titulo = String(fd.get("title") ?? "").trim();
+              const autor = String(fd.get("author") ?? "").trim();
+              if (!titulo || !autor) {
+                toast.error("Título e autor são obrigatórios.");
+                return;
+              }
               addBook({
-                title: String(fd.get("title")),
-                author: String(fd.get("author")),
+                title: titulo,
+                author: autor,
                 genre: String(fd.get("genre") || "Negócios"),
                 finishedAt: String(fd.get("finishedAt") || todayISO()),
                 rating: parseInt(String(fd.get("rating") || "5"), 10),

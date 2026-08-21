@@ -5,6 +5,7 @@ import { fmtDate, GENRES, todayISO } from "@/lib/format";
 import { GlassCard, KpiCard, PageHeader, Section } from "@/components/primitives";
 import { Star, Trash2, Pencil, BookOpen, Eye } from "lucide-react";
 import { Modal, ConfirmButton, inpCls, btnGold } from "@/components/Modal";
+import { toast } from "sonner";
 import {
   BarChart,
   Bar,
@@ -63,7 +64,10 @@ function Biblioteca() {
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.title || !form.author) return;
+    if (!form.title.trim() || !form.author.trim()) {
+      toast.error("Título e autor são obrigatórios.");
+      return;
+    }
     addBook({
       title: form.title,
       author: form.author,
@@ -76,6 +80,7 @@ function Biblioteca() {
       applications: form.applications,
     });
     setForm({ ...form, title: "", author: "", year: "", pages: "", notes: "", applications: "" });
+    toast.success("Livro adicionado à biblioteca.");
   };
 
   const byMonth = useMemo(() => {

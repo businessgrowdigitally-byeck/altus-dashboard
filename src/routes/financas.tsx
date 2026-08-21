@@ -5,6 +5,7 @@ import { brl, CATEGORIES, fmtDate, todayISO } from "@/lib/format";
 import { GlassCard, KpiCard, PageHeader, Section } from "@/components/primitives";
 import { Pencil, Trash2 } from "lucide-react";
 import { Modal, ConfirmButton, inpCls, btnGold } from "@/components/Modal";
+import { toast } from "sonner";
 import {
   PieChart,
   Pie,
@@ -81,7 +82,14 @@ function Financas() {
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
     const v = parseFloat(form.value.replace(",", "."));
-    if (!v || !form.description) return;
+    if (!Number.isFinite(v) || v <= 0) {
+      toast.error("Informe um valor maior que zero.");
+      return;
+    }
+    if (!form.description.trim()) {
+      toast.error("Descreva a transação para reconhecê-la depois.");
+      return;
+    }
     addTransaction({
       type: form.type,
       value: v,
@@ -278,14 +286,25 @@ function Financas() {
             onSubmit={(e) => {
               e.preventDefault();
               const fd = new FormData(e.currentTarget);
+              const valor = parseFloat(String(fd.get("value") ?? "").replace(",", "."));
+              const descricao = String(fd.get("description") ?? "").trim();
+              if (!Number.isFinite(valor) || valor <= 0) {
+                toast.error("Informe um valor maior que zero.");
+                return;
+              }
+              if (!descricao) {
+                toast.error("A descrição não pode ficar vazia.");
+                return;
+              }
               updateTransaction(editing.id, {
-                description: String(fd.get("description") || editing.description),
-                value: parseFloat(String(fd.get("value")) || String(editing.value)),
+                description: descricao,
+                value: valor,
                 category: String(fd.get("category") || editing.category),
                 date: String(fd.get("date") || editing.date),
                 type: String(fd.get("type") || editing.type) as "entrada" | "saida",
               });
               setEditing(null);
+              toast.success("Transação atualizada.");
             }}
             className="space-y-3"
           >
@@ -293,12 +312,12 @@ function Financas() {
               <option value="entrada">Entrada</option>
               <option value="saida">Saída</option>
             </select>
-            <input name="description" defaultValue={editing.description} className={inpCls} placeholder="Descrição" />
-            <input name="value" defaultValue={editing.value} type="number" step="0.01" className={inpCls} />
+            <input name="description" defaultValue={editing.description} className={inpCls} placeholder="Descrição" required />
+            <input name="value" defaultValue={editing.value} type="number" step="0.01" min="0.01" className={inpCls} required />
             <select name="category" defaultValue={editing.category} className={inpCls}>
               {CATEGORIES.map((c) => <option key={c.id} value={c.id}>{c.icon} {c.id}</option>)}
             </select>
-            <input name="date" defaultValue={editing.date} type="date" className={inpCls} />
+            <input name="date" defaultValue={editing.date} type="date" className={inpCls} required />
             <div className="flex justify-end gap-2">
               <button type="button" onClick={() => setEditing(null)} className="px-4 py-2 rounded-lg border border-white/10 text-sm">Cancelar</button>
               <button type="submit" className={btnGold}>Salvar</button>

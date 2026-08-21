@@ -5,6 +5,7 @@ import { daysAgoISO, fmtDate, STUDY_AREAS, STUDY_TYPES, todayISO } from "@/lib/f
 import { GlassCard, KpiCard, PageHeader, Section } from "@/components/primitives";
 import { Pencil, Trash2 } from "lucide-react";
 import { Modal, ConfirmButton, inpCls, btnGold } from "@/components/Modal";
+import { toast } from "sonner";
 import {
   BarChart,
   Bar,
@@ -53,9 +54,17 @@ function Estudos() {
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
     const d = parseInt(form.duration, 10);
-    if (!form.topic || !d) return;
+    if (!form.topic.trim()) {
+      toast.error("Informe o tema que você estudou.");
+      return;
+    }
+    if (!Number.isFinite(d) || d <= 0) {
+      toast.error("Informe a duração do estudo em minutos.");
+      return;
+    }
     addStudy({ ...form, duration: d });
     setForm({ ...form, topic: "", duration: "", learned: "", insights: "" });
+    toast.success("Estudo registrado.");
   };
 
   const grouped = useMemo(() => {

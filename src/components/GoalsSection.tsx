@@ -3,6 +3,7 @@ import { Pencil, Trash2, Plus, Check } from "lucide-react";
 import { useStore, type GoalArea, type GoalMacro, type GoalDaily } from "@/lib/store";
 import { GlassCard } from "@/components/primitives";
 import { Modal, ConfirmButton, inpCls, btnGold } from "@/components/Modal";
+import { toast } from "sonner";
 import { brl, toISODate, todayISO } from "@/lib/format";
 
 const AREAS: GoalArea[] = ["Finanças", "Corpo & Saúde", "Biblioteca", "Estudos", "Geral"];
@@ -145,7 +146,22 @@ function MacroFormModal({
 
   return (
     <Modal open={open} onClose={onClose} title={title}>
-      <form onSubmit={(e) => { e.preventDefault(); if (f.name && f.targetValue) onSave(f); }} className="space-y-3">
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (!f.name.trim()) {
+            toast.error("Dê um nome à meta.");
+            return;
+          }
+          if (!Number.isFinite(f.targetValue) || f.targetValue <= 0) {
+            toast.error("Informe o valor que você quer alcançar.");
+            return;
+          }
+          onSave(f);
+          toast.success("Meta salva.");
+        }}
+        className="space-y-3"
+      >
         <Field label="Nome da meta">
           <input className={inpCls} value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} required />
         </Field>
@@ -298,7 +314,22 @@ function DailyFormModal({
 
   return (
     <Modal open={open} onClose={onClose} title={title}>
-      <form onSubmit={(e) => { e.preventDefault(); if (f.name) onSave(f); }} className="space-y-3">
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (!f.name.trim()) {
+            toast.error("Dê um nome à ação.");
+            return;
+          }
+          if (f.daysOfWeek.length === 0) {
+            toast.error("Escolha pelo menos um dia da semana.");
+            return;
+          }
+          onSave(f);
+          toast.success("Ação salva.");
+        }}
+        className="space-y-3"
+      >
         <Field label="Nome da ação">
           <input className={inpCls} value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} required />
         </Field>
