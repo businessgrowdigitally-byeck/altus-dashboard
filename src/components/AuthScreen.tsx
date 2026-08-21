@@ -12,7 +12,7 @@ const TITLES: Record<Mode, { title: string; subtitle: string; action: string }> 
 };
 
 export function AuthScreen() {
-  const { signIn, signUp, sendReset } = useAuth();
+  const { signIn, signUp, sendReset, signInWithGoogle } = useAuth();
   const [mode, setMode] = useState<Mode>("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -139,7 +139,6 @@ export function AuthScreen() {
               setError(null);
               setBusy(true);
               try {
-                const { signInWithGoogle } = useAuth();
                 await signInWithGoogle();
               } catch (err) {
                 setError(err instanceof Error ? err.message : "Falha ao entrar com Google.");
