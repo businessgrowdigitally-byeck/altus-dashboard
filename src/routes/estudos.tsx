@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useStore, type StudyEntry } from "@/lib/store";
-import { fmtDate, STUDY_AREAS, STUDY_TYPES, todayISO } from "@/lib/format";
+import { daysAgoISO, fmtDate, STUDY_AREAS, STUDY_TYPES, todayISO } from "@/lib/format";
 import { GlassCard, KpiCard, PageHeader, Section } from "@/components/primitives";
 import { Pencil, Trash2 } from "lucide-react";
 import { Modal, ConfirmButton, inpCls, btnGold } from "@/components/Modal";
@@ -30,7 +30,7 @@ function Estudos() {
     const days = new Set(studies.map((s) => s.date));
     let n = 0;
     for (let i = 0; i < 365; i++) {
-      const d = new Date(Date.now() - i * 86400000).toISOString().slice(0, 10);
+      const d = daysAgoISO(i);
       if (days.has(d)) n++;
       else if (i > 0) break;
     }
@@ -78,10 +78,8 @@ function Estudos() {
   const weekly = useMemo(() => {
     const arr: { sem: string; horas: number }[] = [];
     for (let i = 11; i >= 0; i--) {
-      const start = new Date(Date.now() - i * 7 * 86400000);
-      const end = new Date(start.getTime() + 7 * 86400000);
-      const startISO = start.toISOString().slice(0, 10);
-      const endISO = end.toISOString().slice(0, 10);
+      const startISO = daysAgoISO(i * 7);
+      const endISO = daysAgoISO(i * 7 - 7);
       const mins = studies
         .filter((s) => s.date >= startISO && s.date < endISO)
         .reduce((a, s) => a + s.duration, 0);

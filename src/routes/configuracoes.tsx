@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { useStore } from "@/lib/store";
 import { GlassCard, PageHeader, Section } from "@/components/primitives";
+import { todayISO } from "@/lib/format";
 import { Moon, Sun } from "lucide-react";
 
 export const Route = createFileRoute("/configuracoes")({ component: Config });
@@ -22,7 +23,7 @@ function Config() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `altus-export-${new Date().toISOString().slice(0, 10)}.json`;
+    a.download = `altus-export-${todayISO()}.json`;
     a.click();
   };
 
@@ -39,6 +40,19 @@ function Config() {
           <Field label="Nome">
             <input className="inp" value={profile.name} onChange={(e) => setProfile({ name: e.target.value })} />
           </Field>
+          <Field label="Altura (m)">
+            <input
+              className="inp"
+              type="number"
+              step="0.01"
+              min="0.5"
+              max="2.5"
+              placeholder="1.75"
+              value={profile.height || ""}
+              onChange={(e) => setProfile({ height: +e.target.value })}
+            />
+            <span className="text-xs text-muted-foreground mt-1 block">Usada para calcular o IMC em Corpo &amp; Saúde.</span>
+          </Field>
           <Field label="Meta de peso (kg)">
             <input className="inp" type="number" step="0.1" value={profile.goalWeight} onChange={(e) => setProfile({ goalWeight: +e.target.value })} />
           </Field>
@@ -49,23 +63,6 @@ function Config() {
             <input className="inp" type="number" value={profile.maxExpenses} onChange={(e) => setProfile({ maxExpenses: +e.target.value })} />
           </Field>
         </GlassCard>
-      </Section>
-
-      <Section title="Integrações">
-        <div className="grid md:grid-cols-2 gap-4">
-          <GlassCard>
-            <h4 className="font-semibold mb-2">🥗 MyFitnessPal</h4>
-            <p className="text-sm text-muted-foreground mb-2">Webhook URL para receber dados automaticamente:</p>
-            <code className="block text-xs bg-black/40 p-2 rounded break-all">https://api.altus.app/hook/mfp/{profile.name.toLowerCase().replace(/\s/g, "-")}</code>
-            <p className="text-xs text-muted-foreground mt-2">Configure essa URL nas opções de exportação do MyFitnessPal.</p>
-          </GlassCard>
-          <GlassCard>
-            <h4 className="font-semibold mb-2">💪 Strong App</h4>
-            <p className="text-sm text-muted-foreground mb-2">Webhook URL para receber treinos:</p>
-            <code className="block text-xs bg-black/40 p-2 rounded break-all">https://api.altus.app/hook/strong/{profile.name.toLowerCase().replace(/\s/g, "-")}</code>
-            <p className="text-xs text-muted-foreground mt-2">Exporte CSV do Strong e use nosso importador.</p>
-          </GlassCard>
-        </div>
       </Section>
 
       <Section title="Agente IA (add-on)">

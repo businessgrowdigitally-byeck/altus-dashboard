@@ -3,7 +3,7 @@ import { Pencil, Trash2, Plus, Check } from "lucide-react";
 import { useStore, type GoalArea, type GoalMacro, type GoalDaily } from "@/lib/store";
 import { GlassCard } from "@/components/primitives";
 import { Modal, ConfirmButton, inpCls, btnGold } from "@/components/Modal";
-import { brl, todayISO } from "@/lib/format";
+import { brl, toISODate, todayISO } from "@/lib/format";
 
 const AREAS: GoalArea[] = ["Finanças", "Corpo & Saúde", "Biblioteca", "Estudos", "Geral"];
 const AREA_COLORS: Record<GoalArea, string> = {
@@ -373,10 +373,15 @@ function Heatmap() {
     for (let i = daysBack; i >= 0; i--) {
       const d = new Date();
       d.setDate(today.getDate() - i);
-      const iso = d.toISOString().slice(0, 10);
+      const iso = toISODate(d);
       const dow = d.getDay();
-      const planned = goalsDaily.filter((a) => a.daysOfWeek.includes(dow)).length;
-      const done = completions.filter((c) => c.date === iso).length;
+      const plannedIds = new Set(
+        goalsDaily.filter((a) => a.daysOfWeek.includes(dow)).map((a) => a.id),
+      );
+      const planned = plannedIds.size;
+      // Só conta conclusões de ações que estavam previstas para aquele dia da
+      // semana — sem isso a proporção "feitas ÷ planejadas" pode passar de 1.
+      const done = completions.filter((c) => c.date === iso && plannedIds.has(c.actionId)).length;
       const ratio = planned > 0 ? Math.min(1, done / planned) : done > 0 ? 1 : 0;
 
       days.push({ date: iso, done, planned, ratio, dow });

@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useStore } from "@/lib/store";
-import { brl, fmtDate, fmtDateLong, greeting, kg, todayISO } from "@/lib/format";
+import { brl, daysAgoISO, fmtDate, fmtDateLong, greeting, kg, todayISO } from "@/lib/format";
 import { GlassCard, KpiCard, PageHeader, Section } from "@/components/primitives";
 import { GoalsSection } from "@/components/GoalsSection";
 import { Check, ArrowRight, Brain, Sparkles, Target, CheckSquare, Calendar, TrendingUp } from "lucide-react";
@@ -26,7 +26,7 @@ function Dashboard() {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
   const now = new Date();
-  const monthKey = now.toISOString().slice(0, 7);
+  const monthKey = todayISO().slice(0, 7);
   const yearKey = now.getFullYear();
   const today = todayISO();
   const todayDow = now.getDay();
@@ -38,7 +38,7 @@ function Dashboard() {
 
   const sortedWeights = [...weights].sort((a, b) => a.date.localeCompare(b.date));
   const lastW = sortedWeights[sortedWeights.length - 1];
-  const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString().slice(0, 10);
+  const weekAgo = daysAgoISO(7);
   const prevW = [...sortedWeights].reverse().find((w) => w.date <= weekAgo);
   const weightDelta = lastW && prevW ? lastW.weight - prevW.weight : 0;
 
@@ -48,7 +48,7 @@ function Dashboard() {
     const days = new Set(studies.map((s) => s.date));
     let n = 0;
     for (let i = 0; i < 365; i++) {
-      const d = new Date(Date.now() - i * 86400000).toISOString().slice(0, 10);
+      const d = daysAgoISO(i);
       if (days.has(d)) n++;
       else if (i > 0) break;
     }
@@ -66,7 +66,7 @@ function Dashboard() {
     const arr: { date: string; saldo: number }[] = [];
     let running = 0;
     for (let i = 29; i >= 0; i--) {
-      const d = new Date(Date.now() - i * 86400000).toISOString().slice(0, 10);
+      const d = daysAgoISO(i);
       const dayTx = transactions.filter((t) => t.date === d);
       running += dayTx.reduce((a, t) => a + (t.type === "entrada" ? t.value : -t.value), 0);
       arr.push({ date: d.slice(5), saldo: running });
@@ -75,7 +75,7 @@ function Dashboard() {
   }, [transactions]);
 
   const weightTrend = useMemo(() => {
-    const cutoff = new Date(Date.now() - 60 * 86400000).toISOString().slice(0, 10);
+    const cutoff = daysAgoISO(60);
     return sortedWeights
       .filter((w) => w.date >= cutoff)
       .map((w) => ({ date: w.date.slice(5), peso: w.weight }));
@@ -98,14 +98,12 @@ function Dashboard() {
   const studyWeekly = useMemo(() => {
     const buckets: { sem: string; horas: number }[] = [];
     for (let i = 7; i >= 0; i--) {
-      const start = new Date(Date.now() - i * 7 * 86400000);
-      const end = new Date(start.getTime() + 7 * 86400000);
-      const startISO = start.toISOString().slice(0, 10);
-      const endISO = end.toISOString().slice(0, 10);
+      const startISO = daysAgoISO(i * 7);
+      const endISO = daysAgoISO(i * 7 - 7);
       const mins = studies
         .filter((s) => s.date >= startISO && s.date < endISO)
         .reduce((a, s) => a + s.duration, 0);
-      buckets.push({ sem: start.toISOString().slice(5, 10), horas: +(mins / 60).toFixed(1) });
+      buckets.push({ sem: startISO.slice(5), horas: +(mins / 60).toFixed(1) });
     }
     return buckets;
   }, [studies]);
@@ -134,14 +132,13 @@ function Dashboard() {
 
   const insights = useMemo(() => {
     const out: string[] = [];
-    const lastWeekISO = new Date(Date.now() - 7 * 86400000).toISOString().slice(0, 10);
-    const twoWeekISO = new Date(Date.now() - 14 * 86400000).toISOString().slice(0, 10);
     const sumExp = (from: string, to: string) =>
       transactions
         .filter((t) => t.type === "saida" && t.date >= from && t.date < to)
         .reduce((a, b) => a + b.value, 0);
-    const thisWeek = sumExp(lastWeekISO, new Date().toISOString().slice(0, 10));
-    const prevWeek = sumExp(twoWeekISO, lastWeekISO);
+    // Duas janelas de exatamente 7 dias: a que termina hoje e a anterior a ela.
+    const thisWeek = sumExp(daysAgoISO(6), daysAgoISO(-1));
+    const prevWeek = sumExp(daysAgoISO(13), daysAgoISO(6));
     if (prevWeek > 0) {
       const diff = Math.round(((thisWeek - prevWeek) / prevWeek) * 100);
       if (diff !== 0)

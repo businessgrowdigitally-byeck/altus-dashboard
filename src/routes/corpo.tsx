@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useStore, type WeightEntry, type Workout } from "@/lib/store";
-import { fmtDate, kg, todayISO, WORKOUT_TYPES } from "@/lib/format";
+import { daysAgoISO, fmtDate, kg, todayISO, WORKOUT_TYPES } from "@/lib/format";
 import { GlassCard, KpiCard, PageHeader, Section } from "@/components/primitives";
 import { Pencil, Trash2 } from "lucide-react";
 import { Modal, ConfirmButton, inpCls, btnGold } from "@/components/Modal";
@@ -39,9 +39,9 @@ function Corpo() {
   const last = sorted[sorted.length - 1];
   const first = sorted[0];
 
-  // Assume height 1.75 — user can adjust via settings later
-  const height = 1.75;
-  const imc = last ? last.weight / (height * height) : 0;
+  // Altura vem do perfil. Sem ela não há IMC — nunca invente um valor aqui.
+  const height = profile.height;
+  const imc = height > 0 && last ? last.weight / (height * height) : 0;
   const imcStatus = imc < 18.5 ? "Atenção" : imc < 25 ? "Normal" : imc < 30 ? "Atenção" : "Cuidado";
 
   const goal = profile.goalWeight;
@@ -53,7 +53,7 @@ function Corpo() {
 
   const chartData = useMemo(() => {
     const days = { "1M": 30, "3M": 90, "6M": 180, "1A": 365, ALL: 99999 }[filter];
-    const cutoff = new Date(Date.now() - days * 86400000).toISOString().slice(0, 10);
+    const cutoff = daysAgoISO(days);
     return sorted
       .filter((w) => w.date >= cutoff)
       .map((w) => ({ date: w.date.slice(5), peso: w.weight }));
@@ -95,8 +95,8 @@ function Corpo() {
           label="IMC"
           value={imc ? imc.toFixed(1) : "—"}
           icon="📊"
-          delta={imc ? imcStatus : undefined}
-          tone={imcStatus === "Normal" ? "positive" : imcStatus === "Cuidado" ? "negative" : "default"}
+          delta={imc ? imcStatus : height > 0 ? "Registre seu peso" : "Informe sua altura"}
+          tone={!imc ? "default" : imcStatus === "Normal" ? "positive" : imcStatus === "Cuidado" ? "negative" : "default"}
         />
         <KpiCard
           label="Meta de Peso"
@@ -201,27 +201,6 @@ function Corpo() {
           </div>
         </GlassCard>
       </div>
-
-      <Section title="Integrações">
-        <div className="grid md:grid-cols-2 gap-4">
-          <GlassCard>
-            <div className="flex items-center gap-3 mb-2">
-              <span className="text-2xl">🥗</span>
-              <h4 className="font-semibold">MyFitnessPal</h4>
-            </div>
-            <p className="text-sm text-muted-foreground mb-3">Conecte seu MyFitnessPal para sincronizar dados de alimentação automaticamente.</p>
-            <button className="text-sm text-gold hover:underline">Ver Como Integrar →</button>
-          </GlassCard>
-          <GlassCard>
-            <div className="flex items-center gap-3 mb-2">
-              <span className="text-2xl">💪</span>
-              <h4 className="font-semibold">Strong App</h4>
-            </div>
-            <p className="text-sm text-muted-foreground mb-3">Conecte o Strong para importar seus treinos.</p>
-            <button className="text-sm text-gold hover:underline">Ver Como Integrar →</button>
-          </GlassCard>
-        </div>
-      </Section>
 
       <Section title="Resumo de Treinos">
         <div className="grid lg:grid-cols-2 gap-4">

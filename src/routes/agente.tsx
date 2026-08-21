@@ -4,6 +4,7 @@ import { useStore } from "@/lib/store";
 import { PageHeader } from "@/components/primitives";
 import { Bot, Send, Sparkles } from "lucide-react";
 import { AI_AGENT_ENABLED } from "@/lib/features";
+import { daysAgoISO, todayISO } from "@/lib/format";
 
 export const Route = createFileRoute("/agente")({
   // Agente vendido separadamente como add-on: rota desativada nesta versão.
@@ -34,7 +35,7 @@ function Agente() {
   }, [chat]);
 
   const buildContext = () => {
-    const month = new Date().toISOString().slice(0, 7);
+    const month = todayISO().slice(0, 7);
     const monthTx = transactions.filter((t) => t.date.startsWith(month));
     const income = monthTx.filter((t) => t.type === "entrada").reduce((a, b) => a + b.value, 0);
     const expense = monthTx.filter((t) => t.type === "saida").reduce((a, b) => a + b.value, 0);
@@ -47,7 +48,7 @@ function Agente() {
     const days = new Set(studies.map((s) => s.date));
     let streak = 0;
     for (let i = 0; i < 365; i++) {
-      const d = new Date(Date.now() - i * 86400000).toISOString().slice(0, 10);
+      const d = daysAgoISO(i);
       if (days.has(d)) streak++;
       else if (i > 0) break;
     }
@@ -68,7 +69,7 @@ function Agente() {
       metas_macro: goalsMacro.map((g) => ({ nome: g.name, area: g.area, atual: g.currentValue, alvo: g.targetValue, unidade: g.unit, deadline: g.deadline, pct: g.targetValue ? Math.round((g.currentValue / g.targetValue) * 100) : 0 })),
       rotina_diaria: {
         acoes: goalsDaily.map((a) => ({ nome: a.name, area: a.area, dias: a.daysOfWeek })),
-        completions_ultimos_7_dias: completions.filter((c) => c.date >= new Date(Date.now() - 7 * 86400000).toISOString().slice(0, 10)).length,
+        completions_ultimos_7_dias: completions.filter((c) => c.date >= daysAgoISO(6)).length,
       },
     };
   };

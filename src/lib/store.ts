@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { daysAgoISO, todayISO } from "./format";
 
 export type Transaction = {
   id: string;
@@ -57,6 +58,8 @@ export type Profile = {
   goalWeight: number;
   incomeTarget: number;
   maxExpenses: number;
+  /** Altura em metros. 0 = não informada — o IMC fica oculto até ser preenchida. */
+  height: number;
 };
 
 export type Settings = {
@@ -142,11 +145,7 @@ type State = {
 
 const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
 
-const daysAgo = (n: number) => {
-  const d = new Date();
-  d.setDate(d.getDate() - n);
-  return d.toISOString().slice(0, 10);
-};
+const daysAgo = (n: number) => daysAgoISO(n);
 
 const sampleTransactions: Transaction[] = [
   { id: uid(), type: "entrada", value: 8500, description: "Salário", category: "Investimento", date: daysAgo(25) },
@@ -209,7 +208,7 @@ const sampleGoalsDaily: GoalDaily[] = [
 
 const initial = {
   version: 2,
-  profile: { name: "Visionário", goalWeight: 75, incomeTarget: 10000, maxExpenses: 6000 } as Profile,
+  profile: { name: "Visionário", goalWeight: 75, incomeTarget: 10000, maxExpenses: 6000, height: 1.75 } as Profile,
   settings: { theme: "dark" as const, accent: "gold" as const, geminiKey: "" },
   transactions: sampleTransactions,
   weights: sampleWeights,
@@ -240,7 +239,8 @@ export const emptyState = {
   goalsMacro: [] as GoalMacro[],
   goalsDaily: [] as GoalDaily[],
   completions: [] as DailyCompletion[],
-  profile: { ...initial.profile, name: "" },
+  // Conta nova não tem altura: o card de IMC só aparece depois que a pessoa informa.
+  profile: { ...initial.profile, name: "", height: 0 },
 };
 
 /** Estado com os dados de demonstração — usado no botão "carregar exemplo". */
@@ -286,7 +286,7 @@ export const useStore = create<State>()(
       addStudy: (st) => { set((s) => ({ studies: [{ ...st, id: uid() }, ...s.studies] })); get().recomputeLinkedGoals(); },
       updateStudy: (id, p) => { set((s) => ({ studies: s.studies.map((x) => x.id === id ? { ...x, ...p } : x) })); get().recomputeLinkedGoals(); },
       removeStudy: (id) => { set((s) => ({ studies: s.studies.filter((x) => x.id !== id) })); get().recomputeLinkedGoals(); },
-      addGoalMacro: (g) => set((s) => ({ goalsMacro: [{ ...g, id: uid(), createdAt: new Date().toISOString().slice(0,10) }, ...s.goalsMacro] })),
+      addGoalMacro: (g) => set((s) => ({ goalsMacro: [{ ...g, id: uid(), createdAt: todayISO() }, ...s.goalsMacro] })),
       updateGoalMacro: (id, p) => set((s) => ({ goalsMacro: s.goalsMacro.map((x) => x.id === id ? { ...x, ...p } : x) })),
       removeGoalMacro: (id) => set((s) => ({ goalsMacro: s.goalsMacro.filter((x) => x.id !== id) })),
       addGoalDaily: (g) => set((s) => ({ goalsDaily: [{ ...g, id: uid() }, ...s.goalsDaily] })),

@@ -3,7 +3,27 @@ export const brl = (n: number) =>
 
 export const kg = (n: number) => `${n.toFixed(1)} kg`;
 
-export const todayISO = () => new Date().toISOString().slice(0, 10);
+/**
+ * Data no formato YYYY-MM-DD usando o fuso do usuário.
+ *
+ * Nunca use `toISOString().slice(0, 10)` para isso: ele converte para UTC, e
+ * no Brasil (UTC−3) das 21h à meia-noite o resultado já é o dia seguinte —
+ * o que faz o registro da noite cair no dia errado.
+ */
+export const toISODate = (d: Date) => {
+  const mes = String(d.getMonth() + 1).padStart(2, "0");
+  const dia = String(d.getDate()).padStart(2, "0");
+  return `${d.getFullYear()}-${mes}-${dia}`;
+};
+
+export const todayISO = () => toISODate(new Date());
+
+/** Data de N dias atrás em hora local. Valores negativos avançam no tempo. */
+export const daysAgoISO = (n: number) => {
+  const d = new Date();
+  d.setDate(d.getDate() - n);
+  return toISODate(d);
+};
 
 export const fmtDate = (iso: string) => {
   const d = new Date(iso + (iso.length === 10 ? "T00:00:00" : ""));
