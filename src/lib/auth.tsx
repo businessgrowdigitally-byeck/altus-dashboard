@@ -8,6 +8,7 @@ type AuthValue = {
   /** true enquanto verificamos se já existe uma sessão salva no navegador */
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
+  signInWithGoogle: () => Promise<void>;
   /** retorna true quando o Supabase exige confirmação de e-mail antes do login */
   signUp: (email: string, password: string) => Promise<boolean>;
   signOut: () => Promise<void>;
@@ -54,6 +55,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     loading,
     signIn: async (email, password) => {
       const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+      if (error) throw new Error(traduzErro(error.message));
+    },
+    signInWithGoogle: async () => {
+      const redirectTo = typeof window !== "undefined" ? window.location.origin : undefined;
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: { redirectTo },
+      });
       if (error) throw new Error(traduzErro(error.message));
     },
     signUp: async (email, password) => {
