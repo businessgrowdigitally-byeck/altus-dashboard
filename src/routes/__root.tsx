@@ -84,18 +84,18 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:title", content: "ALTUS — Become your best version" },
       { property: "og:description", content: "Gerencie sua vida como um CEO administra sua empresa." },
       { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary" },
+      { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:site", content: "@Lovable" },
       { name: "twitter:title", content: "ALTUS — Become your best version" },
       { name: "twitter:description", content: "Gerencie sua vida como um CEO administra sua empresa." },
-      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/9yD1OZPF30Nbw9xR9YQWpnzDSMk2/social-images/social-1779842024138-Captura_de_tela_2026-05-26_212911.webp" },
-      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/9yD1OZPF30Nbw9xR9YQWpnzDSMk2/social-images/social-1779842024138-Captura_de_tela_2026-05-26_212911.webp" },
     ],
     links: [
       {
         rel: "stylesheet",
         href: appCss,
       },
+      { rel: "icon", type: "image/png", href: "/favicon.png" },
+      { rel: "apple-touch-icon", href: "/favicon.png" },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "" },
       {
