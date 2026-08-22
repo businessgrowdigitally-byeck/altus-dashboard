@@ -17,7 +17,35 @@ import {
   CartesianGrid,
 } from "recharts";
 
-export const Route = createFileRoute("/")({ component: Dashboard });
+import ogImage from "@/assets/altus-og.jpg.asset.json";
+
+const SITE = "https://altus-dashboard.lovable.app";
+const OG_IMAGE = `${SITE}${ogImage.url}`;
+const TITLE = "ALTUS — Organize. Foque. Conquiste.";
+const DESCRIPTION =
+  "Painel pessoal que reúne finanças, corpo, leitura, estudos, metas e hábitos diários em um só lugar. Acompanhe seu progresso e evolua todos os dias.";
+
+export const Route = createFileRoute("/")({
+  component: Dashboard,
+  head: () => ({
+    meta: [
+      { title: TITLE },
+      { name: "description", content: DESCRIPTION },
+      { property: "og:title", content: TITLE },
+      { property: "og:description", content: DESCRIPTION },
+      { property: "og:type", content: "website" },
+      { property: "og:url", content: `${SITE}/` },
+      { property: "og:image", content: OG_IMAGE },
+      { property: "og:image:width", content: "1200" },
+      { property: "og:image:height", content: "630" },
+      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: TITLE },
+      { name: "twitter:description", content: DESCRIPTION },
+      { name: "twitter:image", content: OG_IMAGE },
+    ],
+    links: [{ rel: "canonical", href: `${SITE}/` }],
+  }),
+});
 
 function Dashboard() {
   const { transactions, weights, books, studies, profile, goalsMacro, goalsDaily, completions, toggleCompletion } = useStore();
