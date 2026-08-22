@@ -48,7 +48,12 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const profileName = useStore((s) => s.profile.name);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const { user, signOut } = useAuth();
-  const name = profileName || user?.email?.split("@")[0] || "Visionário";
+  const name =
+    profileName ||
+    user?.user_metadata?.full_name ||
+    user?.user_metadata?.name ||
+    user?.email?.split("@")[0] ||
+    "Visionário";
 
   async function handleSignOut() {
     await flushSync();

@@ -5,6 +5,9 @@ import { brl, daysAgoISO, fmtDate, fmtDateLong, greeting, kg, todayISO } from "@
 import { GlassCard, KpiCard, PageHeader, Section } from "@/components/primitives";
 import { GoalsSection } from "@/components/GoalsSection";
 import { Check, ArrowRight, Brain, Sparkles, Target, CheckSquare, Calendar, TrendingUp } from "lucide-react";
+import { useAuth } from "@/lib/auth";
+import { useSyncStatus } from "@/lib/sync";
+import { Modal } from "@/components/Modal";
 import {
   LineChart,
   Line,
@@ -48,7 +51,7 @@ export const Route = createFileRoute("/")({
 });
 
 function Dashboard() {
-  const { transactions, weights, books, studies, profile, goalsMacro, goalsDaily, completions, toggleCompletion } = useStore();
+  const { transactions, weights, books, studies, profile, goalsMacro, goalsDaily, completions, toggleCompletion, setProfile } = useStore();
 
   // Avoid SSR/CSR hydration mismatch: render time-dependent strings only after mount.
   const [mounted, setMounted] = useState(false);
@@ -194,7 +197,46 @@ function Dashboard() {
     return out.slice(0, 3);
   }, [transactions, sortedWeights, booksThisYear, streak, yearKey]);
 
-  const userName = profile.name || "Erick";
+  const { user } = useAuth();
+  const { status: syncStatus } = useSyncStatus();
+  const [showWelcomeModal, setShowWelcomeModal] = useState(false);
+  const [tempName, setTempName] = useState("");
+
+  const userName =
+    profile.name ||
+    user?.user_metadata?.full_name ||
+    user?.user_metadata?.name ||
+    user?.email?.split("@")[0] ||
+    "Visionário";
+
+  useEffect(() => {
+    if (mounted && syncStatus === "saved" && !profile.name && user) {
+      const sessionSkipped = sessionStorage.getItem("altus_welcome_skipped");
+      if (!sessionSkipped) {
+        setShowWelcomeModal(true);
+        const initialName =
+          user?.user_metadata?.full_name ||
+          user?.user_metadata?.name ||
+          user?.email?.split("@")[0] ||
+          "";
+        setTempName(initialName);
+      }
+    }
+  }, [mounted, syncStatus, profile.name, user]);
+
+  const handleSaveName = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (tempName.trim()) {
+      setProfile({ name: tempName.trim() });
+      setShowWelcomeModal(false);
+    }
+  };
+
+  const handleCloseModal = () => {
+    setProfile({ name: userName });
+    setShowWelcomeModal(false);
+    sessionStorage.setItem("altus_welcome_skipped", "true");
+  };
 
   return (
     <div className="space-y-8">
@@ -526,6 +568,42 @@ function Dashboard() {
 
       {/* Seção Completa de Metas & Rotina */}
       <GoalsSection />
+
+      <Modal
+        open={showWelcomeModal}
+        onClose={handleCloseModal}
+        title="Boas-vindas ao ALTUS!"
+      >
+        <form onSubmit={handleSaveName} className="space-y-4">
+          <p className="text-sm text-purple-200/80 leading-relaxed">
+            Como você gostaria de ser chamado(a) no seu sistema pessoal?
+          </p>
+          <input
+            type="text"
+            className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/40 focus:border-purple-500/50 transition text-white"
+            placeholder="Seu nome"
+            value={tempName}
+            onChange={(e) => setTempName(e.target.value)}
+            required
+            autoFocus
+          />
+          <div className="flex justify-end gap-2 pt-2">
+            <button
+              type="button"
+              onClick={handleCloseModal}
+              className="px-4 py-2 rounded-lg text-sm text-muted-foreground hover:bg-white/5 transition"
+            >
+              Pular
+            </button>
+            <button
+              type="submit"
+              className="px-4 py-2 rounded-lg text-sm font-semibold bg-gradient-to-r from-[#6E38F7] to-[#9055FF] text-white hover:brightness-110 transition shadow-lg shadow-purple-600/25"
+            >
+              Salvar Nome
+            </button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 }
