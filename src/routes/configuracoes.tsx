@@ -6,15 +6,14 @@ import { Modal } from "@/components/Modal";
 import { todayISO } from "@/lib/format";
 import { Moon, Sun } from "lucide-react";
 import { toast } from "sonner";
-import { useT } from "@/lib/i18n";
 
 export const Route = createFileRoute("/configuracoes")({ component: Config });
 
 const ACCENTS = [
-  { id: "gold", color: "#F5C842", label: "config.accentGold" },
-  { id: "emerald", color: "#2ECC71", label: "config.accentEmerald" },
-  { id: "purple", color: "#9B59B6", label: "config.accentPurple" },
-  { id: "blue", color: "#3498DB", label: "config.accentBlue" },
+  { id: "gold", color: "#F5C842", label: "Ouro" },
+  { id: "emerald", color: "#2ECC71", label: "Esmeralda" },
+  { id: "purple", color: "#9B59B6", label: "Roxo" },
+  { id: "blue", color: "#3498DB", label: "Azul" },
 ] as const;
 
 function Config() {
@@ -23,7 +22,6 @@ function Config() {
   const [clearOpen, setClearOpen] = useState(false);
   const [clearConfirm, setClearConfirm] = useState("");
   const [backupFeito, setBackupFeito] = useState(false);
-  const t = useT();
 
   const download = () => {
     const blob = new Blob([exportAll()], { type: "application/json" });
@@ -36,12 +34,12 @@ function Config() {
     a.remove();
     URL.revokeObjectURL(url);
     setBackupFeito(true);
-    toast.success(t("config.toastBackup"));
+    toast.success("Backup baixado.");
   };
 
   const handleImport = () => {
     if (!importText.trim()) {
-      toast.error(t("config.toastPaste"));
+      toast.error("Cole o conteúdo do arquivo antes de importar.");
       return;
     }
     const erro = importAll(importText);
@@ -50,7 +48,7 @@ function Config() {
       return;
     }
     setImportText("");
-    toast.success(t("config.toastImported"));
+    toast.success("Dados importados. Tudo que estava aqui foi substituído.");
   };
 
   const executarLimpeza = () => {
@@ -58,23 +56,19 @@ function Config() {
     setClearOpen(false);
     setClearConfirm("");
     setBackupFeito(false);
-    toast.success(t("config.toastCleared"));
+    toast.success("Todos os dados foram apagados.");
   };
 
   return (
     <div>
-      <PageHeader title={t("config.title")} subtitle={t("config.subtitle")} />
+      <PageHeader title="Configurações" subtitle="Personalize seu sistema operacional pessoal" />
 
-      <Section title={t("config.profile")}>
+      <Section title="Perfil">
         <GlassCard className="grid md:grid-cols-2 gap-3">
-          <Field label={t("config.name")}>
-            <input
-              className="inp"
-              value={profile.name}
-              onChange={(e) => setProfile({ name: e.target.value })}
-            />
+          <Field label="Nome">
+            <input className="inp" value={profile.name} onChange={(e) => setProfile({ name: e.target.value })} />
           </Field>
-          <Field label={t("config.height")}>
+          <Field label="Altura (m)">
             <input
               className="inp"
               type="number"
@@ -85,66 +79,50 @@ function Config() {
               value={profile.height || ""}
               onChange={(e) => setProfile({ height: +e.target.value })}
             />
-            <span className="text-xs text-muted-foreground mt-1 block">
-              {t("config.heightHint")}
-            </span>
+            <span className="text-xs text-muted-foreground mt-1 block">Usada para calcular o IMC em Corpo &amp; Saúde.</span>
           </Field>
-          <Field label={t("config.weightGoal")}>
-            <input
-              className="inp"
-              type="number"
-              step="0.1"
-              value={profile.goalWeight}
-              onChange={(e) => setProfile({ goalWeight: +e.target.value })}
-            />
+          <Field label="Meta de peso (kg)">
+            <input className="inp" type="number" step="0.1" value={profile.goalWeight} onChange={(e) => setProfile({ goalWeight: +e.target.value })} />
           </Field>
-          <Field label={t("config.incomeTarget")}>
-            <input
-              className="inp"
-              type="number"
-              value={profile.incomeTarget}
-              onChange={(e) => setProfile({ incomeTarget: +e.target.value })}
-            />
+          <Field label="Meta de receita mensal (R$)">
+            <input className="inp" type="number" value={profile.incomeTarget} onChange={(e) => setProfile({ incomeTarget: +e.target.value })} />
           </Field>
-          <Field label={t("config.maxExpenses")}>
-            <input
-              className="inp"
-              type="number"
-              value={profile.maxExpenses}
-              onChange={(e) => setProfile({ maxExpenses: +e.target.value })}
-            />
+          <Field label="Limite de despesas (R$)">
+            <input className="inp" type="number" value={profile.maxExpenses} onChange={(e) => setProfile({ maxExpenses: +e.target.value })} />
           </Field>
         </GlassCard>
       </Section>
 
-      <Section title={t("config.aiAgent")}>
+      <Section title="Agente IA (add-on)">
         <GlassCard className="space-y-2">
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-gold" />
-            <span className="text-sm font-medium">{t("config.notIncluded")}</span>
+            <span className="text-sm font-medium">Não incluído nesta versão</span>
           </div>
           <p className="text-xs text-muted-foreground">
-            {t("config.aiAgentDescA")} <strong>{t("config.aiAgentDescB")}</strong>{" "}
-            {t("config.aiAgentDescC")}
+            O <strong>Agente IA</strong> — análises cruzadas de todos os seus módulos em linguagem natural — será
+            oferecido em breve como add-on/assinatura separada. Sua licença atual inclui todos os módulos de
+            registro e acompanhamento.
           </p>
         </GlassCard>
       </Section>
 
-      <Section title={t("config.data")}>
+
+      <Section title="Dados">
         <GlassCard className="space-y-3">
           <div className="flex flex-wrap gap-2">
-            <button onClick={download} className="btn-gold">
-              {t("config.downloadBackup")}
-            </button>
+            <button onClick={download} className="btn-gold">Baixar backup (JSON)</button>
             <button
               onClick={() => setClearOpen(true)}
               className="px-4 py-2 rounded-lg bg-coral text-white font-semibold hover:brightness-110"
             >
-              {t("config.clearData")}
+              Apagar todos os dados
             </button>
           </div>
-          <p className="text-xs text-muted-foreground">{t("config.backupHint")}</p>
-          <Field label={t("config.restoreFrom")}>
+          <p className="text-xs text-muted-foreground">
+            O backup é um arquivo comum no seu computador. Guarde num lugar seguro — ele não tem senha.
+          </p>
+          <Field label="Restaurar de um backup">
             <textarea
               className="inp"
               rows={3}
@@ -153,37 +131,32 @@ function Config() {
               onChange={(e) => setImportText(e.target.value)}
             />
           </Field>
-          <p className="text-xs text-muted-foreground">{t("config.restoreHint")}</p>
-          <button onClick={handleImport} className="text-sm text-gold hover:underline">
-            {t("config.restore")}
-          </button>
+          <p className="text-xs text-muted-foreground">
+            Restaurar <strong>substitui</strong> tudo que está aqui hoje pelo conteúdo do arquivo.
+          </p>
+          <button onClick={handleImport} className="text-sm text-gold hover:underline">Restaurar →</button>
         </GlassCard>
       </Section>
 
-      <Modal
-        open={clearOpen}
-        onClose={() => {
-          setClearOpen(false);
-          setClearConfirm("");
-        }}
-        title={t("config.clearModalTitle")}
-      >
+      <Modal open={clearOpen} onClose={() => { setClearOpen(false); setClearConfirm(""); }} title="Apagar todos os dados">
         <div className="space-y-4">
-          <p className="text-sm text-muted-foreground">{t("config.clearWarning")}</p>
+          <p className="text-sm text-muted-foreground">
+            Isso apaga suas transações, pesos, treinos, livros, estudos e metas —
+            <strong className="text-foreground"> inclusive a cópia na nuvem</strong>. Não há como desfazer
+            e não existe lixeira.
+          </p>
 
           <div className="rounded-lg border border-white/10 p-3 space-y-2">
             <div className="flex items-center justify-between gap-3">
-              <span className="text-sm">{t("config.downloadBefore")}</span>
+              <span className="text-sm">1. Baixe um backup antes</span>
               <button onClick={download} className="text-sm text-gold hover:underline shrink-0">
-                {backupFeito ? t("config.downloadAgain") : t("config.downloadNow")}
+                {backupFeito ? "Baixar de novo" : "Baixar agora"}
               </button>
             </div>
-            {backupFeito && (
-              <p className="text-xs text-emerald-bgt">{t("config.backupDownloaded")}</p>
-            )}
+            {backupFeito && <p className="text-xs text-emerald-bgt">Backup baixado.</p>}
           </div>
 
-          <Field label={t("config.confirmLabel")}>
+          <Field label={`2. Digite APAGAR para confirmar`}>
             <input
               className="inp"
               value={clearConfirm}
@@ -195,44 +168,41 @@ function Config() {
 
           <div className="flex justify-end gap-2 pt-1">
             <button
-              onClick={() => {
-                setClearOpen(false);
-                setClearConfirm("");
-              }}
+              onClick={() => { setClearOpen(false); setClearConfirm(""); }}
               className="px-4 py-2 rounded-lg border border-white/10 text-sm hover:bg-white/5 transition"
             >
-              {t("config.cancel")}
+              Cancelar
             </button>
             <button
               onClick={executarLimpeza}
               disabled={clearConfirm.trim().toUpperCase() !== "APAGAR"}
               className="px-4 py-2 rounded-lg bg-coral text-white font-semibold text-sm hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              {t("config.clearAll")}
+              Apagar tudo
             </button>
           </div>
         </div>
       </Modal>
 
-      <Section title={t("config.appearance")}>
+      <Section title="Aparência">
         <GlassCard className="space-y-4">
-          <Field label={t("config.theme")}>
+          <Field label="Tema">
             <div className="flex gap-2">
               <button
                 onClick={() => setSettings({ theme: "dark" })}
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition ${settings.theme === "dark" ? "border-gold bg-gold/10" : "border-white/10"}`}
               >
-                <Moon size={16} /> {t("config.themeDark")}
+                <Moon size={16} /> Escuro
               </button>
               <button
                 onClick={() => setSettings({ theme: "light" })}
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition ${settings.theme === "light" ? "border-gold bg-gold/10" : "border-white/10"}`}
               >
-                <Sun size={16} /> {t("config.themeLight")}
+                <Sun size={16} /> Claro
               </button>
             </div>
           </Field>
-          <Field label={t("config.accent")}>
+          <Field label="Cor de destaque">
             <div className="flex gap-2">
               {ACCENTS.map((a) => (
                 <button
@@ -240,7 +210,7 @@ function Config() {
                   onClick={() => setSettings({ accent: a.id })}
                   className={`w-10 h-10 rounded-full transition ${settings.accent === a.id ? "ring-2 ring-offset-2 ring-offset-background ring-white" : ""}`}
                   style={{ backgroundColor: a.color }}
-                  title={t(a.label)}
+                  title={a.label}
                 />
               ))}
             </div>

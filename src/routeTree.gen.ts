@@ -9,38 +9,18 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as IndexRouteImport } from './routes/index'
-import { Route as AgenteRouteImport } from './routes/agente'
-import { Route as BibliotecaRouteImport } from './routes/biblioteca'
-import { Route as ConfiguracoesRouteImport } from './routes/configuracoes'
-import { Route as CorpoRouteImport } from './routes/corpo'
-import { Route as EstudosRouteImport } from './routes/estudos'
 import { Route as FinancasRouteImport } from './routes/financas'
+import { Route as EstudosRouteImport } from './routes/estudos'
+import { Route as CorpoRouteImport } from './routes/corpo'
+import { Route as ConfiguracoesRouteImport } from './routes/configuracoes'
+import { Route as BibliotecaRouteImport } from './routes/biblioteca'
+import { Route as AgenteRouteImport } from './routes/agente'
+import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
 
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AgenteRoute = AgenteRouteImport.update({
-  id: '/agente',
-  path: '/agente',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const BibliotecaRoute = BibliotecaRouteImport.update({
-  id: '/biblioteca',
-  path: '/biblioteca',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ConfiguracoesRoute = ConfiguracoesRouteImport.update({
-  id: '/configuracoes',
-  path: '/configuracoes',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const CorpoRoute = CorpoRouteImport.update({
-  id: '/corpo',
-  path: '/corpo',
+const FinancasRoute = FinancasRouteImport.update({
+  id: '/financas',
+  path: '/financas',
   getParentRoute: () => rootRouteImport,
 } as any)
 const EstudosRoute = EstudosRouteImport.update({
@@ -48,9 +28,29 @@ const EstudosRoute = EstudosRouteImport.update({
   path: '/estudos',
   getParentRoute: () => rootRouteImport,
 } as any)
-const FinancasRoute = FinancasRouteImport.update({
-  id: '/financas',
-  path: '/financas',
+const CorpoRoute = CorpoRouteImport.update({
+  id: '/corpo',
+  path: '/corpo',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ConfiguracoesRoute = ConfiguracoesRouteImport.update({
+  id: '/configuracoes',
+  path: '/configuracoes',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BibliotecaRoute = BibliotecaRouteImport.update({
+  id: '/biblioteca',
+  path: '/biblioteca',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AgenteRoute = AgenteRouteImport.update({
+  id: '/agente',
+  path: '/agente',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiChatRoute = ApiChatRouteImport.update({
@@ -136,39 +136,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/agente': {
-      id: '/agente'
-      path: '/agente'
-      fullPath: '/agente'
-      preLoaderRoute: typeof AgenteRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/biblioteca': {
-      id: '/biblioteca'
-      path: '/biblioteca'
-      fullPath: '/biblioteca'
-      preLoaderRoute: typeof BibliotecaRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/configuracoes': {
-      id: '/configuracoes'
-      path: '/configuracoes'
-      fullPath: '/configuracoes'
-      preLoaderRoute: typeof ConfiguracoesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/corpo': {
-      id: '/corpo'
-      path: '/corpo'
-      fullPath: '/corpo'
-      preLoaderRoute: typeof CorpoRouteImport
+    '/financas': {
+      id: '/financas'
+      path: '/financas'
+      fullPath: '/financas'
+      preLoaderRoute: typeof FinancasRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/estudos': {
@@ -178,11 +150,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EstudosRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/financas': {
-      id: '/financas'
-      path: '/financas'
-      fullPath: '/financas'
-      preLoaderRoute: typeof FinancasRouteImport
+    '/corpo': {
+      id: '/corpo'
+      path: '/corpo'
+      fullPath: '/corpo'
+      preLoaderRoute: typeof CorpoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/configuracoes': {
+      id: '/configuracoes'
+      path: '/configuracoes'
+      fullPath: '/configuracoes'
+      preLoaderRoute: typeof ConfiguracoesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/biblioteca': {
+      id: '/biblioteca'
+      path: '/biblioteca'
+      fullPath: '/biblioteca'
+      preLoaderRoute: typeof BibliotecaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/agente': {
+      id: '/agente'
+      path: '/agente'
+      fullPath: '/agente'
+      preLoaderRoute: typeof AgenteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/chat': {

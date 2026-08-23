@@ -2,9 +2,8 @@ import { useState } from "react";
 import { Plus, Wallet, HeartPulse, BookOpen, GraduationCap, Dumbbell, Check } from "lucide-react";
 import { Modal, inpCls, btnGold } from "./Modal";
 import { useStore } from "@/lib/store";
-import { todayISO, CATEGORIES, WORKOUT_TYPES, STUDY_AREAS, GENRES } from "@/lib/format";
+import { todayISO, CATEGORIES, WORKOUT_TYPES, STUDY_AREAS, STUDY_TYPES, GENRES } from "@/lib/format";
 import { toast } from "sonner";
-import { useT } from "@/lib/i18n";
 
 type QuickActionType = "menu" | "transaction" | "weight" | "workout" | "study" | "book";
 
@@ -12,7 +11,6 @@ export function QuickAddFab() {
   const [currentModal, setCurrentModal] = useState<QuickActionType | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
-  const t = useT();
   const { addTransaction, addWeight, addWorkout, addStudy, addBook } = useStore();
 
   const showFeedback = (msg: string) => {
@@ -33,72 +31,64 @@ export function QuickAddFab() {
       {/* Floating Action Button */}
       <button
         onClick={() => setCurrentModal("menu")}
-        aria-label={t("quickAdd.fab")}
+        aria-label="Adicionar rápido"
         className="md:hidden fixed bottom-6 right-6 z-40 w-14 h-14 rounded-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-xl shadow-purple-900/50 border border-purple-400/30 flex items-center justify-center active:scale-95 transition-all"
       >
         <Plus size={28} className="transition-transform duration-200" />
       </button>
 
       {/* Main Action Menu Modal */}
-      <Modal
-        open={currentModal === "menu"}
-        onClose={() => setCurrentModal(null)}
-        title={t("quickAdd.menuTitle")}
-      >
-        <p className="text-xs text-muted-foreground mb-4">{t("quickAdd.subtitle")}</p>
+      <Modal open={currentModal === "menu"} onClose={() => setCurrentModal(null)} title="Registro Rápido">
+        <p className="text-xs text-muted-foreground mb-4">Escolha o que deseja registrar agora em 1 toque:</p>
         <div className="grid grid-cols-2 gap-3">
           <button
             onClick={() => setCurrentModal("transaction")}
             className="glass rounded-xl p-4 flex flex-col items-center gap-2 hover:border-gold/40 hover:bg-white/10 transition text-center"
           >
             <span className="text-3xl">💰</span>
-            <span className="text-sm font-medium">{t("quickAdd.transaction")}</span>
+            <span className="text-sm font-medium">Transação</span>
           </button>
           <button
             onClick={() => setCurrentModal("weight")}
             className="glass rounded-xl p-4 flex flex-col items-center gap-2 hover:border-emerald-bgt/40 hover:bg-white/10 transition text-center"
           >
             <span className="text-3xl">⚖️</span>
-            <span className="text-sm font-medium">{t("quickAdd.weight")}</span>
+            <span className="text-sm font-medium">Peso Corporal</span>
           </button>
           <button
             onClick={() => setCurrentModal("workout")}
             className="glass rounded-xl p-4 flex flex-col items-center gap-2 hover:border-purple-500/40 hover:bg-white/10 transition text-center"
           >
             <span className="text-3xl">💪</span>
-            <span className="text-sm font-medium">{t("quickAdd.workout")}</span>
+            <span className="text-sm font-medium">Treino</span>
           </button>
           <button
             onClick={() => setCurrentModal("study")}
             className="glass rounded-xl p-4 flex flex-col items-center gap-2 hover:border-blue-500/40 hover:bg-white/10 transition text-center"
           >
             <span className="text-3xl">🎓</span>
-            <span className="text-sm font-medium">{t("quickAdd.study")}</span>
+            <span className="text-sm font-medium">Sessão de Estudo</span>
           </button>
           <button
             onClick={() => setCurrentModal("book")}
             className="glass rounded-xl p-4 flex flex-col items-center gap-2 hover:border-amber-500/40 hover:bg-white/10 transition text-center col-span-2"
           >
             <span className="text-3xl">📚</span>
-            <span className="text-sm font-medium">{t("quickAdd.book")}</span>
+            <span className="text-sm font-medium">Livro Lido</span>
           </button>
         </div>
       </Modal>
 
       {/* Quick Transaction Modal */}
       {currentModal === "transaction" && (
-        <Modal
-          open={true}
-          onClose={() => setCurrentModal(null)}
-          title={t("quickAdd.modalTransaction")}
-        >
+        <Modal open={true} onClose={() => setCurrentModal(null)} title="Registrar Transação">
           <form
             onSubmit={(e) => {
               e.preventDefault();
               const fd = new FormData(e.currentTarget);
               const val = parseFloat(String(fd.get("value")).replace(",", "."));
               if (!Number.isFinite(val) || val <= 0) {
-                toast.error(t("quickAdd.errValue"));
+                toast.error("Informe um valor maior que zero.");
                 return;
               }
               addTransaction({
@@ -108,79 +98,48 @@ export function QuickAddFab() {
                 category: String(fd.get("category") || "Alimentação"),
                 date: String(fd.get("date") || todayISO()),
               });
-              showFeedback(t("quickAdd.toastTransaction"));
+              showFeedback("Transação registrada!");
             }}
             className="space-y-3"
           >
             <div className="flex rounded-lg overflow-hidden border border-white/10">
               <label className="flex-1 text-center py-2 text-sm font-medium cursor-pointer bg-white/5 has-[:checked]:bg-emerald-bgt has-[:checked]:text-black transition">
                 <input type="radio" name="type" value="entrada" className="sr-only" />
-                {t("quickAdd.entrada")}
+                Entrada
               </label>
               <label className="flex-1 text-center py-2 text-sm font-medium cursor-pointer bg-white/5 has-[:checked]:bg-coral has-[:checked]:text-white transition">
                 <input type="radio" name="type" value="saida" defaultChecked className="sr-only" />
-                {t("quickAdd.saida")}
+                Saída
               </label>
             </div>
             <div>
-              <label className="text-xs text-muted-foreground block mb-1">
-                {t("quickAdd.value")}
-              </label>
-              <input
-                name="value"
-                type="number"
-                step="0.01"
-                placeholder={t("quickAdd.placeholderValue")}
-                className={inpCls}
-                required
-                autoFocus
-              />
+              <label className="text-xs text-muted-foreground block mb-1">Valor (R$)</label>
+              <input name="value" type="number" step="0.01" placeholder="0,00" className={inpCls} required autoFocus />
             </div>
             <div>
-              <label className="text-xs text-muted-foreground block mb-1">
-                {t("quickAdd.description")}
-              </label>
-              <input
-                name="description"
-                placeholder={t("quickAdd.placeholderDescription")}
-                className={inpCls}
-                required
-              />
+              <label className="text-xs text-muted-foreground block mb-1">Descrição</label>
+              <input name="description" placeholder="ex: Supermercado" className={inpCls} required />
             </div>
             <div>
-              <label className="text-xs text-muted-foreground block mb-1">
-                {t("quickAdd.category")}
-              </label>
+              <label className="text-xs text-muted-foreground block mb-1">Categoria</label>
               <select name="category" className={inpCls}>
                 {CATEGORIES.map((c) => (
                   <option key={c.id} value={c.id}>
-                    {c.icon} {t("cat." + c.id)}
+                    {c.icon} {c.id}
                   </option>
                 ))}
               </select>
             </div>
             <div>
-              <label className="text-xs text-muted-foreground block mb-1">
-                {t("quickAdd.date")}
-              </label>
-              <input
-                name="date"
-                type="date"
-                defaultValue={todayISO()}
-                className={inpCls}
-                required
-              />
+              <label className="text-xs text-muted-foreground block mb-1">Data</label>
+              <input name="date" type="date" defaultValue={todayISO()} className={inpCls} required />
             </div>
             <div className="flex justify-end gap-2 pt-2">
-              <button
-                type="button"
-                onClick={() => setCurrentModal("menu")}
-                className="px-4 py-2 rounded-lg border border-white/10 text-sm"
-              >
-                {t("quickAdd.back")}
+              <button type="button" onClick={() => setCurrentModal("menu")} className="px-4 py-2 rounded-lg border border-white/10 text-sm">
+                Voltar
               </button>
               <button type="submit" className={btnGold}>
-                {t("quickAdd.save")}
+                Salvar
               </button>
             </div>
           </form>
@@ -189,14 +148,14 @@ export function QuickAddFab() {
 
       {/* Quick Weight Modal */}
       {currentModal === "weight" && (
-        <Modal open={true} onClose={() => setCurrentModal(null)} title={t("quickAdd.modalWeight")}>
+        <Modal open={true} onClose={() => setCurrentModal(null)} title="Registrar Peso">
           <form
             onSubmit={(e) => {
               e.preventDefault();
               const fd = new FormData(e.currentTarget);
               const val = parseFloat(String(fd.get("weight")).replace(",", "."));
               if (!Number.isFinite(val) || val <= 0) {
-                toast.error(t("quickAdd.errWeight"));
+                toast.error("Informe um peso válido, maior que zero.");
                 return;
               }
               addWeight({
@@ -204,57 +163,28 @@ export function QuickAddFab() {
                 date: String(fd.get("date") || todayISO()),
                 notes: String(fd.get("notes") || ""),
               });
-              showFeedback(t("quickAdd.toastWeight"));
+              showFeedback("Peso registrado!");
             }}
             className="space-y-3"
           >
             <div>
-              <label className="text-xs text-muted-foreground block mb-1">
-                {t("quickAdd.weightKg")}
-              </label>
-              <input
-                name="weight"
-                type="number"
-                step="0.1"
-                placeholder={t("quickAdd.placeholderWeight")}
-                className={inpCls}
-                required
-                autoFocus
-              />
+              <label className="text-xs text-muted-foreground block mb-1">Peso Atual (kg)</label>
+              <input name="weight" type="number" step="0.1" placeholder="ex: 78.5" className={inpCls} required autoFocus />
             </div>
             <div>
-              <label className="text-xs text-muted-foreground block mb-1">
-                {t("quickAdd.date")}
-              </label>
-              <input
-                name="date"
-                type="date"
-                defaultValue={todayISO()}
-                className={inpCls}
-                required
-              />
+              <label className="text-xs text-muted-foreground block mb-1">Data</label>
+              <input name="date" type="date" defaultValue={todayISO()} className={inpCls} required />
             </div>
             <div>
-              <label className="text-xs text-muted-foreground block mb-1">
-                {t("quickAdd.observations")}
-              </label>
-              <textarea
-                name="notes"
-                placeholder={t("quickAdd.placeholderNotes")}
-                rows={2}
-                className={inpCls}
-              />
+              <label className="text-xs text-muted-foreground block mb-1">Observações</label>
+              <textarea name="notes" placeholder="ex: Jejum matinal..." rows={2} className={inpCls} />
             </div>
             <div className="flex justify-end gap-2 pt-2">
-              <button
-                type="button"
-                onClick={() => setCurrentModal("menu")}
-                className="px-4 py-2 rounded-lg border border-white/10 text-sm"
-              >
-                {t("quickAdd.back")}
+              <button type="button" onClick={() => setCurrentModal("menu")} className="px-4 py-2 rounded-lg border border-white/10 text-sm">
+                Voltar
               </button>
               <button type="submit" className={btnGold}>
-                {t("quickAdd.saveWeight")}
+                Salvar Peso
               </button>
             </div>
           </form>
@@ -263,14 +193,14 @@ export function QuickAddFab() {
 
       {/* Quick Workout Modal */}
       {currentModal === "workout" && (
-        <Modal open={true} onClose={() => setCurrentModal(null)} title={t("quickAdd.modalWorkout")}>
+        <Modal open={true} onClose={() => setCurrentModal(null)} title="Registrar Treino">
           <form
             onSubmit={(e) => {
               e.preventDefault();
               const fd = new FormData(e.currentTarget);
               const dur = parseInt(String(fd.get("duration")), 10);
               if (!Number.isFinite(dur) || dur <= 0) {
-                toast.error(t("quickAdd.errWorkoutDuration"));
+                toast.error("Informe a duração do treino em minutos.");
                 return;
               }
               addWorkout({
@@ -279,68 +209,38 @@ export function QuickAddFab() {
                 date: String(fd.get("date") || todayISO()),
                 notes: String(fd.get("notes") || ""),
               });
-              showFeedback(t("quickAdd.toastWorkout"));
+              showFeedback("Treino registrado!");
             }}
             className="space-y-3"
           >
             <div>
-              <label className="text-xs text-muted-foreground block mb-1">
-                {t("quickAdd.workoutType")}
-              </label>
+              <label className="text-xs text-muted-foreground block mb-1">Tipo de Treino</label>
               <select name="type" className={inpCls}>
-                {WORKOUT_TYPES.map((w) => (
-                  <option key={w} value={w}>
-                    {t("workout." + w)}
+                {WORKOUT_TYPES.map((t) => (
+                  <option key={t} value={t}>
+                    {t}
                   </option>
                 ))}
               </select>
             </div>
             <div>
-              <label className="text-xs text-muted-foreground block mb-1">
-                {t("quickAdd.durationMin")}
-              </label>
-              <input
-                name="duration"
-                type="number"
-                placeholder={t("quickAdd.placeholderDuration")}
-                className={inpCls}
-                required
-                autoFocus
-              />
+              <label className="text-xs text-muted-foreground block mb-1">Duração (minutos)</label>
+              <input name="duration" type="number" placeholder="ex: 60" className={inpCls} required autoFocus />
             </div>
             <div>
-              <label className="text-xs text-muted-foreground block mb-1">
-                {t("quickAdd.date")}
-              </label>
-              <input
-                name="date"
-                type="date"
-                defaultValue={todayISO()}
-                className={inpCls}
-                required
-              />
+              <label className="text-xs text-muted-foreground block mb-1">Data</label>
+              <input name="date" type="date" defaultValue={todayISO()} className={inpCls} required />
             </div>
             <div>
-              <label className="text-xs text-muted-foreground block mb-1">
-                {t("quickAdd.notes")}
-              </label>
-              <textarea
-                name="notes"
-                placeholder={t("quickAdd.placeholderNotesOptional")}
-                rows={2}
-                className={inpCls}
-              />
+              <label className="text-xs text-muted-foreground block mb-1">Notas</label>
+              <textarea name="notes" placeholder="ex: Peito, ombro e tríceps" rows={2} className={inpCls} />
             </div>
             <div className="flex justify-end gap-2 pt-2">
-              <button
-                type="button"
-                onClick={() => setCurrentModal("menu")}
-                className="px-4 py-2 rounded-lg border border-white/10 text-sm"
-              >
-                {t("quickAdd.back")}
+              <button type="button" onClick={() => setCurrentModal("menu")} className="px-4 py-2 rounded-lg border border-white/10 text-sm">
+                Voltar
               </button>
               <button type="submit" className={btnGold}>
-                {t("quickAdd.saveWorkout")}
+                Salvar Treino
               </button>
             </div>
           </form>
@@ -349,7 +249,7 @@ export function QuickAddFab() {
 
       {/* Quick Study Modal */}
       {currentModal === "study" && (
-        <Modal open={true} onClose={() => setCurrentModal(null)} title={t("quickAdd.modalStudy")}>
+        <Modal open={true} onClose={() => setCurrentModal(null)} title="Registrar Estudo">
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -357,11 +257,11 @@ export function QuickAddFab() {
               const dur = parseInt(String(fd.get("duration")), 10);
               const tema = String(fd.get("topic") ?? "").trim();
               if (!tema) {
-                toast.error(t("quickAdd.errTopic"));
+                toast.error("Informe o tema que você estudou.");
                 return;
               }
               if (!Number.isFinite(dur) || dur <= 0) {
-                toast.error(t("quickAdd.errStudyDuration"));
+                toast.error("Informe a duração do estudo em minutos.");
                 return;
               }
               addStudy({
@@ -374,69 +274,36 @@ export function QuickAddFab() {
                 insights: String(fd.get("insights") || ""),
                 status: String(fd.get("status") || "concluido") as "progresso" | "concluido",
               });
-              showFeedback(t("quickAdd.toastStudy"));
+              showFeedback("Estudo registrado!");
             }}
             className="space-y-3"
           >
             <div>
-              <label className="text-xs text-muted-foreground block mb-1">
-                {t("quickAdd.topic")}
-              </label>
-              <input
-                name="topic"
-                placeholder={t("quickAdd.placeholderTopic")}
-                className={inpCls}
-                required
-                autoFocus
-              />
+              <label className="text-xs text-muted-foreground block mb-1">Tópico</label>
+              <input name="topic" placeholder="ex: Next.js Server Actions" className={inpCls} required autoFocus />
             </div>
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <label className="text-xs text-muted-foreground block mb-1">
-                  {t("quickAdd.area")}
-                </label>
+                <label className="text-xs text-muted-foreground block mb-1">Área</label>
                 <select name="area" className={inpCls}>
-                  {STUDY_AREAS.map((a) => (
-                    <option key={a} value={a}>
-                      {t("area." + a)}
-                    </option>
-                  ))}
+                  {STUDY_AREAS.map((a) => <option key={a} value={a}>{a}</option>)}
                 </select>
               </div>
               <div>
-                <label className="text-xs text-muted-foreground block mb-1">
-                  {t("quickAdd.durationMinShort")}
-                </label>
-                <input
-                  name="duration"
-                  type="number"
-                  placeholder={t("quickAdd.placeholderDuration")}
-                  className={inpCls}
-                  required
-                />
+                <label className="text-xs text-muted-foreground block mb-1">Duração (min)</label>
+                <input name="duration" type="number" placeholder="ex: 45" className={inpCls} required />
               </div>
             </div>
             <div>
-              <label className="text-xs text-muted-foreground block mb-1">
-                {t("quickAdd.learned")}
-              </label>
-              <textarea
-                name="learned"
-                placeholder={t("quickAdd.placeholderLearned")}
-                rows={2}
-                className={inpCls}
-              />
+              <label className="text-xs text-muted-foreground block mb-1">O que aprendeu?</label>
+              <textarea name="learned" placeholder="Resumo em poucas palavras..." rows={2} className={inpCls} />
             </div>
             <div className="flex justify-end gap-2 pt-2">
-              <button
-                type="button"
-                onClick={() => setCurrentModal("menu")}
-                className="px-4 py-2 rounded-lg border border-white/10 text-sm"
-              >
-                {t("quickAdd.back")}
+              <button type="button" onClick={() => setCurrentModal("menu")} className="px-4 py-2 rounded-lg border border-white/10 text-sm">
+                Voltar
               </button>
               <button type="submit" className={btnGold}>
-                {t("quickAdd.saveStudy")}
+                Salvar Estudo
               </button>
             </div>
           </form>
@@ -445,7 +312,7 @@ export function QuickAddFab() {
 
       {/* Quick Book Modal */}
       {currentModal === "book" && (
-        <Modal open={true} onClose={() => setCurrentModal(null)} title={t("quickAdd.modalBook")}>
+        <Modal open={true} onClose={() => setCurrentModal(null)} title="Registrar Livro">
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -453,7 +320,7 @@ export function QuickAddFab() {
               const titulo = String(fd.get("title") ?? "").trim();
               const autor = String(fd.get("author") ?? "").trim();
               if (!titulo || !autor) {
-                toast.error(t("quickAdd.errBook"));
+                toast.error("Título e autor são obrigatórios.");
                 return;
               }
               addBook({
@@ -464,81 +331,46 @@ export function QuickAddFab() {
                 rating: parseInt(String(fd.get("rating") || "5"), 10),
                 notes: String(fd.get("notes") || ""),
               });
-              showFeedback(t("quickAdd.toastBook"));
+              showFeedback("Livro adicionado!");
             }}
             className="space-y-3"
           >
             <div>
-              <label className="text-xs text-muted-foreground block mb-1">
-                {t("quickAdd.title")}
-              </label>
-              <input
-                name="title"
-                placeholder={t("quickAdd.placeholderTitle")}
-                className={inpCls}
-                required
-                autoFocus
-              />
+              <label className="text-xs text-muted-foreground block mb-1">Título</label>
+              <input name="title" placeholder="ex: Essencialismo" className={inpCls} required autoFocus />
             </div>
             <div>
-              <label className="text-xs text-muted-foreground block mb-1">
-                {t("quickAdd.author")}
-              </label>
-              <input
-                name="author"
-                placeholder={t("quickAdd.placeholderAuthor")}
-                className={inpCls}
-                required
-              />
+              <label className="text-xs text-muted-foreground block mb-1">Autor</label>
+              <input name="author" placeholder="ex: Greg McKeown" className={inpCls} required />
             </div>
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <label className="text-xs text-muted-foreground block mb-1">
-                  {t("quickAdd.genre")}
-                </label>
+                <label className="text-xs text-muted-foreground block mb-1">Gênero</label>
                 <select name="genre" className={inpCls}>
-                  {GENRES.map((g) => (
-                    <option key={g} value={g}>
-                      {t("genre." + g)}
-                    </option>
-                  ))}
+                  {GENRES.map((g) => <option key={g} value={g}>{g}</option>)}
                 </select>
               </div>
               <div>
-                <label className="text-xs text-muted-foreground block mb-1">
-                  {t("quickAdd.rating")}
-                </label>
+                <label className="text-xs text-muted-foreground block mb-1">Nota</label>
                 <select name="rating" defaultValue="5" className={inpCls}>
                   {[5, 4, 3, 2, 1].map((n) => (
                     <option key={n} value={n}>
-                      {t("quickAdd.stars", { n })}
+                      {n} estrelas
                     </option>
                   ))}
                 </select>
               </div>
             </div>
             <div>
-              <label className="text-xs text-muted-foreground block mb-1">
-                {t("quickAdd.finishDate")}
-              </label>
-              <input
-                name="finishedAt"
-                type="date"
-                defaultValue={todayISO()}
-                className={inpCls}
-                required
-              />
+              <label className="text-xs text-muted-foreground block mb-1">Data Conclusão</label>
+              <input name="finishedAt" type="date" defaultValue={todayISO()} className={inpCls} required />
             </div>
             <div className="flex justify-end gap-2 pt-2">
-              <button
-                type="button"
-                onClick={() => setCurrentModal("menu")}
-                className="px-4 py-2 rounded-lg border border-white/10 text-sm"
-              >
-                {t("quickAdd.back")}
+              <button type="button" onClick={() => setCurrentModal("menu")} className="px-4 py-2 rounded-lg border border-white/10 text-sm">
+                Voltar
               </button>
               <button type="submit" className={btnGold}>
-                {t("quickAdd.saveBook")}
+                Salvar Livro
               </button>
             </div>
           </form>

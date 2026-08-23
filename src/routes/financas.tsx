@@ -3,7 +3,6 @@ import { useMemo, useState } from "react";
 import { useStore } from "@/lib/store";
 import { brl, CATEGORIES, fmtDate, todayISO } from "@/lib/format";
 import { GlassCard, KpiCard, PageHeader, Section } from "@/components/primitives";
-import { useT } from "@/lib/i18n";
 import { Pencil, Trash2 } from "lucide-react";
 import { Modal, ConfirmButton, inpCls, btnGold } from "@/components/Modal";
 import { toast } from "sonner";
@@ -26,7 +25,6 @@ export const Route = createFileRoute("/financas")({ component: Financas });
 const COLORS = ["#F5C842", "#2ECC71", "#E74C3C", "#3498DB", "#9B59B6", "#1ABC9C", "#95A5A6"];
 
 function Financas() {
-  const t = useT();
   const { transactions, addTransaction, updateTransaction, removeTransaction } = useStore();
   const [monthSel, setMonthSel] = useState(todayISO().slice(0, 7));
   const [editing, setEditing] = useState<null | (typeof transactions)[number]>(null);
@@ -85,11 +83,11 @@ function Financas() {
     e.preventDefault();
     const v = parseFloat(form.value.replace(",", "."));
     if (!Number.isFinite(v) || v <= 0) {
-      toast.error(t("financas.toastValue"));
+      toast.error("Informe um valor maior que zero.");
       return;
     }
     if (!form.description.trim()) {
-      toast.error(t("financas.toastDescribe"));
+      toast.error("Descreva a transação para reconhecê-la depois.");
       return;
     }
     addTransaction({
@@ -105,8 +103,8 @@ function Financas() {
   return (
     <div>
       <PageHeader
-        title={t("financas.title")}
-        subtitle={t("financas.subtitle")}
+        title="Central Financeira"
+        subtitle="Sua gestão de capital pessoal"
         right={
           <input
             type="month"
@@ -118,20 +116,15 @@ function Financas() {
       />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <KpiCard label={t("financas.kpiIncome")} value={brl(income)} icon="📈" tone="positive" />
-        <KpiCard label={t("financas.kpiExpense")} value={brl(expense)} icon="📉" tone="negative" />
-        <KpiCard
-          label={t("financas.kpiNet")}
-          value={brl(net)}
-          icon="💎"
-          tone={net >= 0 ? "gold" : "negative"}
-        />
+        <KpiCard label="Total Entradas" value={brl(income)} icon="📈" tone="positive" />
+        <KpiCard label="Total Saídas" value={brl(expense)} icon="📉" tone="negative" />
+        <KpiCard label="Saldo Líquido" value={brl(net)} icon="💎" tone={net >= 0 ? "gold" : "negative"} />
       </div>
 
-      <Section title={t("financas.expensesByCategory")}>
+      <Section title="Despesas por Categoria">
         <GlassCard>
           {byCategory.length === 0 ? (
-            <p className="text-muted-foreground text-sm">{t("financas.emptyExpenses")}</p>
+            <p className="text-muted-foreground text-sm">Sem despesas neste mês.</p>
           ) : (
             <ResponsiveContainer width="100%" height={280}>
               <PieChart>
@@ -156,7 +149,7 @@ function Financas() {
 
       <div className="grid lg:grid-cols-2 gap-4 mt-6">
         <GlassCard>
-          <h3 className="font-display font-semibold mb-4">{t("financas.register")}</h3>
+          <h3 className="font-display font-semibold mb-4">Registrar Transação</h3>
           <form onSubmit={submit} className="space-y-3">
             <div className="flex rounded-lg overflow-hidden border border-white/10">
               <button
@@ -164,25 +157,25 @@ function Financas() {
                 onClick={() => setForm({ ...form, type: "entrada" })}
                 className={`flex-1 py-2 text-sm font-medium transition ${form.type === "entrada" ? "bg-emerald-bgt text-black" : "hover:bg-white/5"}`}
               >
-                {t("financas.entrada")}
+                Entrada
               </button>
               <button
                 type="button"
                 onClick={() => setForm({ ...form, type: "saida" })}
                 className={`flex-1 py-2 text-sm font-medium transition ${form.type === "saida" ? "bg-coral text-white" : "hover:bg-white/5"}`}
               >
-                {t("financas.saida")}
+                Saída
               </button>
             </div>
             <Input
               type="number"
               step="0.01"
-              placeholder={t("financas.valuePlaceholder")}
+              placeholder="Valor (R$)"
               value={form.value}
               onChange={(e) => setForm({ ...form, value: e.target.value })}
             />
             <Input
-              placeholder={t("financas.descriptionPlaceholder")}
+              placeholder="Descrição"
               value={form.description}
               onChange={(e) => setForm({ ...form, description: e.target.value })}
             />
@@ -193,7 +186,7 @@ function Financas() {
             >
               {CATEGORIES.map((c) => (
                 <option key={c.id} value={c.id}>
-                  {c.icon} {t("cat." + c.id)}
+                  {c.icon} {c.id}
                 </option>
               ))}
             </select>
@@ -206,51 +199,36 @@ function Financas() {
               type="submit"
               className="w-full bg-gold text-[#0A0F1E] font-semibold py-2.5 rounded-lg hover:brightness-110 transition"
             >
-              {t("financas.registerBtn")}
+              Registrar
             </button>
           </form>
         </GlassCard>
 
         <GlassCard>
-          <h3 className="font-display font-semibold mb-4">{t("financas.history")}</h3>
+          <h3 className="font-display font-semibold mb-4">Histórico do Mês</h3>
           <div className="max-h-[400px] overflow-y-auto space-y-2">
             {monthTx.length === 0 && (
-              <p className="text-muted-foreground text-sm">{t("financas.emptyTx")}</p>
+              <p className="text-muted-foreground text-sm">Nenhuma transação registrada.</p>
             )}
             {monthTx.map((t) => {
               const cat = CATEGORIES.find((c) => c.id === t.category);
               return (
-                <div
-                  key={t.id}
-                  className="group flex items-center gap-3 p-2 rounded-lg hover:bg-white/5 transition"
-                >
+                <div key={t.id} className="group flex items-center gap-3 p-2 rounded-lg hover:bg-white/5 transition">
                   <span className="text-xl">{cat?.icon || "📦"}</span>
                   <div className="flex-1 min-w-0">
                     <div className="text-sm truncate">{t.description}</div>
-                    <div className="text-xs text-muted-foreground">
-                      {fmtDate(t.date)} • {t("cat." + t.category)}
-                    </div>
+                    <div className="text-xs text-muted-foreground">{fmtDate(t.date)} • {t.category}</div>
                   </div>
-                  <div
-                    className={`font-semibold ${t.type === "entrada" ? "text-emerald-bgt" : "text-coral"}`}
-                  >
-                    {t.type === "entrada" ? "+" : "-"}
-                    {brl(t.value)}
+                  <div className={`font-semibold ${t.type === "entrada" ? "text-emerald-bgt" : "text-coral"}`}>
+                    {t.type === "entrada" ? "+" : "-"}{brl(t.value)}
                   </div>
                   <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition">
-                    <button
-                      onClick={() => setEditing(t)}
-                      title={t("common.action.edit")}
-                      className="text-muted-foreground hover:text-foreground p-1 rounded hover:bg-white/10"
-                    >
+                    <button onClick={() => setEditing(t)} title="Editar" className="text-muted-foreground hover:text-foreground p-1 rounded hover:bg-white/10">
                       <Pencil size={14} />
                     </button>
                     <ConfirmButton
                       onConfirm={() => removeTransaction(t.id)}
-                      message={t("financas.confirmDelete", {
-                        desc: t.description,
-                        value: brl(t.value),
-                      })}
+                      message={`Excluir a transação "${t.description}" (${brl(t.value)})?`}
                       className="text-coral p-1 rounded hover:bg-white/10"
                     >
                       <Trash2 size={14} />
@@ -263,7 +241,7 @@ function Financas() {
         </GlassCard>
       </div>
 
-      <Section title={t("financas.balanceTrend")}>
+      <Section title="Evolução do Saldo (6 meses)">
         <GlassCard>
           <ResponsiveContainer width="100%" height={250}>
             <LineChart data={balanceTrend}>
@@ -277,15 +255,15 @@ function Financas() {
         </GlassCard>
       </Section>
 
-      <Section title={t("financas.summary12")}>
+      <Section title="Resumo dos Últimos 12 Meses">
         <GlassCard className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="text-muted-foreground border-b border-white/10">
               <tr>
-                <th className="text-left py-2 px-2">{t("financas.month")}</th>
-                <th className="text-right py-2 px-2">{t("financas.income")}</th>
-                <th className="text-right py-2 px-2">{t("financas.expenses")}</th>
-                <th className="text-right py-2 px-2">{t("financas.balance")}</th>
+                <th className="text-left py-2 px-2">Mês</th>
+                <th className="text-right py-2 px-2">Entradas</th>
+                <th className="text-right py-2 px-2">Saídas</th>
+                <th className="text-right py-2 px-2">Saldo</th>
               </tr>
             </thead>
             <tbody>
@@ -294,11 +272,7 @@ function Financas() {
                   <td className="py-2 px-2">{m.mes}</td>
                   <td className="text-right text-emerald-bgt">{brl(m.entradas)}</td>
                   <td className="text-right text-coral">{brl(m.saidas)}</td>
-                  <td
-                    className={`text-right font-semibold ${m.saldo >= 0 ? "text-gold" : "text-coral"}`}
-                  >
-                    {brl(m.saldo)}
-                  </td>
+                  <td className={`text-right font-semibold ${m.saldo >= 0 ? "text-gold" : "text-coral"}`}>{brl(m.saldo)}</td>
                 </tr>
               ))}
             </tbody>
@@ -307,7 +281,7 @@ function Financas() {
       </Section>
 
       {editing && (
-        <Modal open={!!editing} onClose={() => setEditing(null)} title={t("financas.editTitle")}>
+        <Modal open={!!editing} onClose={() => setEditing(null)} title="Editar Transação">
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -315,11 +289,11 @@ function Financas() {
               const valor = parseFloat(String(fd.get("value") ?? "").replace(",", "."));
               const descricao = String(fd.get("description") ?? "").trim();
               if (!Number.isFinite(valor) || valor <= 0) {
-                toast.error(t("financas.toastValue"));
+                toast.error("Informe um valor maior que zero.");
                 return;
               }
               if (!descricao) {
-                toast.error(t("financas.toastEmptyDesc"));
+                toast.error("A descrição não pode ficar vazia.");
                 return;
               }
               updateTransaction(editing.id, {
@@ -330,56 +304,23 @@ function Financas() {
                 type: String(fd.get("type") || editing.type) as "entrada" | "saida",
               });
               setEditing(null);
-              toast.success(t("financas.toastUpdated"));
+              toast.success("Transação atualizada.");
             }}
             className="space-y-3"
           >
             <select name="type" defaultValue={editing.type} className={inpCls}>
-              <option value="entrada">{t("financas.entrada")}</option>
-              <option value="saida">{t("financas.saida")}</option>
+              <option value="entrada">Entrada</option>
+              <option value="saida">Saída</option>
             </select>
-            <input
-              name="description"
-              defaultValue={editing.description}
-              className={inpCls}
-              placeholder={t("financas.editDescription")}
-              required
-            />
-            <input
-              name="value"
-              defaultValue={editing.value}
-              type="number"
-              step="0.01"
-              min="0.01"
-              className={inpCls}
-              required
-            />
+            <input name="description" defaultValue={editing.description} className={inpCls} placeholder="Descrição" required />
+            <input name="value" defaultValue={editing.value} type="number" step="0.01" min="0.01" className={inpCls} required />
             <select name="category" defaultValue={editing.category} className={inpCls}>
-              {CATEGORIES.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.icon} {t("cat." + c.id)}
-                </option>
-              ))}
+              {CATEGORIES.map((c) => <option key={c.id} value={c.id}>{c.icon} {c.id}</option>)}
             </select>
-            <input
-              name="date"
-              defaultValue={editing.date}
-              type="date"
-              className={inpCls}
-              placeholder={t("financas.editDate")}
-              required
-            />
+            <input name="date" defaultValue={editing.date} type="date" className={inpCls} required />
             <div className="flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setEditing(null)}
-                className="px-4 py-2 rounded-lg border border-white/10 text-sm"
-              >
-                {t("financas.cancel")}
-              </button>
-              <button type="submit" className={btnGold}>
-                {t("financas.save")}
-              </button>
+              <button type="button" onClick={() => setEditing(null)} className="px-4 py-2 rounded-lg border border-white/10 text-sm">Cancelar</button>
+              <button type="submit" className={btnGold}>Salvar</button>
             </div>
           </form>
         </Modal>
