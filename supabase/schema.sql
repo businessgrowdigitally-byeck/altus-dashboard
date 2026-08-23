@@ -58,29 +58,3 @@ drop trigger if exists user_data_touch_updated_at on public.user_data;
 create trigger user_data_touch_updated_at
   before update on public.user_data
   for each row execute function public.touch_updated_at();
-
--- ----------------------------------------------------------------------------
--- Registro de aceite dos Termos de Uso e da Política de Privacidade.
--- Uma linha por aceite (histórico imutável): serve de prova do consentimento
--- (LGPD, art. 7º, I). A linha mais recente por usuário indica a versão aceita.
--- ----------------------------------------------------------------------------
-create table if not exists public.consent_records (
-  id               uuid        primary key default gen_random_uuid(),
-  user_id          uuid        not null references auth.users (id) on delete cascade,
-  document_version text        not null,
-  accepted_at      timestamptz not null default now()
-);
-
-create index if not exists consent_records_user_id_idx on public.consent_records (user_id);
-
-alter table public.consent_records enable row level security;
-
-drop policy if exists consent_records_select_own on public.consent_records;
-create policy consent_records_select_own on public.consent_records
-  for select to authenticated
-  using ((select auth.uid()) = user_id);
-
-drop policy if exists consent_records_insert_own on public.consent_records;
-create policy consent_records_insert_own on public.consent_records
-  for insert to authenticated
-  with check ((select auth.uid()) = user_id);

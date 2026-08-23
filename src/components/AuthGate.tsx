@@ -2,7 +2,6 @@ import { useEffect, type ReactNode } from "react";
 import { Loader2 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { AuthScreen } from "./AuthScreen";
-import { TermsGate } from "./TermsGate";
 import { startSync, stopSync, useSyncStatus, flushSync } from "@/lib/sync";
 
 /**
@@ -32,31 +31,26 @@ export function AuthGate({ children }: { children: ReactNode }) {
   if (loading) return <Splash label="Carregando..." />;
   if (!user) return <AuthScreen />;
 
-  // LGPD: sem aceite da versão vigente dos termos, nada do app é renderizado.
-  return (
-    <TermsGate userId={user.id}>
-      {status === "loading" || status === "idle" ? (
-        <Splash label="Buscando seus dados..." />
-      ) : status === "error" && syncError ? (
-        <div className="flex min-h-screen items-center justify-center bg-background px-4">
-          <div className="max-w-md text-center">
-            <h1 className="text-xl font-semibold text-foreground">
-              Não consegui carregar seus dados
-            </h1>
-            <p className="mt-2 text-sm text-muted-foreground">{syncError}</p>
-            <button
-              onClick={() => window.location.reload()}
-              className="mt-6 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
-            >
-              Tentar de novo
-            </button>
-          </div>
+  if (status === "loading" || status === "idle") return <Splash label="Buscando seus dados..." />;
+
+  if (status === "error" && syncError) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background px-4">
+        <div className="max-w-md text-center">
+          <h1 className="text-xl font-semibold text-foreground">Não consegui carregar seus dados</h1>
+          <p className="mt-2 text-sm text-muted-foreground">{syncError}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-6 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+          >
+            Tentar de novo
+          </button>
         </div>
-      ) : (
-        children
-      )}
-    </TermsGate>
-  );
+      </div>
+    );
+  }
+
+  return <>{children}</>;
 }
 
 function Splash({ label }: { label: string }) {
