@@ -13,6 +13,7 @@ import { AppLayout } from "@/components/AppLayout";
 import { AuthGate } from "@/components/AuthGate";
 import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider } from "@/lib/auth";
+import { I18nProvider } from "@/lib/i18n";
 import { useStore } from "@/lib/store";
 import { useEffect } from "react";
 
@@ -79,15 +80,25 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: "ALTUS — Become your best version" },
-      { name: "description", content: "ALTUS é o sistema operacional pessoal para gerenciar sua vida como uma empresa: finanças, corpo, biblioteca, estudos e metas." },
+      {
+        name: "description",
+        content:
+          "ALTUS é o sistema operacional pessoal para gerenciar sua vida como uma empresa: finanças, corpo, biblioteca, estudos e metas.",
+      },
       { name: "author", content: "ALTUS" },
       { property: "og:title", content: "ALTUS — Become your best version" },
-      { property: "og:description", content: "Gerencie sua vida como um CEO administra sua empresa." },
+      {
+        property: "og:description",
+        content: "Gerencie sua vida como um CEO administra sua empresa.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:site", content: "@Lovable" },
       { name: "twitter:title", content: "ALTUS — Become your best version" },
-      { name: "twitter:description", content: "Gerencie sua vida como um CEO administra sua empresa." },
+      {
+        name: "twitter:description",
+        content: "Gerencie sua vida como um CEO administra sua empresa.",
+      },
     ],
     links: [
       {
@@ -135,11 +146,13 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <AuthGate>
-          <AppLayout>
-            <Outlet />
-          </AppLayout>
-        </AuthGate>
+        <I18nProvider>
+          <AuthGate>
+            <AppLayout>
+              <Outlet />
+            </AppLayout>
+          </AuthGate>
+        </I18nProvider>
       </AuthProvider>
       <Toaster position="bottom-right" richColors closeButton />
     </QueryClientProvider>
