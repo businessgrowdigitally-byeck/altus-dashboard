@@ -4,6 +4,7 @@ import { useStore } from "@/lib/store";
 import { brl, daysAgoISO, fmtDate, fmtDateLong, greeting, kg, todayISO } from "@/lib/format";
 import { GlassCard, KpiCard, PageHeader, Section } from "@/components/primitives";
 import { GoalsSection } from "@/components/GoalsSection";
+import { KaizenTodayCard } from "@/components/KaizenTodayCard";
 import { Check, ArrowRight, Brain, Sparkles, Target, CheckSquare, Calendar, TrendingUp } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { useSyncStatus } from "@/lib/sync";
@@ -462,6 +463,8 @@ function Dashboard() {
           })}
         </div>
       </div>
+
+      <KaizenTodayCard embedded />
 
       {/* Relatório Executivo - KPIs Gerais */}
       <div>

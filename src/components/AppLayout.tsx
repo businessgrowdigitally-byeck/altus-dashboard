@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Home, Wallet, HeartPulse, BookOpen, GraduationCap, Bot, Settings, Menu, X, LogOut, Cloud, CloudOff, Loader2 } from "lucide-react";
+import { Home, Wallet, HeartPulse, BookOpen, GraduationCap, Bot, Settings, Menu, X, LogOut, Cloud, CloudOff, Loader2, Sparkles } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { dailyQuote } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -16,6 +16,7 @@ const NAV = [
   { to: "/corpo", label: "Corpo & Saúde", icon: HeartPulse, emoji: "⚖️" },
   { to: "/biblioteca", label: "Biblioteca Pessoal", icon: BookOpen, emoji: "📚" },
   { to: "/estudos", label: "Estudos & Conhecimento", icon: GraduationCap, emoji: "🎓" },
+  { to: "/kaizen", label: "Kaizen Diário", icon: Sparkles, emoji: "🌱" },
   ...(AI_AGENT_ENABLED ? [{ to: "/agente", label: "Agente IA", icon: Bot, emoji: "🤖" }] : []),
   { to: "/configuracoes", label: "Configurações", icon: Settings, emoji: "⚙️" },
 ] as const;

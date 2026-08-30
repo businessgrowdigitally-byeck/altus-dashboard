@@ -96,6 +96,16 @@ export type GoalDaily = {
 
 export type DailyCompletion = { date: string; actionId: string };
 
+export type KaizenEntry = {
+  id: string;
+  date: string; // YYYY-MM-DD local
+  improvedToday: string;
+  improveTomorrow: string;
+  notes: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
 type State = {
   version: number;
   profile: Profile;
@@ -109,6 +119,7 @@ type State = {
   goalsMacro: GoalMacro[];
   goalsDaily: GoalDaily[];
   completions: DailyCompletion[];
+  kaizen: KaizenEntry[];
 
   addTransaction: (t: Omit<Transaction, "id">) => void;
   updateTransaction: (id: string, patch: Partial<Omit<Transaction, "id">>) => void;
@@ -132,6 +143,10 @@ type State = {
   updateGoalDaily: (id: string, patch: Partial<Omit<GoalDaily, "id">>) => void;
   removeGoalDaily: (id: string) => void;
   toggleCompletion: (actionId: string, date: string) => void;
+  addKaizen: (k: Omit<KaizenEntry, "id" | "createdAt" | "updatedAt">) => void;
+  updateKaizen: (id: string, patch: Partial<Omit<KaizenEntry, "id">>) => void;
+  removeKaizen: (id: string) => void;
+  upsertKaizenByDate: (date: string, data: Pick<KaizenEntry, "improvedToday" | "improveTomorrow" | "notes">) => void;
   recomputeLinkedGoals: () => void;
   pushChat: (m: ChatMsg) => void;
   updateLastAssistant: (content: string) => void;
@@ -220,12 +235,13 @@ const initial = {
   goalsMacro: sampleGoalsMacro,
   goalsDaily: sampleGoalsDaily,
   completions: [] as DailyCompletion[],
+  kaizen: [] as KaizenEntry[],
 };
 
 /** Campos que são sincronizados com a nuvem (tudo menos as funções do store). */
 export const SYNC_KEYS = [
   "version", "profile", "settings", "transactions", "weights", "workouts",
-  "books", "studies", "chat", "goalsMacro", "goalsDaily", "completions",
+  "books", "studies", "chat", "goalsMacro", "goalsDaily", "completions", "kaizen",
 ] as const;
 
 /** Estado de uma conta recém-criada: sem nenhum dado de exemplo. */
@@ -240,6 +256,7 @@ export const emptyState = {
   goalsMacro: [] as GoalMacro[],
   goalsDaily: [] as GoalDaily[],
   completions: [] as DailyCompletion[],
+  kaizen: [] as KaizenEntry[],
   // Conta nova não tem altura: o card de IMC só aparece depois que a pessoa informa.
   profile: { ...initial.profile, name: "", height: 0 },
 };
@@ -296,6 +313,16 @@ export const useStore = create<State>()(
       toggleCompletion: (actionId, date) => set((s) => {
         const exists = s.completions.find((c) => c.actionId === actionId && c.date === date);
         return { completions: exists ? s.completions.filter((c) => !(c.actionId === actionId && c.date === date)) : [...s.completions, { actionId, date }] };
+      }),
+      addKaizen: (k) => set((s) => ({ kaizen: [{ ...k, id: uid(), createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }, ...s.kaizen] })),
+      updateKaizen: (id, patch) => set((s) => ({ kaizen: s.kaizen.map((x) => x.id === id ? { ...x, ...patch, updatedAt: new Date().toISOString() } : x) })),
+      removeKaizen: (id) => set((s) => ({ kaizen: s.kaizen.filter((x) => x.id !== id) })),
+      upsertKaizenByDate: (date, data) => set((s) => {
+        const existing = s.kaizen.find((k) => k.date === date);
+        if (existing) {
+          return { kaizen: s.kaizen.map((k) => k.date === date ? { ...k, ...data, updatedAt: new Date().toISOString() } : k) };
+        }
+        return { kaizen: [{ id: uid(), date, ...data, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }, ...s.kaizen] };
       }),
       recomputeLinkedGoals: () => set((s) => ({ goalsMacro: recomputeGoals(s) })),
       pushChat: (m) => set((s) => ({ chat: [...s.chat, m] })),
