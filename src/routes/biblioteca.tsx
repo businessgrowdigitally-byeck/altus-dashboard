@@ -327,7 +327,7 @@ function Biblioteca() {
         </div>
       </Section>
 
-      <Section title="Estatísticas de Leitura">
+      <Section title={t("biblioteca.statsTitle")}>
         <div className="grid md:grid-cols-3 gap-4">
           <GlassCard>
             <h4 className="text-sm text-muted-foreground mb-2">

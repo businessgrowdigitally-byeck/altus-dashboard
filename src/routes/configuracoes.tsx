@@ -46,7 +46,15 @@ function Config() {
     }
     const erro = importAll(importText);
     if (erro) {
-      toast.error(erro);
+      const key =
+        erro.includes("JSON válido") || erro.includes("valid JSON")
+          ? "config.importErrorInvalid"
+          : erro.includes("formato esperado") || erro.includes("expected format")
+            ? "config.importErrorFormat"
+            : erro.includes("Nenhum dado") || erro.includes("No recognizable")
+              ? "config.importErrorEmpty"
+              : null;
+      toast.error(key ? t(key) : erro);
       return;
     }
     setImportText("");
@@ -148,7 +156,7 @@ function Config() {
             <textarea
               className="inp"
               rows={3}
-              placeholder="Cole aqui o conteúdo do arquivo .json..."
+              placeholder={t("config.importPlaceholder")}
               value={importText}
               onChange={(e) => setImportText(e.target.value)}
             />

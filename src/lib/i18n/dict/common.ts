@@ -15,6 +15,10 @@ export const common = {
   "sync.saving": { pt: "salvando...", en: "saving...", es: "guardando..." },
   "sync.error": { pt: "falha ao salvar", en: "save failed", es: "error al guardar" },
   "sync.saved": { pt: "salvo na nuvem", en: "saved to cloud", es: "guardado en la nube" },
+  "sync.loading": { pt: "Carregando...", en: "Loading...", es: "Cargando..." },
+  "sync.loadErrorTitle": { pt: "Não consegui carregar seus dados", en: "Failed to load your data", es: "No se pudieron cargar tus datos" },
+  "sync.loadErrorDesc": { pt: "Tente novamente ou volte mais tarde.", en: "Try again or come back later.", es: "Inténtalo de nuevo o vuelve más tarde." },
+  "sync.loadErrorRetry": { pt: "Tentar novamente", en: "Try again", es: "Intentar de nuevo" },
   "auth.signOut": { pt: "Sair da conta", en: "Sign out", es: "Cerrar sesión" },
 
   "lang.label": { pt: "Idioma", en: "Language", es: "Idioma" },
@@ -126,6 +130,11 @@ export const common = {
   "quote.8": { pt: "Foco é dizer não a 100 boas ideias.", en: "Focus is saying no to 100 good ideas.", es: "Enfocarse es decir no a 100 buenas ideas." },
   "quote.9": { pt: "Constância vence intensidade.", en: "Consistency beats intensity.", es: "La constancia vence a la intensidad." },
   "common.viewMore": { pt: "Ver mais", en: "View more", es: "Ver más" },
+  "common.savedShort": { pt: "✓ Salvo", en: "✓ Saved", es: "✓ Guardado" },
+  "common.tryAgain": { pt: "Tentar novamente", en: "Try again", es: "Intentar de nuevo" },
+  "common.goHome": { pt: "Voltar ao início", en: "Go home", es: "Volver al inicio" },
+  "common.pageNotFound": { pt: "Página não encontrada", en: "Page not found", es: "Página no encontrada" },
+  "common.pageNotFoundDesc": { pt: "A página que você procura não existe ou foi movida.", en: "The page you're looking for doesn't exist or has been moved.", es: "La página que buscas no existe o fue movida." },
 
   "greeting.morning": { pt: "Bom dia", en: "Good morning", es: "Buenos días" },
   "greeting.afternoon": { pt: "Boa tarde", en: "Good afternoon", es: "Buenas tardes" },

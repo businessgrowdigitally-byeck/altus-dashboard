@@ -133,4 +133,8 @@ export const configuracoes = {
     en: "All data has been erased.",
     es: "Todos los datos fueron borrados.",
   },
+  "config.importPlaceholder": { pt: "Cole aqui o conteúdo do arquivo .json...", en: "Paste the .json file contents here...", es: "Pega aquí el contenido del archivo .json..." },
+  "config.importErrorInvalid": { pt: "Isso não é um JSON válido. Cole o conteúdo completo do arquivo exportado.", en: "This is not valid JSON. Paste the full exported file contents.", es: "No es un JSON válido. Pega el contenido completo del archivo exportado." },
+  "config.importErrorFormat": { pt: "O arquivo não tem o formato esperado.", en: "The file does not have the expected format.", es: "El archivo no tiene el formato esperado." },
+  "config.importErrorEmpty": { pt: "Nenhum dado reconhecido no arquivo.", en: "No recognizable data in the file.", es: "No se reconoció ningún dato en el archivo." },
 } as const;

@@ -30,6 +30,7 @@ export const biblioteca = {
   genre: { pt: "Gênero", en: "Genre", es: "Género" },
   finishedDate: { pt: "Data de Conclusão", en: "Completion Date", es: "Fecha de Finalización" },
   finishedOn: { pt: "Concluído em", en: "Completed on", es: "Completado el" },
+  statsTitle: { pt: "Estatísticas de Leitura", en: "Reading Statistics", es: "Estadísticas de Lectura" },
 
   notesPlaceholder: {
     pt: "Minhas notas (principais ideias, citações)",
