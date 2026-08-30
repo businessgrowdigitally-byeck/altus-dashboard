@@ -1,6 +1,21 @@
 import { useState } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Home, Wallet, HeartPulse, BookOpen, GraduationCap, Bot, Settings, Menu, X, LogOut, Cloud, CloudOff, Loader2, Sparkles } from "lucide-react";
+import {
+  Home,
+  Wallet,
+  HeartPulse,
+  BookOpen,
+  GraduationCap,
+  Bot,
+  Settings,
+  Menu,
+  X,
+  LogOut,
+  Cloud,
+  CloudOff,
+  Loader2,
+  Sparkles,
+} from "lucide-react";
 import { useStore } from "@/lib/store";
 import { dailyQuote } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -9,43 +24,46 @@ import { AI_AGENT_ENABLED } from "@/lib/features";
 import { useAuth } from "@/lib/auth";
 import { useSyncStatus } from "@/lib/sync";
 import { flushSync } from "@/lib/sync";
+import { useT } from "@/lib/i18n";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 
 const NAV = [
-  { to: "/", label: "Dashboard", icon: Home, emoji: "🏠" },
-  { to: "/financas", label: "Finanças", icon: Wallet, emoji: "💰" },
-  { to: "/corpo", label: "Corpo & Saúde", icon: HeartPulse, emoji: "⚖️" },
-  { to: "/biblioteca", label: "Biblioteca Pessoal", icon: BookOpen, emoji: "📚" },
-  { to: "/estudos", label: "Estudos & Conhecimento", icon: GraduationCap, emoji: "🎓" },
-  { to: "/kaizen", label: "Kaizen Diário", icon: Sparkles, emoji: "🌱" },
-  ...(AI_AGENT_ENABLED ? [{ to: "/agente", label: "Agente IA", icon: Bot, emoji: "🤖" }] : []),
-  { to: "/configuracoes", label: "Configurações", icon: Settings, emoji: "⚙️" },
+  { to: "/", i18nKey: "nav.dashboard", icon: Home, emoji: "🏠" },
+  { to: "/financas", i18nKey: "nav.financas", icon: Wallet, emoji: "💰" },
+  { to: "/corpo", i18nKey: "nav.corpo", icon: HeartPulse, emoji: "⚖️" },
+  { to: "/biblioteca", i18nKey: "nav.biblioteca", icon: BookOpen, emoji: "📚" },
+  { to: "/estudos", i18nKey: "nav.estudos", icon: GraduationCap, emoji: "🎓" },
+  { to: "/kaizen", i18nKey: "nav.kaizen", icon: Sparkles, emoji: "🌱" },
+  ...(AI_AGENT_ENABLED ? [{ to: "/agente", i18nKey: "nav.agente", icon: Bot, emoji: "🤖" }] : []),
+  { to: "/configuracoes", i18nKey: "nav.configuracoes", icon: Settings, emoji: "⚙️" },
 ] as const;
-
 
 /** Mostra se as alterações já foram para a nuvem. */
 function SyncBadge() {
   const status = useSyncStatus((s) => s.status);
+  const t = useT();
   if (status === "saving")
     return (
       <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
-        <Loader2 size={11} className="animate-spin" /> salvando...
+        <Loader2 size={11} className="animate-spin" /> {t("sync.saving")}
       </span>
     );
   if (status === "error")
     return (
       <span className="flex items-center gap-1 text-[10px] text-destructive">
-        <CloudOff size={11} /> falha ao salvar
+        <CloudOff size={11} /> {t("sync.error")}
       </span>
     );
   return (
     <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
-      <Cloud size={11} /> salvo na nuvem
+      <Cloud size={11} /> {t("sync.saved")}
     </span>
   );
 }
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
+  const t = useT();
   const profileName = useStore((s) => s.profile.name);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const { user, signOut } = useAuth();
@@ -66,19 +84,35 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       {/* Mobile topbar */}
       <div className="md:hidden flex items-center justify-between p-4 glass-strong sticky top-0 z-30 border-b border-purple-500/20">
         <div className="flex items-center gap-2.5">
-          <svg viewBox="0 0 36 36" className="w-7 h-7 shrink-0 drop-shadow-[0_0_8px_rgba(168,85,247,0.6)]" fill="none">
+          <svg
+            viewBox="0 0 36 36"
+            className="w-7 h-7 shrink-0 drop-shadow-[0_0_8px_rgba(168,85,247,0.6)]"
+            fill="none"
+          >
             <path d="M18 3L31 29H24.5L18 16L11.5 29H5L18 3Z" fill="url(#mobile-logo-grad)" />
             <defs>
-              <linearGradient id="mobile-logo-grad" x1="5" y1="3" x2="31" y2="29" gradientUnits="userSpaceOnUse">
+              <linearGradient
+                id="mobile-logo-grad"
+                x1="5"
+                y1="3"
+                x2="31"
+                y2="29"
+                gradientUnits="userSpaceOnUse"
+              >
                 <stop stopColor="#C084FC" />
                 <stop offset="0.5" stopColor="#A855F7" />
                 <stop offset="1" stopColor="#6366F1" />
               </linearGradient>
             </defs>
           </svg>
-          <span className="font-display font-bold tracking-wider text-base text-foreground">ALTUS</span>
+          <span className="font-display font-bold tracking-wider text-base text-foreground">
+            ALTUS
+          </span>
         </div>
-        <button onClick={() => setOpen(!open)} className="p-2 rounded-lg hover:bg-white/10 transition text-muted-foreground hover:text-foreground">
+        <button
+          onClick={() => setOpen(!open)}
+          className="p-2 rounded-lg hover:bg-white/10 transition text-muted-foreground hover:text-foreground"
+        >
           {open ? <X size={20} /> : <Menu size={20} />}
         </button>
       </div>
@@ -88,16 +122,27 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           className={cn(
             "fixed md:sticky top-0 z-40 h-screen w-64 shrink-0 transition-transform duration-300",
             "glass-strong border-r border-purple-500/15 flex flex-col bg-[#090714]/90",
-            open ? "translate-x-0" : "-translate-x-full md:translate-x-0"
+            open ? "translate-x-0" : "-translate-x-full md:translate-x-0",
           )}
         >
           <div className="p-5 border-b border-white/10">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-600/30 to-indigo-900/40 border border-purple-500/30 flex items-center justify-center shadow-lg shadow-purple-950/50">
-                <svg viewBox="0 0 36 36" className="w-6 h-6 drop-shadow-[0_0_10px_rgba(168,85,247,0.7)]" fill="none">
+                <svg
+                  viewBox="0 0 36 36"
+                  className="w-6 h-6 drop-shadow-[0_0_10px_rgba(168,85,247,0.7)]"
+                  fill="none"
+                >
                   <path d="M18 3L31 29H24.5L18 16L11.5 29H5L18 3Z" fill="url(#sidebar-logo-grad)" />
                   <defs>
-                    <linearGradient id="sidebar-logo-grad" x1="5" y1="3" x2="31" y2="29" gradientUnits="userSpaceOnUse">
+                    <linearGradient
+                      id="sidebar-logo-grad"
+                      x1="5"
+                      y1="3"
+                      x2="31"
+                      y2="29"
+                      gradientUnits="userSpaceOnUse"
+                    >
                       <stop stopColor="#C084FC" />
                       <stop offset="0.5" stopColor="#A855F7" />
                       <stop offset="1" stopColor="#6366F1" />
@@ -130,20 +175,18 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                     "hover:bg-white/5 hover:translate-x-1",
                     active
                       ? "bg-gradient-to-r from-purple-900/50 to-indigo-900/30 text-purple-200 border border-purple-500/40 shadow-sm shadow-purple-900/20 font-semibold"
-                      : "text-muted-foreground hover:text-foreground"
+                      : "text-muted-foreground hover:text-foreground",
                   )}
                 >
                   <span className="text-lg">{n.emoji}</span>
-                  <span>{n.label}</span>
+                  <span>{t(n.i18nKey)}</span>
                 </Link>
               );
             })}
           </nav>
 
           <div className="p-4 border-t border-white/10 space-y-3">
-            <p className="text-xs italic text-muted-foreground leading-relaxed">
-              "{dailyQuote()}"
-            </p>
+            <p className="text-xs italic text-muted-foreground leading-relaxed">"{dailyQuote()}"</p>
             <div className="flex items-center justify-between gap-2 pt-1 border-t border-white/10">
               <div className="min-w-0">
                 <div className="truncate text-xs text-muted-foreground" title={user?.email ?? ""}>
@@ -151,9 +194,10 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 </div>
                 <SyncBadge />
               </div>
+              <LanguageSwitcher />
               <button
                 onClick={handleSignOut}
-                title="Sair da conta"
+                title={t("auth.signOut")}
                 className="shrink-0 p-2 rounded-md text-muted-foreground hover:bg-white/10 hover:text-foreground transition"
               >
                 <LogOut size={16} />
@@ -163,7 +207,10 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         </aside>
 
         {open && (
-          <div className="md:hidden fixed inset-0 bg-black/50 z-30" onClick={() => setOpen(false)} />
+          <div
+            className="md:hidden fixed inset-0 bg-black/50 z-30"
+            onClick={() => setOpen(false)}
+          />
         )}
 
         <main className="flex-1 min-w-0 p-4 md:p-8 max-w-[1400px] mx-auto w-full">{children}</main>

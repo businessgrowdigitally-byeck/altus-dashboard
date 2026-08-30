@@ -2,23 +2,17 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useStore, type StudyEntry } from "@/lib/store";
 import { daysAgoISO, fmtDate, STUDY_AREAS, STUDY_TYPES, todayISO } from "@/lib/format";
+import { useT } from "@/lib/i18n";
 import { GlassCard, KpiCard, PageHeader, Section } from "@/components/primitives";
 import { Pencil, Trash2 } from "lucide-react";
 import { Modal, ConfirmButton, inpCls, btnGold } from "@/components/Modal";
 import { toast } from "sonner";
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  CartesianGrid,
-} from "recharts";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 
 export const Route = createFileRoute("/estudos")({ component: Estudos });
 
 function Estudos() {
+  const t = useT();
   const { studies, addStudy, updateStudy, removeStudy } = useStore();
   const [page, setPage] = useState(1);
   const [editingStudy, setEditingStudy] = useState<StudyEntry | null>(null);
@@ -55,16 +49,16 @@ function Estudos() {
     e.preventDefault();
     const d = parseInt(form.duration, 10);
     if (!form.topic.trim()) {
-      toast.error("Informe o tema que você estudou.");
+      toast.error(t("estudos.toastTema"));
       return;
     }
     if (!Number.isFinite(d) || d <= 0) {
-      toast.error("Informe a duração do estudo em minutos.");
+      toast.error(t("estudos.toastDuracao"));
       return;
     }
     addStudy({ ...form, duration: d });
     setForm({ ...form, topic: "", duration: "", learned: "", insights: "" });
-    toast.success("Estudo registrado.");
+    toast.success(t("estudos.toastRegistrado"));
   };
 
   const grouped = useMemo(() => {
@@ -99,22 +93,29 @@ function Estudos() {
 
   return (
     <div>
-      <PageHeader title="Centro de Conhecimento" subtitle="O que você aprendeu hoje?" />
+      <PageHeader title={t("estudos.pageTitle")} subtitle={t("estudos.pageSubtitle")} />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <KpiCard label="Entradas este mês" value={monthEntries.length} icon="📝" />
-        <KpiCard label="Horas estudadas" value={`${hours.toFixed(1)}h`} icon="⏱️" tone="gold" />
-        <KpiCard label="Streak atual" value={`${streak}d`} icon="🔥" tone="gold" />
-        <KpiCard label="Em progresso" value={inProgress} icon="⚡" />
+        <KpiCard label={t("estudos.kpiEntradas")} value={monthEntries.length} icon="📝" />
+        <KpiCard
+          label={t("estudos.kpiHoras")}
+          value={`${hours.toFixed(1)}h`}
+          icon="⏱️"
+          tone="gold"
+        />
+        <KpiCard label={t("estudos.kpiStreak")} value={`${streak}d`} icon="🔥" tone="gold" />
+        <KpiCard label={t("estudos.kpiProgresso")} value={inProgress} icon="⚡" />
       </div>
 
       <div className="grid lg:grid-cols-5 gap-4 mt-6">
         <div className="lg:col-span-3">
-          <h2 className="font-display text-xl font-semibold mb-3">Diário de Estudos</h2>
+          <h2 className="font-display text-xl font-semibold mb-3">{t("estudos.diary")}</h2>
           <div className="space-y-4">
             {grouped.map(([date, items]) => (
               <div key={date}>
-                <div className="text-xs text-muted-foreground mb-2 uppercase tracking-wider">{fmtDate(date)}</div>
+                <div className="text-xs text-muted-foreground mb-2 uppercase tracking-wider">
+                  {fmtDate(date)}
+                </div>
                 <div className="space-y-2">
                   {items.map((s) => {
                     const icon = STUDY_TYPES.find((t) => t.id === s.type)?.icon || "📚";
@@ -126,32 +127,44 @@ function Estudos() {
                             <div className="flex items-center justify-between gap-2">
                               <div className="flex items-center gap-2 flex-wrap">
                                 <h4 className="font-semibold">{s.topic}</h4>
-                                <span className="text-xs px-2 py-0.5 rounded-full bg-white/10">{s.area}</span>
-                                <span className="text-xs px-2 py-0.5 rounded-full bg-white/10">{s.duration}min</span>
+                                <span className="text-xs px-2 py-0.5 rounded-full bg-white/10">
+                                  {s.area}
+                                </span>
+                                <span className="text-xs px-2 py-0.5 rounded-full bg-white/10">
+                                  {s.duration}min
+                                </span>
                                 {s.status === "concluido" ? (
-                                  <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-bgt/20 text-emerald-bgt">Concluído</span>
+                                  <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-bgt/20 text-emerald-bgt">
+                                    {t("estudos.statusConcluido")}
+                                  </span>
                                 ) : (
-                                  <span className="text-xs px-2 py-0.5 rounded-full bg-gold/20 text-gold">Em Progresso</span>
+                                  <span className="text-xs px-2 py-0.5 rounded-full bg-gold/20 text-gold">
+                                    {t("estudos.statusProgresso")}
+                                  </span>
                                 )}
                               </div>
                               <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition shrink-0">
                                 <button
                                   onClick={() => setEditingStudy(s)}
-                                  title="Editar"
+                                  title={t("estudos.editarBtn")}
                                   className="p-1 rounded hover:bg-white/10 text-muted-foreground hover:text-foreground"
                                 >
                                   <Pencil size={13} />
                                 </button>
                                 <ConfirmButton
                                   onConfirm={() => removeStudy(s.id)}
-                                  message={`Excluir o estudo "${s.topic}"?`}
+                                  message={t("estudos.confirmDelete", { topic: s.topic })}
                                   className="p-1 rounded hover:bg-white/10 text-coral"
                                 >
                                   <Trash2 size={13} />
                                 </ConfirmButton>
                               </div>
                             </div>
-                            {s.learned && <p className="text-sm text-muted-foreground mt-2 whitespace-pre-wrap">{s.learned}</p>}
+                            {s.learned && (
+                              <p className="text-sm text-muted-foreground mt-2 whitespace-pre-wrap">
+                                {s.learned}
+                              </p>
+                            )}
                             {s.insights && (
                               <div className="mt-2 text-xs text-gold border-l-2 border-gold pl-3 whitespace-pre-wrap">
                                 💡 {s.insights}
@@ -165,78 +178,150 @@ function Estudos() {
                 </div>
               </div>
             ))}
-            {grouped.length === 0 && <p className="text-muted-foreground text-sm py-4">Nenhuma entrada registrada ainda.</p>}
+            {grouped.length === 0 && (
+              <p className="text-muted-foreground text-sm py-4">{t("estudos.emptyDiary")}</p>
+            )}
             {studies.length > page * 20 && (
-              <button onClick={() => setPage(page + 1)} className="text-sm text-gold hover:underline">Ver mais</button>
+              <button
+                onClick={() => setPage(page + 1)}
+                className="text-sm text-gold hover:underline"
+              >
+                {t("estudos.verMais")}
+              </button>
             )}
           </div>
         </div>
 
         <div className="lg:col-span-2 space-y-4">
           <GlassCard>
-            <h3 className="font-display font-semibold mb-3">Nova Entrada</h3>
+            <h3 className="font-display font-semibold mb-3">{t("estudos.novaEntrada")}</h3>
             <form onSubmit={submit} className="space-y-3">
               <div>
-                <label className="text-xs text-muted-foreground block mb-1">Data</label>
-                <input className={inpCls} type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} required />
+                <label className="text-xs text-muted-foreground block mb-1">
+                  {t("estudos.data")}
+                </label>
+                <input
+                  className={inpCls}
+                  type="date"
+                  value={form.date}
+                  onChange={(e) => setForm({ ...form, date: e.target.value })}
+                  required
+                />
               </div>
               <div>
-                <label className="text-xs text-muted-foreground block mb-1">Tópico / Assunto</label>
-                <input className={inpCls} placeholder="ex: Zustand state management" value={form.topic} onChange={(e) => setForm({ ...form, topic: e.target.value })} required />
+                <label className="text-xs text-muted-foreground block mb-1">
+                  {t("estudos.topico")}
+                </label>
+                <input
+                  className={inpCls}
+                  placeholder="ex: Zustand state management"
+                  value={form.topic}
+                  onChange={(e) => setForm({ ...form, topic: e.target.value })}
+                  required
+                />
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="text-xs text-muted-foreground block mb-1">Área</label>
-                  <select className={inpCls} value={form.area} onChange={(e) => setForm({ ...form, area: e.target.value })}>
-                    {STUDY_AREAS.map((a) => <option key={a} value={a}>{a}</option>)}
+                  <label className="text-xs text-muted-foreground block mb-1">
+                    {t("estudos.area")}
+                  </label>
+                  <select
+                    className={inpCls}
+                    value={form.area}
+                    onChange={(e) => setForm({ ...form, area: e.target.value })}
+                  >
+                    {STUDY_AREAS.map((a) => (
+                      <option key={a} value={a}>
+                        {t("area." + a)}
+                      </option>
+                    ))}
                   </select>
                 </div>
                 <div>
-                  <label className="text-xs text-muted-foreground block mb-1">Formato</label>
-                  <select className={inpCls} value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}>
-                    {STUDY_TYPES.map((t) => <option key={t.id} value={t.id}>{t.icon} {t.id}</option>)}
+                  <label className="text-xs text-muted-foreground block mb-1">
+                    {t("estudos.formato")}
+                  </label>
+                  <select
+                    className={inpCls}
+                    value={form.type}
+                    onChange={(e) => setForm({ ...form, type: e.target.value })}
+                  >
+                    {STUDY_TYPES.map((st) => (
+                      <option key={st.id} value={st.id}>
+                        {st.icon} {t("studyType." + st.id)}
+                      </option>
+                    ))}
                   </select>
                 </div>
               </div>
               <div>
-                <label className="text-xs text-muted-foreground block mb-1">Duração (minutos)</label>
-                <input className={inpCls} type="number" placeholder="ex: 45" value={form.duration} onChange={(e) => setForm({ ...form, duration: e.target.value })} required />
+                <label className="text-xs text-muted-foreground block mb-1">
+                  {t("estudos.duracao")}
+                </label>
+                <input
+                  className={inpCls}
+                  type="number"
+                  placeholder="ex: 45"
+                  value={form.duration}
+                  onChange={(e) => setForm({ ...form, duration: e.target.value })}
+                  required
+                />
               </div>
               <div>
-                <label className="text-xs text-muted-foreground block mb-1">O que aprendi</label>
-                <textarea className={inpCls} rows={3} placeholder="Principais conceitos..." value={form.learned} onChange={(e) => setForm({ ...form, learned: e.target.value })} />
+                <label className="text-xs text-muted-foreground block mb-1">
+                  {t("estudos.oQueAprendi")}
+                </label>
+                <textarea
+                  className={inpCls}
+                  rows={3}
+                  placeholder="Principais conceitos..."
+                  value={form.learned}
+                  onChange={(e) => setForm({ ...form, learned: e.target.value })}
+                />
               </div>
               <div>
-                <label className="text-xs text-muted-foreground block mb-1">Insights-chave</label>
-                <textarea className={inpCls} rows={2} placeholder="Ideias para aplicar..." value={form.insights} onChange={(e) => setForm({ ...form, insights: e.target.value })} />
+                <label className="text-xs text-muted-foreground block mb-1">
+                  {t("estudos.insights")}
+                </label>
+                <textarea
+                  className={inpCls}
+                  rows={2}
+                  placeholder="Ideias para aplicar..."
+                  value={form.insights}
+                  onChange={(e) => setForm({ ...form, insights: e.target.value })}
+                />
               </div>
               <div>
-                <label className="text-xs text-muted-foreground block mb-1">Status</label>
+                <label className="text-xs text-muted-foreground block mb-1">
+                  {t("estudos.status")}
+                </label>
                 <div className="flex rounded-lg overflow-hidden border border-white/10 text-sm">
                   <button
                     type="button"
                     onClick={() => setForm({ ...form, status: "progresso" })}
                     className={`flex-1 py-2 font-medium transition ${form.status === "progresso" ? "bg-gold text-[#0A0F1E]" : "hover:bg-white/5"}`}
                   >
-                    Em Progresso
+                    {t("estudos.statusProgresso")}
                   </button>
                   <button
                     type="button"
                     onClick={() => setForm({ ...form, status: "concluido" })}
                     className={`flex-1 py-2 font-medium transition ${form.status === "concluido" ? "bg-emerald-bgt text-black" : "hover:bg-white/5"}`}
                   >
-                    Concluído
+                    {t("estudos.statusConcluido")}
                   </button>
                 </div>
               </div>
-              <button type="submit" className={`${btnGold} w-full`}>Registrar Estudo</button>
+              <button type="submit" className={`${btnGold} w-full`}>
+                {t("estudos.registrar")}
+              </button>
             </form>
           </GlassCard>
 
           <GlassCard>
-            <h3 className="font-display font-semibold mb-3">Minhas Áreas (mês)</h3>
+            <h3 className="font-display font-semibold mb-3">{t("estudos.minhasAreas")}</h3>
             {byArea.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Sem dados.</p>
+              <p className="text-sm text-muted-foreground">{t("estudos.semDados")}</p>
             ) : (
               <ResponsiveContainer width="100%" height={200}>
                 <BarChart data={byArea} layout="vertical">
@@ -252,7 +337,7 @@ function Estudos() {
         </div>
       </div>
 
-      <Section title="Horas por Semana (12 semanas)">
+      <Section title={t("estudos.horasSemana")}>
         <GlassCard>
           <ResponsiveContainer width="100%" height={220}>
             <BarChart data={weekly}>
@@ -268,7 +353,11 @@ function Estudos() {
 
       {/* Modal Editar Estudo */}
       {editingStudy && (
-        <Modal open={!!editingStudy} onClose={() => setEditingStudy(null)} title="Editar Estudo">
+        <Modal
+          open={!!editingStudy}
+          onClose={() => setEditingStudy(null)}
+          title={t("estudos.editar")}
+        >
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -281,67 +370,118 @@ function Estudos() {
                 duration: parseInt(String(fd.get("duration")), 10) || editingStudy.duration,
                 learned: String(fd.get("learned") || ""),
                 insights: String(fd.get("insights") || ""),
-                status: String(fd.get("status") || editingStudy.status) as "progresso" | "concluido",
+                status: String(fd.get("status") || editingStudy.status) as
+                  "progresso" | "concluido",
               });
               setEditingStudy(null);
             }}
             className="space-y-3"
           >
             <div>
-              <label className="text-xs text-muted-foreground block mb-1">Tópico / Assunto</label>
+              <label className="text-xs text-muted-foreground block mb-1">
+                {t("estudos.topico")}
+              </label>
               <input name="topic" defaultValue={editingStudy.topic} className={inpCls} required />
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-xs text-muted-foreground block mb-1">Data</label>
-                <input name="date" type="date" defaultValue={editingStudy.date} className={inpCls} required />
+                <label className="text-xs text-muted-foreground block mb-1">
+                  {t("estudos.data")}
+                </label>
+                <input
+                  name="date"
+                  type="date"
+                  defaultValue={editingStudy.date}
+                  className={inpCls}
+                  required
+                />
               </div>
               <div>
-                <label className="text-xs text-muted-foreground block mb-1">Duração (minutos)</label>
-                <input name="duration" type="number" defaultValue={editingStudy.duration} className={inpCls} required />
+                <label className="text-xs text-muted-foreground block mb-1">
+                  {t("estudos.duracao")}
+                </label>
+                <input
+                  name="duration"
+                  type="number"
+                  defaultValue={editingStudy.duration}
+                  className={inpCls}
+                  required
+                />
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-xs text-muted-foreground block mb-1">Área</label>
+                <label className="text-xs text-muted-foreground block mb-1">
+                  {t("estudos.area")}
+                </label>
                 <select name="area" defaultValue={editingStudy.area} className={inpCls}>
-                  {STUDY_AREAS.map((a) => <option key={a} value={a}>{a}</option>)}
+                  {STUDY_AREAS.map((a) => (
+                    <option key={a} value={a}>
+                      {t("area." + a)}
+                    </option>
+                  ))}
                 </select>
               </div>
               <div>
-                <label className="text-xs text-muted-foreground block mb-1">Formato</label>
+                <label className="text-xs text-muted-foreground block mb-1">
+                  {t("estudos.formato")}
+                </label>
                 <select name="type" defaultValue={editingStudy.type} className={inpCls}>
-                  {STUDY_TYPES.map((t) => <option key={t.id} value={t.id}>{t.icon} {t.id}</option>)}
+                  {STUDY_TYPES.map((st) => (
+                    <option key={st.id} value={st.id}>
+                      {st.icon} {t("studyType." + st.id)}
+                    </option>
+                  ))}
                 </select>
               </div>
             </div>
 
             <div>
-              <label className="text-xs text-muted-foreground block mb-1">Status</label>
+              <label className="text-xs text-muted-foreground block mb-1">
+                {t("estudos.status")}
+              </label>
               <select name="status" defaultValue={editingStudy.status} className={inpCls}>
-                <option value="progresso">Em Progresso</option>
-                <option value="concluido">Concluído</option>
+                <option value="progresso">{t("estudos.statusProgresso")}</option>
+                <option value="concluido">{t("estudos.statusConcluido")}</option>
               </select>
             </div>
 
             <div>
-              <label className="text-xs text-muted-foreground block mb-1">O que aprendi</label>
-              <textarea name="learned" defaultValue={editingStudy.learned ?? ""} rows={3} className={inpCls} />
+              <label className="text-xs text-muted-foreground block mb-1">
+                {t("estudos.oQueAprendi")}
+              </label>
+              <textarea
+                name="learned"
+                defaultValue={editingStudy.learned ?? ""}
+                rows={3}
+                className={inpCls}
+              />
             </div>
 
             <div>
-              <label className="text-xs text-muted-foreground block mb-1">Insights-chave</label>
-              <textarea name="insights" defaultValue={editingStudy.insights ?? ""} rows={2} className={inpCls} />
+              <label className="text-xs text-muted-foreground block mb-1">
+                {t("estudos.insights")}
+              </label>
+              <textarea
+                name="insights"
+                defaultValue={editingStudy.insights ?? ""}
+                rows={2}
+                className={inpCls}
+              />
             </div>
 
             <div className="flex justify-end gap-2 pt-2">
-              <button type="button" onClick={() => setEditingStudy(null)} className="px-4 py-2 rounded-lg border border-white/10 text-sm hover:bg-white/5 transition">
-                Cancelar
+              <button
+                type="button"
+                onClick={() => setEditingStudy(null)}
+                className="px-4 py-2 rounded-lg border border-white/10 text-sm hover:bg-white/5 transition"
+              >
+                {t("estudos.cancelar")}
               </button>
               <button type="submit" className={btnGold}>
-                Salvar Alterações
+                {t("estudos.salvarAlteracoes")}
               </button>
             </div>
           </form>

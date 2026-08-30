@@ -2,17 +2,19 @@ import { useState, type FormEvent } from "react";
 import { Loader2 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { supabaseConfigured } from "@/lib/supabase";
+import { useT } from "@/lib/i18n";
 
 type Mode = "login" | "signup" | "reset";
 
 const TITLES: Record<Mode, { title: string; subtitle: string; action: string }> = {
-  login: { title: "Entrar no ALTUS", subtitle: "Acesse seus registros de qualquer lugar.", action: "Entrar" },
-  signup: { title: "Criar sua conta", subtitle: "Seus dados ficam salvos na nuvem, só seus.", action: "Criar conta" },
-  reset: { title: "Recuperar senha", subtitle: "Enviamos um link de redefinição para o seu e-mail.", action: "Enviar link" },
+  login: { title: "title.login", subtitle: "subtitle.login", action: "action.login" },
+  signup: { title: "title.signup", subtitle: "subtitle.signup", action: "action.signup" },
+  reset: { title: "title.reset", subtitle: "subtitle.reset", action: "action.reset" },
 };
 
 export function AuthScreen() {
   const { signIn, signUp, sendReset, signInWithGoogle } = useAuth();
+  const t = useT();
   const [mode, setMode] = useState<Mode>("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -37,28 +39,29 @@ export function AuthScreen() {
       } else if (mode === "signup") {
         const needsConfirmation = await signUp(email, password);
         if (needsConfirmation) {
-          setNotice("Conta criada! Confirme o e-mail que enviamos e depois faça login.");
+          setNotice(t("notice.signup"));
           setMode("login");
         }
       } else {
         await sendReset(email);
-        setNotice("Se existir uma conta com esse e-mail, o link de redefinição chegou na caixa de entrada.");
+        setNotice(t("notice.reset"));
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Algo deu errado. Tente de novo.");
+      setError(err instanceof Error ? err.message : t("error.generic"));
     } finally {
       setBusy(false);
     }
   }
 
-  const t = TITLES[mode];
+  const meta = TITLES[mode];
 
   if (!supabaseConfigured) {
     return (
       <Shell>
         <p className="text-sm text-destructive">
-          O login não está configurado. Defina <code>VITE_SUPABASE_URL</code> e{" "}
-          <code>VITE_SUPABASE_ANON_KEY</code> nas variáveis de ambiente do projeto.
+          {t("notConfigured.lead")}
+          <code>VITE_SUPABASE_URL</code> e <code>VITE_SUPABASE_ANON_KEY</code>
+          {t("notConfigured.trail")}
         </p>
       </Shell>
     );
@@ -66,13 +69,15 @@ export function AuthScreen() {
 
   return (
     <Shell>
-      <h1 className="font-display text-2xl font-bold tracking-tight text-foreground">{t.title}</h1>
-      <p className="mt-1 text-sm text-muted-foreground">{t.subtitle}</p>
+      <h1 className="font-display text-2xl font-bold tracking-tight text-foreground">
+        {t(meta.title)}
+      </h1>
+      <p className="mt-1 text-sm text-muted-foreground">{t(meta.subtitle)}</p>
 
       <form onSubmit={handleSubmit} className="mt-6 space-y-4">
         <div className="space-y-1.5">
           <label htmlFor="email" className="text-sm font-medium text-foreground">
-            E-mail
+            {t("label.email")}
           </label>
           <input
             id="email"
@@ -89,7 +94,7 @@ export function AuthScreen() {
         {mode !== "reset" && (
           <div className="space-y-1.5">
             <label htmlFor="password" className="text-sm font-medium text-foreground">
-              Senha
+              {t("label.password")}
             </label>
             <input
               id="password"
@@ -99,7 +104,7 @@ export function AuthScreen() {
               autoComplete={mode === "signup" ? "new-password" : "current-password"}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Mínimo de 6 caracteres"
+              placeholder={t("placeholder.password")}
               className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-primary"
             />
           </div>
@@ -122,7 +127,7 @@ export function AuthScreen() {
           className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-60"
         >
           {busy && <Loader2 className="size-4 animate-spin" />}
-          {t.action}
+          {t(meta.action)}
         </button>
       </form>
 
@@ -130,7 +135,7 @@ export function AuthScreen() {
         <div className="mt-4 space-y-4">
           <div className="relative flex items-center justify-center">
             <div className="w-full border-t border-border" />
-            <span className="relative bg-card px-2 text-xs text-muted-foreground">ou</span>
+            <span className="relative bg-card px-2 text-xs text-muted-foreground">{t("or")}</span>
           </div>
           <button
             type="button"
@@ -141,7 +146,7 @@ export function AuthScreen() {
               try {
                 await signInWithGoogle();
               } catch (err) {
-                setError(err instanceof Error ? err.message : "Falha ao entrar com Google.");
+                setError(err instanceof Error ? err.message : t("error.google"));
                 setBusy(false);
               }
             }}
@@ -165,7 +170,7 @@ export function AuthScreen() {
                 d="M12 23c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3 0-5.5-2.2-6.4-5.2L1.9 16C3.7 19.7 7.5 23 12 23z"
               />
             </svg>
-            Continuar com Google
+            {t("continueGoogle")}
           </button>
         </div>
       )}
@@ -174,22 +179,30 @@ export function AuthScreen() {
         {mode === "login" && (
           <>
             <p>
-              Não tem conta?{" "}
-              <button type="button" onClick={() => switchMode("signup")} className="font-medium text-primary hover:underline">
-                Criar agora
+              {t("noAccount")}{" "}
+              <button
+                type="button"
+                onClick={() => switchMode("signup")}
+                className="font-medium text-primary hover:underline"
+              >
+                {t("createNow")}
               </button>
             </p>
             <p>
               <button type="button" onClick={() => switchMode("reset")} className="hover:underline">
-                Esqueci minha senha
+                {t("forgotPassword")}
               </button>
             </p>
           </>
         )}
         {mode !== "login" && (
           <p>
-            <button type="button" onClick={() => switchMode("login")} className="font-medium text-primary hover:underline">
-              Voltar para o login
+            <button
+              type="button"
+              onClick={() => switchMode("login")}
+              className="font-medium text-primary hover:underline"
+            >
+              {t("backToLogin")}
             </button>
           </p>
         )}

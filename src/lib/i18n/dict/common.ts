@@ -6,6 +6,7 @@ export const common = {
   "nav.biblioteca": { pt: "Biblioteca Pessoal", en: "Personal Library", es: "Biblioteca Personal" },
   "nav.estudos": { pt: "Estudos & Conhecimento", en: "Studies & Knowledge", es: "Estudios y Conocimiento" },
   "nav.agente": { pt: "Agente IA", en: "AI Agent", es: "Agente IA" },
+  "nav.kaizen": { pt: "Kaizen Diário", en: "Daily Kaizen", es: "Kaizen Diario" },
   "nav.configuracoes": { pt: "Configurações", en: "Settings", es: "Configuración" },
 
   "app.tagline": { pt: "Organize • Foque • Conquiste", en: "Organize • Focus • Conquer", es: "Organiza • Enfoca • Conquista" },
@@ -124,6 +125,7 @@ export const common = {
   "quote.7": { pt: "Hoje é a versão mais nova de você.", en: "Today is the newest version of you.", es: "Hoy es la versión más nueva de ti." },
   "quote.8": { pt: "Foco é dizer não a 100 boas ideias.", en: "Focus is saying no to 100 good ideas.", es: "Enfocarse es decir no a 100 buenas ideas." },
   "quote.9": { pt: "Constância vence intensidade.", en: "Consistency beats intensity.", es: "La constancia vence a la intensidad." },
+  "common.viewMore": { pt: "Ver mais", en: "View more", es: "Ver más" },
 
   "greeting.morning": { pt: "Bom dia", en: "Good morning", es: "Buenos días" },
   "greeting.afternoon": { pt: "Boa tarde", en: "Good afternoon", es: "Buenas tardes" },
