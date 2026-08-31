@@ -155,7 +155,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                   ALTUS
                 </div>
                 <div className="text-[9px] uppercase tracking-[0.22em] text-purple-400 font-semibold mt-1">
-                  Organize • Foque • Conquiste
+                  {t("app.tagline")}
                 </div>
                 <div className="text-xs text-muted-foreground mt-0.5 truncate">{name}</div>
               </div>
