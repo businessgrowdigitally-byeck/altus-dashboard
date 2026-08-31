@@ -135,6 +135,8 @@ export const common = {
   "common.goHome": { pt: "Voltar ao início", en: "Go home", es: "Volver al inicio" },
   "common.pageNotFound": { pt: "Página não encontrada", en: "Page not found", es: "Página no encontrada" },
   "common.pageNotFoundDesc": { pt: "A página que você procura não existe ou foi movida.", en: "The page you're looking for doesn't exist or has been moved.", es: "La página que buscas no existe o fue movida." },
+  "common.errorTitle": { pt: "Esta página não carregou", en: "This page didn't load", es: "Esta página no se cargó" },
+  "common.errorDesc": { pt: "Algo deu errado da nossa parte. Você pode tentar atualizar ou voltar ao início.", en: "Something went wrong on our end. You can try refreshing or head back home.", es: "Algo salió mal de nuestra parte. Puedes intentar actualizar o volver al inicio." },
 
   "greeting.morning": { pt: "Bom dia", en: "Good morning", es: "Buenos días" },
   "greeting.afternoon": { pt: "Boa tarde", en: "Good afternoon", es: "Buenas tardes" },

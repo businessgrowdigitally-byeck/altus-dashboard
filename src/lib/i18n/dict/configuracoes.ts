@@ -97,9 +97,10 @@ export const configuracoes = {
   },
   "config.confirmLabel": {
     pt: "2. Digite APAGAR para confirmar",
-    en: "2. Type APAGAR to confirm",
-    es: "2. Escribe APAGAR para confirmar",
+    en: "2. Type DELETE to confirm",
+    es: "2. Escribe BORRAR para confirmar",
   },
+  "config.confirmWord": { pt: "APAGAR", en: "DELETE", es: "BORRAR" },
   "config.cancel": { pt: "Cancelar", en: "Cancel", es: "Cancelar" },
   "config.clearAll": { pt: "Apagar tudo", en: "Delete everything", es: "Borrar todo" },
 

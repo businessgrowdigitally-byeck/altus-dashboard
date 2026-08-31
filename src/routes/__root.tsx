@@ -13,25 +13,37 @@ import { AppLayout } from "@/components/AppLayout";
 import { AuthGate } from "@/components/AuthGate";
 import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider } from "@/lib/auth";
-import { I18nProvider } from "@/lib/i18n";
+import { I18nProvider, translate, useLangStore } from "@/lib/i18n";
 import { useStore } from "@/lib/store";
 import { useEffect } from "react";
 
+function getLang(): "pt" | "en" | "es" {
+  try {
+    if (typeof window === "undefined") return "pt";
+    const raw = localStorage.getItem("altus-lang");
+    if (!raw) return "pt";
+    const p = JSON.parse(raw);
+    const l = p?.state?.lang ?? p?.lang;
+    return l === "en" || l === "es" ? l : "pt";
+  } catch {
+    return "pt";
+  }
+}
+
 function NotFoundComponent() {
+  const t = (k: string) => translate(k, getLang());
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
         <h1 className="text-7xl font-bold text-foreground">404</h1>
-        <h2 className="mt-4 text-xl font-semibold text-foreground">Page not found</h2>
-        <p className="mt-2 text-sm text-muted-foreground">
-          The page you're looking for doesn't exist or has been moved.
-        </p>
+        <h2 className="mt-4 text-xl font-semibold text-foreground">{t("common.pageNotFound")}</h2>
+        <p className="mt-2 text-sm text-muted-foreground">{t("common.pageNotFoundDesc")}</p>
         <div className="mt-6">
           <Link
             to="/"
             className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
           >
-            Go home
+            {t("common.goHome")}
           </Link>
         </div>
       </div>
@@ -42,16 +54,15 @@ function NotFoundComponent() {
 function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   console.error(error);
   const router = useRouter();
+  const t = (k: string) => translate(k, getLang());
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
         <h1 className="text-xl font-semibold tracking-tight text-foreground">
-          This page didn't load
+          {t("common.errorTitle")}
         </h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Something went wrong on our end. You can try refreshing or head back home.
-        </p>
+        <p className="mt-2 text-sm text-muted-foreground">{t("common.errorDesc")}</p>
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           <button
             onClick={() => {
@@ -60,13 +71,13 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
             }}
             className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
           >
-            Try again
+            {t("common.tryAgain")}
           </button>
           <a
             href="/"
             className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent"
           >
-            Go home
+            {t("common.goHome")}
           </a>
         </div>
       </div>
@@ -150,6 +161,22 @@ function RootComponent() {
     if (theme === "dark") root.classList.add("dark");
     else root.classList.remove("dark");
   }, [theme]);
+  const lang = useLangStore((s) => s.lang);
+  useEffect(() => {
+    const titles: Record<string, string> = {
+      pt: "ALTUS — Organize. Foque. Conquiste.",
+      en: "ALTUS — Organize. Focus. Conquer.",
+      es: "ALTUS — Organiza. Enfoca. Conquista.",
+    };
+    const descs: Record<string, string> = {
+      pt: "ALTUS é o sistema operacional pessoal para gerenciar sua vida como uma empresa: finanças, corpo, biblioteca, estudos e metas.",
+      en: "ALTUS is your personal operating system to manage your life like a company: finances, body, library, studies and goals.",
+      es: "ALTUS es tu sistema operativo personal para gestionar tu vida como una empresa: finanzas, cuerpo, biblioteca, estudios y metas.",
+    };
+    document.title = titles[lang] ?? titles.pt;
+    const m = document.querySelector('meta[name="description"]');
+    if (m) m.setAttribute("content", descs[lang] ?? descs.pt);
+  }, [lang]);
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>

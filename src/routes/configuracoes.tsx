@@ -196,7 +196,7 @@ function Config() {
               className="inp"
               value={clearConfirm}
               onChange={(e) => setClearConfirm(e.target.value)}
-              placeholder="APAGAR"
+              placeholder={t("config.confirmWord")}
               autoComplete="off"
             />
           </Field>
@@ -213,7 +213,7 @@ function Config() {
             </button>
             <button
               onClick={executarLimpeza}
-              disabled={clearConfirm.trim().toUpperCase() !== "APAGAR"}
+              disabled={clearConfirm.trim().toUpperCase() !== t("config.confirmWord")}
               className="px-4 py-2 rounded-lg bg-coral text-white font-semibold text-sm hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {t("config.clearAll")}
