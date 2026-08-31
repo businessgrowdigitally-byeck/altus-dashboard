@@ -1,7 +1,33 @@
-export const brl = (n: number) =>
-  n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+export const brl = (n: number) => formatCurrency(n);
+export const kg = (n: number) => formatWeight(n);
 
-export const kg = (n: number) => `${n.toFixed(1)} kg`;
+export type LangCode = "pt" | "en" | "es";
+const LOCALE: Record<LangCode, string> = { pt: "pt-BR", en: "en-US", es: "es-ES" };
+const CURRENCY: Record<LangCode, string> = { pt: "BRL", en: "USD", es: "EUR" };
+
+function getCurrentLang(): LangCode {
+  try {
+    if (typeof window === "undefined") return "pt";
+    const raw = localStorage.getItem("altus-lang");
+    if (!raw) return "pt";
+    const parsed = JSON.parse(raw);
+    const lang = (parsed?.state?.lang ?? parsed?.lang) as string | undefined;
+    if (lang === "en" || lang === "es" || lang === "pt") return lang;
+    return "pt";
+  } catch {
+    return "pt";
+  }
+}
+
+export const formatCurrency = (n: number, lang?: LangCode) => {
+  const l = lang ?? getCurrentLang();
+  return n.toLocaleString(LOCALE[l], { style: "currency", currency: CURRENCY[l] });
+};
+
+export const formatWeight = (n: number, lang?: LangCode) => {
+  const l = lang ?? getCurrentLang();
+  return l === "en" ? `${(n * 2.20462).toFixed(1)} lbs` : `${n.toFixed(1)} kg`;
+};
 
 /**
  * Data no formato YYYY-MM-DD usando o fuso do usuário.
@@ -25,37 +51,69 @@ export const daysAgoISO = (n: number) => {
   return toISODate(d);
 };
 
-export const fmtDate = (iso: string) => {
+export const fmtDate = (iso: string, lang?: LangCode) => {
+  const l = lang ?? getCurrentLang();
   const d = new Date(iso + (iso.length === 10 ? "T00:00:00" : ""));
-  return d.toLocaleDateString("pt-BR");
+  return d.toLocaleDateString(LOCALE[l]);
 };
 
-export const fmtDateLong = (d: Date) =>
-  d.toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+export const fmtDateLong = (d: Date, lang?: LangCode) =>
+  d.toLocaleDateString(LOCALE[lang ?? getCurrentLang()], { weekday: "long", day: "numeric", month: "long", year: "numeric" });
 
-export const greeting = () => {
+export const greeting = (lang?: LangCode) => {
+  const l = lang ?? getCurrentLang();
   const h = new Date().getHours();
+  if (l === "en") return h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening";
+  if (l === "es") return h < 12 ? "Buenos días" : h < 18 ? "Buenas tardes" : "Buenas noches";
   if (h < 12) return "Bom dia";
   if (h < 18) return "Boa tarde";
   return "Boa noite";
 };
 
-export const QUOTES = [
-  "Disciplina é a ponte entre objetivos e conquistas.",
-  "Você se torna aquilo que mede.",
-  "Pequenos ganhos diários se acumulam em grandes vitórias.",
-  "O que não é registrado, não é gerenciado.",
-  "Sua vida é a sua empresa mais importante.",
-  "Excelência é hábito, não acidente.",
-  "Cada decisão é um voto na pessoa que você quer se tornar.",
-  "Hoje é a versão mais nova de você.",
-  "Foco é dizer não a 100 boas ideias.",
-  "Constância vence intensidade.",
-];
+export const QUOTES: Record<LangCode, string[]> = {
+  pt: [
+    "Disciplina é a ponte entre objetivos e conquistas.",
+    "Você se torna aquilo que mede.",
+    "Pequenos ganhos diários se acumulam em grandes vitórias.",
+    "O que não é registrado, não é gerenciado.",
+    "Sua vida é a sua empresa mais importante.",
+    "Excelência é hábito, não acidente.",
+    "Cada decisão é um voto na pessoa que você quer se tornar.",
+    "Hoje é a versão mais nova de você.",
+    "Foco é dizer não a 100 boas ideias.",
+    "Constância vence intensidade.",
+  ],
+  en: [
+    "Discipline is the bridge between goals and achievement.",
+    "You become what you measure.",
+    "Small daily gains compound into great victories.",
+    "What is not recorded is not managed.",
+    "Your life is your most important business.",
+    "Excellence is a habit, not an accident.",
+    "Every decision is a vote for the person you want to become.",
+    "Today is the newest version of you.",
+    "Focus is saying no to 100 good ideas.",
+    "Consistency beats intensity.",
+  ],
+  es: [
+    "La disciplina es el puente entre objetivos y logros.",
+    "Te conviertes en lo que mides.",
+    "Pequeñas ganancias diarias se acumulan en grandes victorias.",
+    "Lo que no se registra no se gestiona.",
+    "Tu vida es tu empresa más importante.",
+    "La excelencia es un hábito, no un accidente.",
+    "Cada decisión es un voto por la persona que quieres ser.",
+    "Hoy es la versión más nueva de ti.",
+    "Enfocarse es decir no a 100 buenas ideas.",
+    "La constancia vence a la intensidad.",
+  ],
+};
 
-export const dailyQuote = () => {
+export const dailyQuote = (lang?: LangCode) => {
+  const l = lang ?? getCurrentLang();
   const day = Math.floor(Date.now() / (1000 * 60 * 60 * 24));
-  return QUOTES[day % QUOTES.length];
+  const arr = QUOTES[l] ?? QUOTES.pt;
+  return arr[day % arr.length];
 };
 
 export const CATEGORIES = [

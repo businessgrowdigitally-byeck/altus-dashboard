@@ -21,12 +21,14 @@ export const Route = createFileRoute("/api/chat")({
         }
 
 
-        const { messages, context } = (await request.json()) as {
+        const { messages, context, lang: reqLang } = (await request.json()) as {
           messages: { role: "user" | "assistant"; content: string }[];
           context: unknown;
+          lang?: string;
         };
 
-        const systemPrompt = `Você é o assistente executivo pessoal do usuário no ALTUS (Become your best version), um sistema operacional pessoal que trata a vida do usuário como uma empresa multinacional. Responda SEMPRE em português do Brasil, de forma direta, analítica e prática — como um CEO conversando com seu chefe de gabinete. Use dados, números e percentuais. Você tem acesso a TODOS os dados do usuário (finanças, corpo, biblioteca, estudos, metas, rotina diária):\n\n${JSON.stringify(context, null, 2)}\n\nFaça análises cruzadas entre módulos. Quando relevante, sugira ações concretas.`;
+        const lang = reqLang === "en" ? "English" : reqLang === "es" ? "español" : "português do Brasil";
+        const systemPrompt = `Você é o assistente executivo pessoal do usuário no ALTUS (Become your best version), um sistema operacional pessoal que trata a vida do usuário como uma empresa multinacional. Responda SEMPRE em ${lang}, de forma direta, analítica e prática — como um CEO conversando com seu chefe de gabinete. Use dados, números e percentuais. Você tem acesso a TODOS os dados do usuário (finanças, corpo, biblioteca, estudos, metas, rotina diária):\n\n${JSON.stringify(context, null, 2)}\n\nFaça análises cruzadas entre módulos. Quando relevante, sugira ações concretas.`;
 
         const upstream = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
           method: "POST",

@@ -119,10 +119,18 @@ function Agente() {
     const history = [...chat, { role: "user" as const, content: message }];
 
     try {
+      const lang = (() => {
+        try {
+          const raw = localStorage.getItem("altus-lang");
+          if (!raw) return "pt";
+          const p = JSON.parse(raw);
+          return p?.state?.lang ?? p?.lang ?? "pt";
+        } catch { return "pt"; }
+      })();
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: history, context: buildContext() }),
+        body: JSON.stringify({ messages: history, context: buildContext(), lang }),
       });
 
       if (!res.ok || !res.body) {

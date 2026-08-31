@@ -684,7 +684,16 @@ function Heatmap() {
       currentWeek.push(day);
       if (currentWeek.length === 7 || idx === days.length - 1) {
         const firstDayDate = new Date(currentWeek[0].date + "T12:00:00");
-        const monthName = firstDayDate.toLocaleDateString("pt-BR", { month: "short" });
+        const lang = (() => {
+          try {
+            const raw = localStorage.getItem("altus-lang");
+            if (!raw) return "pt-BR";
+            const p = JSON.parse(raw);
+            const l = p?.state?.lang ?? p?.lang;
+            return l === "en" ? "en-US" : l === "es" ? "es-ES" : "pt-BR";
+          } catch { return "pt-BR"; }
+        })();
+        const monthName = firstDayDate.toLocaleDateString(lang, { month: "short" });
         const isNewMonth = monthName !== lastMonth;
         if (isNewMonth) lastMonth = monthName;
 
