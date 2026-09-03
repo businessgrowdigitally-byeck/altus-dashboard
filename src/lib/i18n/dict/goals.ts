@@ -168,4 +168,10 @@ export const goals = {
   "goals.weekday.thu": { pt: "Qui", en: "Thu", es: "Jue" },
   "goals.weekday.fri": { pt: "Sex", en: "Fri", es: "Vie" },
   "goals.weekday.sat": { pt: "Sáb", en: "Sat", es: "Sáb" },
+
+  "goals.labelDescricaoAcao": { pt: "Descrição curta (opcional, até 120 caracteres)", en: "Short description (optional, up to 120 chars)", es: "Descripción corta (opcional, hasta 120 caracteres)" },
+  "goals.placeholderDescricao": { pt: "Ex: 3x12 supino, sem celular", en: "E.g.: 3x12 bench, no phone", es: "Ej: 3x12 press, sin móvil" },
+  "goals.viewRoutine": { pt: "Ver rotina de", en: "View routine for", es: "Ver rutina de" },
+  "goals.routineOf": { pt: "Rotina de", en: "Routine for", es: "Rutina de" },
+  "goals.noActionsDay": { pt: "Nenhuma ação para este dia.", en: "No actions for this day.", es: "Ninguna acción para este día." },
 } as const;

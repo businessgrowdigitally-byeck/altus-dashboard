@@ -344,6 +344,7 @@ function emptyDaily(): Omit<GoalDaily, "id"> {
     linkedGoalId: null,
     suggestedTime: "",
     daysOfWeek: [1, 2, 3, 4, 5],
+    description: "",
   };
 }
 
@@ -362,19 +363,38 @@ function DailyTab() {
   const [creating, setCreating] = useState(false);
   const today = todayISO();
   const todayDow = new Date().getDay();
+  const [selectedDow, setSelectedDow] = useState(todayDow);
 
   const todayActions = goalsDaily.filter((a) => a.daysOfWeek.includes(todayDow));
   const doneIds = new Set(completions.filter((c) => c.date === today).map((c) => c.actionId));
   const completed = todayActions.filter((a) => doneIds.has(a.id)).length;
 
+  // A1: só visual — seletor mostra rotina do dia selecionado, sem afetar marcação de hoje
+  const displayedActions = goalsDaily.filter((a) => a.daysOfWeek.includes(selectedDow));
   const sorted = useMemo(() => {
-    return [...todayActions].sort((a, b) => {
-      const ad = doneIds.has(a.id) ? 1 : 0;
-      const bd = doneIds.has(b.id) ? 1 : 0;
-      if (ad !== bd) return ad - bd;
-      return (a.suggestedTime || "").localeCompare(b.suggestedTime || "");
-    });
-  }, [todayActions, doneIds]);
+    const base = displayedActions;
+    // quando vê hoje, ordena por concluído + horário; quando vê outro dia, só por horário
+    if (selectedDow === todayDow) {
+      return [...base].sort((a, b) => {
+        const ad = doneIds.has(a.id) ? 1 : 0;
+        const bd = doneIds.has(b.id) ? 1 : 0;
+        if (ad !== bd) return ad - bd;
+        return (a.suggestedTime || "").localeCompare(b.suggestedTime || "");
+      });
+    }
+    return [...base].sort((a, b) => (a.suggestedTime || "").localeCompare(b.suggestedTime || ""));
+  }, [displayedActions, doneIds, selectedDow, todayDow]);
+
+  const isViewingToday = selectedDow === todayDow;
+  const weekdayNames = [
+    t("goals.weekday.sun"),
+    t("goals.weekday.mon"),
+    t("goals.weekday.tue"),
+    t("goals.weekday.wed"),
+    t("goals.weekday.thu"),
+    t("goals.weekday.fri"),
+    t("goals.weekday.sat"),
+  ];
 
   return (
     <div className="space-y-4">
@@ -398,27 +418,66 @@ function DailyTab() {
         />
       </div>
 
+      {/* Seletor de dia A1 — só visual */}
+      <div className="flex items-center gap-2 flex-wrap">
+        <span className="text-xs text-muted-foreground">{t("goals.viewRoutine")}:</span>
+        <div className="flex gap-1 flex-wrap">
+          {weekdayNames.map((d, i) => {
+            const active = selectedDow === i;
+            const isToday = i === todayDow;
+            return (
+              <button
+                key={i}
+                onClick={() => setSelectedDow(i)}
+                className={`px-3 py-1.5 rounded-lg text-xs transition border ${
+                  active
+                    ? "bg-gold text-[#0A0F1E] font-semibold border-gold"
+                    : "bg-white/5 hover:bg-white/10 border-white/10"
+                } ${isToday ? "ring-1 ring-gold/40" : ""}`}
+                title={isToday ? "Hoje" : undefined}
+              >
+                {d} {isToday ? "•" : ""}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+      {!isViewingToday && (
+        <p className="text-xs text-muted-foreground">
+          {t("goals.routineOf")} <span className="text-gold font-semibold">{weekdayNames[selectedDow]}</span> — {displayedActions.length} {displayedActions.length === 1 ? "ação" : "ações"}
+        </p>
+      )}
+
       <GlassCard className="space-y-2">
         {sorted.length === 0 && (
-          <p className="text-sm text-muted-foreground">{t("goals.noneToday")}</p>
+          <p className="text-sm text-muted-foreground">
+            {isViewingToday ? t("goals.noneToday") : t("goals.noActionsDay")}
+          </p>
         )}
         {sorted.map((a) => {
-          const done = doneIds.has(a.id);
+          const done = isViewingToday && doneIds.has(a.id);
           const linked = goalsMacro.find((g) => g.id === a.linkedGoalId);
           return (
             <div
               key={a.id}
               className={`group flex items-center gap-3 p-2 rounded-lg hover:bg-white/5 transition ${done ? "opacity-50" : ""}`}
             >
-              <button
-                onClick={() => toggleCompletion(a.id, today)}
-                className={`w-6 h-6 rounded-md border-2 flex items-center justify-center transition shrink-0 ${done ? "bg-emerald-bgt border-emerald-bgt" : "border-white/20 hover:border-gold"}`}
-              >
-                {done && <Check size={14} className="text-black" />}
-              </button>
+              {isViewingToday ? (
+                <button
+                  onClick={() => toggleCompletion(a.id, today)}
+                  className={`w-6 h-6 rounded-md border-2 flex items-center justify-center transition shrink-0 ${done ? "bg-emerald-bgt border-emerald-bgt" : "border-white/20 hover:border-gold"}`}
+                >
+                  {done && <Check size={14} className="text-black" />}
+                </button>
+              ) : (
+                <div className="w-6 h-6 rounded-md border border-white/10 bg-white/5 shrink-0" title={t("goals.viewRoutine")} />
+              )}
               <div className="flex-1 min-w-0">
                 <div className={`text-sm ${done ? "line-through" : ""}`}>{a.name}</div>
-                <div className="text-xs text-muted-foreground flex items-center gap-2 flex-wrap">
+                {a.description && (
+                  <div className="text-xs text-muted-foreground/80 mt-0.5 line-clamp-2">{a.description}</div>
+                )}
+                <div className="text-xs text-muted-foreground flex items-center gap-2 flex-wrap mt-1">
                   <span className={`px-1.5 py-0.5 rounded ${AREA_COLORS[a.area]} text-[10px]`}>
                     {areaT(t, a.area)}
                   </span>
@@ -581,6 +640,21 @@ function DailyFormModal({
                 </button>
               );
             })}
+          </div>
+        </Field>
+        <Field label={t("goals.labelDescricaoAcao")}>
+          <div>
+            <textarea
+              className={inpCls}
+              rows={2}
+              maxLength={120}
+              placeholder={t("goals.placeholderDescricao")}
+              value={f.description ?? ""}
+              onChange={(e) => setF({ ...f, description: e.target.value.slice(0, 120) })}
+            />
+            <div className="text-[10px] text-muted-foreground text-right mt-1">
+              {(f.description ?? "").length}/120
+            </div>
           </div>
         </Field>
         <div className="flex gap-2 justify-end pt-2">

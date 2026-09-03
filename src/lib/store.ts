@@ -92,6 +92,7 @@ export type GoalDaily = {
   linkedGoalId?: string | null;
   suggestedTime?: string; // HH:MM
   daysOfWeek: number[]; // 0=Dom..6=Sáb
+  description?: string; // nota curta 120c sobre a ação
 };
 
 export type DailyCompletion = { date: string; actionId: string };
