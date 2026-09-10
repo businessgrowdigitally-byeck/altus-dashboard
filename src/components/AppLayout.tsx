@@ -121,7 +121,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         <aside
           className={cn(
             "fixed md:sticky top-0 z-40 h-screen w-64 shrink-0 transition-transform duration-300",
-            "glass-strong border-r border-purple-500/15 flex flex-col bg-[#090714]/90",
+            "glass-strong border-r flex flex-col",
             open ? "translate-x-0" : "-translate-x-full md:translate-x-0",
           )}
         >

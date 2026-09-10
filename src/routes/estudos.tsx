@@ -179,9 +179,9 @@ function Estudos() {
             setPage(1);
           }}
         >
-          <option value="Todos" className="bg-[#0A0F1E]">{t("estudos.filterAll")}</option>
+          <option value="Todos">{t("estudos.filterAll")}</option>
           {STUDY_AREAS.map((a) => (
-            <option key={a} value={a} className="bg-[#0A0F1E]">{t("area." + a)}</option>
+            <option key={a} value={a}>{t("area." + a)}</option>
           ))}
         </select>
       </div>

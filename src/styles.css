@@ -173,16 +173,29 @@
 
 @layer utilities {
   .glass {
-    background-color: rgba(18, 16, 36, 0.65);
+    background-color: color-mix(in oklch, var(--card) 85%, transparent);
     backdrop-filter: blur(14px);
     -webkit-backdrop-filter: blur(14px);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--border);
   }
   .glass-strong {
-    background-color: rgba(14, 12, 29, 0.88);
+    background-color: color-mix(in oklch, var(--card) 92%, transparent);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(168, 85, 247, 0.15);
+    border: 1px solid var(--border);
+  }
+  :root .glass,
+  :root .glass-strong {
+    border-color: oklch(0.9 0.01 255);
+    box-shadow: 0 8px 32px oklch(0.18 0.03 260 / 8%);
+  }
+  .dark .glass {
+    background-color: rgba(18, 16, 36, 0.65);
+    border-color: rgba(255, 255, 255, 0.08);
+  }
+  .dark .glass-strong {
+    background-color: rgba(14, 12, 29, 0.88);
+    border-color: rgba(168, 85, 247, 0.15);
   }
   .text-gold { color: #F5C842; }
   .text-purple-altus { color: #A855F7; }

@@ -284,7 +284,7 @@ function Dashboard() {
   return (
     <div className="space-y-8">
       {/* Hero Brand Section (Fiel à foto anexada) */}
-      <div className="relative overflow-hidden rounded-3xl border border-purple-500/25 bg-gradient-to-b from-[#110D27]/90 via-[#0B091B]/95 to-[#07070F] p-6 md:p-10 shadow-2xl">
+      <div className="relative overflow-hidden rounded-3xl border bg-card/80 backdrop-blur-xl p-6 md:p-10 shadow-2xl">
         {/* Background Mountain Silhouette & Glow */}
         <div className="absolute right-0 bottom-0 pointer-events-none opacity-40 md:opacity-70 w-full max-w-lg h-full overflow-hidden flex items-end justify-end">
           <svg viewBox="0 0 500 300" className="w-full h-auto" fill="none">
