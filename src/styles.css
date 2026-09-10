@@ -149,7 +149,7 @@
   }
 
   body {
-    background-color: #07070F;
+    background-color: var(--background);
     color: var(--color-foreground);
     font-family: var(--font-sans);
     background-image:
@@ -157,6 +157,12 @@
       radial-gradient(ellipse 60% 50% at 90% 100%, rgba(139, 92, 246, 0.12), transparent 60%);
     background-attachment: fixed;
     min-height: 100vh;
+  }
+
+  :root body {
+    background-image:
+      radial-gradient(ellipse 90% 60% at 50% -10%, rgba(110, 56, 247, 0.08), transparent 70%),
+      radial-gradient(ellipse 60% 50% at 90% 100%, rgba(139, 92, 246, 0.04), transparent 60%);
   }
 
   h1, h2, h3, h4, h5, h6 {
