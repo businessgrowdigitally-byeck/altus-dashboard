@@ -1,12 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { useStore } from "@/lib/store";
+import { useStore, type TaxonomyScope } from "@/lib/store";
 import { GlassCard, PageHeader, Section } from "@/components/primitives";
-import { Modal } from "@/components/Modal";
+import { Modal, ConfirmButton } from "@/components/Modal";
 import { todayISO } from "@/lib/format";
+import { Pencil, Trash2 } from "lucide-react";
 import { Moon, Sun } from "lucide-react";
 import { toast } from "sonner";
 import { useT } from "@/lib/i18n";
+import { taxLabel, PREFIX } from "@/components/TaxonomySelect";
 
 export const Route = createFileRoute("/configuracoes")({ component: Config });
 
@@ -18,11 +20,13 @@ const ACCENTS = [
 ] as const;
 
 function Config() {
-  const { profile, setProfile, settings, setSettings, exportAll, importAll, clearAll } = useStore();
+  const { profile, setProfile, settings, setSettings, exportAll, importAll, clearAll, customTaxonomy, renameCustomItem, removeCustomItem } = useStore();
   const [importText, setImportText] = useState("");
   const [clearOpen, setClearOpen] = useState(false);
   const [clearConfirm, setClearConfirm] = useState("");
   const [backupFeito, setBackupFeito] = useState(false);
+  const [renameTarget, setRenameTarget] = useState<{ scope: TaxonomyScope; id: string; icon?: string } | null>(null);
+  const [renameValue, setRenameValue] = useState("");
   const t = useT();
 
   const download = () => {
@@ -68,6 +72,47 @@ function Config() {
     setBackupFeito(false);
     toast.success(t("config.toastCleared"));
   };
+
+  const confirmRename = () => {
+    if (!renameTarget) return;
+    const v = renameValue.trim();
+    if (!v) return;
+    renameCustomItem(renameTarget.scope, renameTarget.id, v);
+    setRenameTarget(null);
+    setRenameValue("");
+    toast.success(t("config.categorySaved"));
+  };
+
+  const sections: { scope: TaxonomyScope; label: string; items: string[]; icons?: Record<string, string> }[] = [
+    {
+      scope: "financeCategories",
+      label: t("config.categoryFinance"),
+      items: customTaxonomy.financeCategories.map((c) => c.id),
+      icons: Object.fromEntries(customTaxonomy.financeCategories.map((c) => [c.id, c.icon])),
+    },
+    {
+      scope: "studyAreas",
+      label: t("config.categoryStudyAreas"),
+      items: customTaxonomy.studyAreas,
+    },
+    {
+      scope: "studyTypes",
+      label: t("config.categoryStudyTypes"),
+      items: customTaxonomy.studyTypes.map((c) => c.id),
+      icons: Object.fromEntries(customTaxonomy.studyTypes.map((c) => [c.id, c.icon])),
+    },
+    {
+      scope: "genres",
+      label: t("config.categoryGenres"),
+      items: customTaxonomy.genres,
+    },
+    {
+      scope: "workoutTypes",
+      label: t("config.categoryWorkout"),
+      items: customTaxonomy.workoutTypes,
+    },
+  ];
+  const hasCustom = sections.some((s) => s.items.length > 0);
 
   return (
     <div>
@@ -217,6 +262,99 @@ function Config() {
               className="px-4 py-2 rounded-lg bg-coral text-white font-semibold text-sm hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {t("config.clearAll")}
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      <Section title={t("config.categories")}>
+        <GlassCard className="space-y-4">
+          <p className="text-xs text-muted-foreground">{t("config.categoriesHint")}</p>
+          {!hasCustom ? (
+            <p className="text-sm text-muted-foreground">{t("config.categoriesEmpty")}</p>
+          ) : (
+            <div className="space-y-5">
+              {sections.map((sec) => {
+                if (sec.items.length === 0) return null;
+                return (
+                  <div key={sec.scope}>
+                    <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+                      {sec.label}
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {sec.items.map((id) => (
+                        <div
+                          key={id}
+                          className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted/50 border border-border"
+                        >
+                          {sec.icons?.[id] && <span>{sec.icons[id]}</span>}
+                          <span className="text-sm">{taxLabel(t, PREFIX[sec.scope], id)}</span>
+                          <button
+                            onClick={() => {
+                              setRenameTarget({ scope: sec.scope, id, icon: sec.icons?.[id] });
+                              setRenameValue(id);
+                            }}
+                            title={t("action.edit")}
+                            className="text-muted-foreground hover:text-foreground p-1 rounded hover:bg-muted/80"
+                          >
+                            <Pencil size={13} />
+                          </button>
+                          <ConfirmButton
+                            onConfirm={() => {
+                              removeCustomItem(sec.scope, id);
+                              toast.success(t("config.categoryRemoved"));
+                            }}
+                            message={t("config.categoryConfirmRemove")}
+                            className="text-coral p-1 rounded hover:bg-muted/80"
+                          >
+                            <Trash2 size={13} />
+                          </ConfirmButton>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </GlassCard>
+      </Section>
+
+      <Modal
+        open={renameTarget !== null}
+        onClose={() => setRenameTarget(null)}
+        title={t("config.categoryRename")}
+      >
+        <div className="space-y-4">
+          {renameTarget && (
+            <div className="flex items-center gap-2 text-sm">
+              {renameTarget.icon && <span>{renameTarget.icon}</span>}
+              <span>{taxLabel(t, PREFIX[renameTarget.scope], renameTarget.id)}</span>
+            </div>
+          )}
+          <Field label={t("config.categoryRename")}>
+            <input
+              className="inp"
+              value={renameValue}
+              onChange={(e) => setRenameValue(e.target.value)}
+              autoFocus
+              autoComplete="off"
+            />
+          </Field>
+          <p className="text-xs text-muted-foreground">{t("config.categoryRenameHint")}</p>
+          <div className="flex justify-end gap-2 pt-1">
+            <button
+              onClick={() => setRenameTarget(null)}
+              className="px-4 py-2 rounded-lg border border-border text-sm hover:bg-muted/50 transition"
+            >
+              {t("config.cancel")}
+            </button>
+            <button
+              onClick={confirmRename}
+              disabled={!renameValue.trim()}
+              className="px-4 py-2 rounded-lg bg-gold text-[#0A0F1E] font-semibold text-sm hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              {t("action.save")}
             </button>
           </div>
         </div>

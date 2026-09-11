@@ -14,6 +14,52 @@ export const configuracoes = {
   },
   "config.data": { pt: "Dados", en: "Data", es: "Datos" },
   "config.appearance": { pt: "Aparência", en: "Appearance", es: "Apariencia" },
+  "config.categories": {
+    pt: "Categorias personalizadas",
+    en: "Custom categories",
+    es: "Categorías personalizadas",
+  },
+  "config.categoriesHint": {
+    pt: "Categorias que você criou nos campos com “+ Nova...”. Aqui você pode renomear ou remover. Os registros já feitos são atualizados ao renomear.",
+    en: "Categories you created in fields with “+ New...”. You can rename or remove them here. Existing records are updated when you rename.",
+    es: "Categorías que creaste en los campos con “+ Nueva...”. Aquí puedes renombrarlas o eliminarlas. Los registros existentes se actualizan al renombrar.",
+  },
+  "config.categoriesEmpty": {
+    pt: "Nenhuma categoria personalizada ainda.",
+    en: "No custom categories yet.",
+    es: "Aún no hay categorías personalizadas.",
+  },
+  "config.categoryRename": { pt: "Novo nome", en: "New name", es: "Nuevo nombre" },
+  "config.categoryRenameHint": {
+    pt: "O nome é salvo como você digitou — registros existentes são atualizados automaticamente.",
+    en: "The name is saved as typed — existing records are updated automatically.",
+    es: "El nombre se guarda tal como lo escribes — los registros existentes se actualizan automáticamente.",
+  },
+  "config.categorySaved": {
+    pt: "Categoria atualizada.",
+    en: "Category updated.",
+    es: "Categoría actualizada.",
+  },
+  "config.categoryRemoved": {
+    pt: "Categoria removida.",
+    en: "Category removed.",
+    es: "Categoría eliminada.",
+  },
+  "config.categoryConfirmRemove": {
+    pt: "Excluir esta categoria? Os registros existentes manterão o texto atual.",
+    en: "Remove this category? Existing records keep their current text.",
+    es: "¿Eliminar esta categoría? Los registros existentes conservan su texto actual.",
+  },
+  "config.categorySections": {
+    pt: "Categorias por área",
+    en: "Categories by area",
+    es: "Categorías por área",
+  },
+  "config.categoryFinance": { pt: "Finanças", en: "Finance", es: "Finanzas" },
+  "config.categoryStudyAreas": { pt: "Estudos — áreas", en: "Studies — areas", es: "Estudios — áreas" },
+  "config.categoryStudyTypes": { pt: "Estudos — formatos", en: "Studies — formats", es: "Estudios — formatos" },
+  "config.categoryGenres": { pt: "Biblioteca — gêneros", en: "Library — genres", es: "Biblioteca — géneros" },
+  "config.categoryWorkout": { pt: "Corpo — treinos", en: "Body — workouts", es: "Cuerpo — entrenamientos" },
 
   "config.name": { pt: "Nome", en: "Name", es: "Nombre" },
   "config.height": { pt: "Altura (m)", en: "Height (m)", es: "Altura (m)" },

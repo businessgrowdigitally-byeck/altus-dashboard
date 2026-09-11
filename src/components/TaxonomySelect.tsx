@@ -7,7 +7,7 @@ import { useT } from "@/lib/i18n";
 type Option = { id: string; icon?: string; label: string };
 export type { Option as TaxonomyOption };
 
-const PREFIX: Record<TaxonomyScope, string> = {
+export const PREFIX: Record<TaxonomyScope, string> = {
   financeCategories: "cat.",
   studyAreas: "area.",
   studyTypes: "studyType.",
