@@ -1,8 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useStore, type WeightEntry, type Workout } from "@/lib/store";
-import { daysAgoISO, fmtDate, kg, todayISO, WORKOUT_TYPES } from "@/lib/format";
+import { daysAgoISO, fmtDate, kg, todayISO } from "@/lib/format";
 import { GlassCard, KpiCard, PageHeader, Section } from "@/components/primitives";
+import { TaxonomySelect, taxLabel } from "@/components/TaxonomySelect";
 import { Pencil, Trash2 } from "lucide-react";
 import { Modal, ConfirmButton, inpCls, btnGold } from "@/components/Modal";
 import { useT } from "@/lib/i18n";
@@ -31,6 +32,7 @@ function Corpo() {
     addWorkout,
     updateWorkout,
     removeWorkout,
+    addCustomItem,
   } = useStore();
   const t = useT();
   const [filter, setFilter] = useState<"1M" | "3M" | "6M" | "1A" | "ALL">("3M");
@@ -289,17 +291,13 @@ function Corpo() {
                 onChange={(e) => setWo({ ...wo, date: e.target.value })}
                 required
               />
-              <select
-                className={inpCls}
+              <TaxonomySelect
+                scope="workoutTypes"
                 value={wo.type}
-                onChange={(e) => setWo({ ...wo, type: e.target.value })}
-              >
-                {WORKOUT_TYPES.map((wt) => (
-                  <option key={wt} value={wt}>
-                    {t("workout." + wt)}
-                  </option>
-                ))}
-              </select>
+                onChange={(v) => setWo({ ...wo, type: v })}
+                onAdd={addCustomItem}
+                className={inpCls}
+              />
               <input
                 className={inpCls}
                 type="number"
@@ -327,7 +325,7 @@ function Corpo() {
                   className="group flex items-center justify-between p-2.5 rounded-lg hover:bg-muted/50 transition border border-transparent hover:border-border"
                 >
                   <div>
-                    <div className="text-sm font-medium">{t("workout." + w.type)}</div>
+                    <div className="text-sm font-medium">{taxLabel(t, "workout.", w.type)}</div>
                     <div className="text-xs text-muted-foreground">
                       {fmtDate(w.date)} • {w.duration}min {w.notes ? `• ${w.notes}` : ""}
                     </div>
@@ -453,13 +451,13 @@ function Corpo() {
               <label className="text-xs text-muted-foreground block mb-1">
                 {t("corpo.tipoDeTreino")}
               </label>
-              <select name="type" defaultValue={editingWorkout.type} className={inpCls}>
-                {WORKOUT_TYPES.map((wt) => (
-                  <option key={wt} value={wt}>
-                    {t("workout." + wt)}
-                  </option>
-                ))}
-              </select>
+              <TaxonomySelect
+                  scope="workoutTypes"
+                  name="type"
+                  defaultValue={editingWorkout.type}
+                  onAdd={addCustomItem}
+                  className={inpCls}
+                />
             </div>
             <div>
               <label className="text-xs text-muted-foreground block mb-1">

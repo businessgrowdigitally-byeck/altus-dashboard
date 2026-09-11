@@ -1,9 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useStore, type StudyEntry } from "@/lib/store";
-import { daysAgoISO, fmtDate, STUDY_AREAS, STUDY_TYPES, todayISO } from "@/lib/format";
+import { daysAgoISO, fmtDate, STUDY_TYPES, todayISO } from "@/lib/format";
 import { useT } from "@/lib/i18n";
 import { GlassCard, KpiCard, PageHeader, Section } from "@/components/primitives";
+import { TaxonomySelect, taxLabel, useTaxonomyOptions } from "@/components/TaxonomySelect";
 import { Pencil, Trash2, Search } from "lucide-react";
 import { Modal, ConfirmButton, inpCls, btnGold } from "@/components/Modal";
 import { toast } from "sonner";
@@ -15,13 +16,14 @@ type Tab = "trilhas" | "calendario" | "insights" | "diario";
 
 function Estudos() {
   const t = useT();
-  const { studies, addStudy, updateStudy, removeStudy } = useStore();
+  const { studies, addStudy, updateStudy, removeStudy, addCustomItem, customTaxonomy } = useStore();
   const [page, setPage] = useState(1);
   const [editingStudy, setEditingStudy] = useState<StudyEntry | null>(null);
   const [activeTab, setActiveTab] = useState<Tab>("trilhas");
   const [search, setSearch] = useState("");
   const [filterArea, setFilterArea] = useState("Todos");
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const studyAreaOptions = useTaxonomyOptions("studyAreas");
 
   const month = todayISO().slice(0, 7);
   const monthEntries = studies.filter((s) => s.date.startsWith(month));
@@ -180,8 +182,8 @@ function Estudos() {
           }}
         >
           <option value="Todos">{t("estudos.filterAll")}</option>
-          {STUDY_AREAS.map((a) => (
-            <option key={a} value={a}>{t("area." + a)}</option>
+          {studyAreaOptions.map((a) => (
+            <option key={a.id} value={a.id}>{a.label}</option>
           ))}
         </select>
       </div>
@@ -217,7 +219,7 @@ function Estudos() {
                 <GlassCard key={g.area} className="space-y-3">
                   <div className="flex items-center justify-between">
                     <h3 className="font-semibold flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-full bg-gold" /> {t("area." + g.area)}
+                      <span className="w-2 h-2 rounded-full bg-gold" /> {taxLabel(t, "area.", g.area)}
                     </h3>
                     <span className="text-xs px-2 py-1 rounded-full bg-gold/20 text-gold">{t("estudos.totalHoras", { h: g.totalHoras.toFixed(1) })}</span>
                   </div>
@@ -290,7 +292,7 @@ function Estudos() {
                   {selectedDayStudies.map((s) => (
                     <div key={s.id} className="p-3 rounded-xl bg-muted/50 border border-border">
                       <div className="font-medium text-sm">{s.topic}</div>
-                      <div className="text-xs text-muted-foreground">{t("area." + s.area)} • {s.duration}min • {t("studyType." + s.type)}</div>
+                      <div className="text-xs text-muted-foreground">{taxLabel(t, "area.", s.area)} • {s.duration}min • {taxLabel(t, "studyType.", s.type)}</div>
                       {s.learned && <p className="text-xs mt-1 whitespace-pre-wrap">{s.learned}</p>}
                     </div>
                   ))}
@@ -305,7 +307,7 @@ function Estudos() {
               {insightsBank.map((s) => (
                 <GlassCard key={s.id} className="!p-4 hover:border-gold/30 transition">
                   <div className="flex items-center gap-2 mb-2">
-                    <span className="text-xs px-2 py-0.5 rounded-full bg-gold/20 text-gold">{t("area." + s.area)}</span>
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-gold/20 text-gold">{taxLabel(t, "area.", s.area)}</span>
                     <span className="text-xs text-muted-foreground">{fmtDate(s.date)} • {s.topic}</span>
                   </div>
                   {s.learned && <p className="text-sm whitespace-pre-wrap">{s.learned}</p>}
@@ -324,7 +326,8 @@ function Estudos() {
                     <div className="text-xs text-muted-foreground mb-2 uppercase tracking-wider">{fmtDate(date)}</div>
                     <div className="space-y-2">
                       {items.map((s) => {
-                        const icon = STUDY_TYPES.find((x) => x.id === s.type)?.icon || "📚";
+                        const icon = STUDY_TYPES.find((x) => x.id === s.type)?.icon || customTaxonomy.studyTypes.find((x) => x.id === s.type)?.icon || "📚";
+                        const areaLabel = studyAreaOptions.find((a) => a.id === s.area)?.label ?? s.area;
                         return (
                           <GlassCard key={s.id} className="!p-4 group hover:border-gold/30 transition">
                             <div className="flex items-start gap-3">
@@ -333,7 +336,7 @@ function Estudos() {
                                 <div className="flex items-center justify-between gap-2">
                                   <div className="flex items-center gap-2 flex-wrap">
                                     <h4 className="font-semibold">{s.topic}</h4>
-                                    <span className="text-xs px-2 py-0.5 rounded-full bg-muted/60">{t("area." + s.area)}</span>
+                                    <span className="text-xs px-2 py-0.5 rounded-full bg-muted/60">{areaLabel}</span>
                                     <span className="text-xs px-2 py-0.5 rounded-full bg-muted/60">{s.duration}min</span>
                                     {s.status === "concluido" ? (
                                       <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-bgt/20 text-emerald-bgt">{t("estudos.statusConcluido")}</span>
@@ -384,19 +387,23 @@ function Estudos() {
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="text-xs text-muted-foreground block mb-1">{t("estudos.area")}</label>
-                  <select className={inpCls} value={form.area} onChange={(e) => setForm({ ...form, area: e.target.value })}>
-                    {STUDY_AREAS.map((a) => (
-                      <option key={a} value={a}>{t("area." + a)}</option>
-                    ))}
-                  </select>
+                  <TaxonomySelect
+                    scope="studyAreas"
+                    value={form.area}
+                    onChange={(v) => setForm({ ...form, area: v })}
+                    onAdd={addCustomItem}
+                    className={inpCls}
+                  />
                 </div>
                 <div>
                   <label className="text-xs text-muted-foreground block mb-1">{t("estudos.formato")}</label>
-                  <select className={inpCls} value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}>
-                    {STUDY_TYPES.map((st) => (
-                      <option key={st.id} value={st.id}>{st.icon} {t("studyType." + st.id)}</option>
-                    ))}
-                  </select>
+                  <TaxonomySelect
+                    scope="studyTypes"
+                    value={form.type}
+                    onChange={(v) => setForm({ ...form, type: v })}
+                    onAdd={addCustomItem}
+                    className={inpCls}
+                  />
                 </div>
               </div>
               <div>
@@ -496,19 +503,23 @@ function Estudos() {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="text-xs text-muted-foreground block mb-1">{t("estudos.area")}</label>
-                <select name="area" defaultValue={editingStudy.area} className={inpCls}>
-                  {STUDY_AREAS.map((a) => (
-                    <option key={a} value={a}>{t("area." + a)}</option>
-                  ))}
-                </select>
+                <TaxonomySelect
+                  scope="studyAreas"
+                  name="area"
+                  defaultValue={editingStudy.area}
+                  onAdd={addCustomItem}
+                  className={inpCls}
+                />
               </div>
               <div>
                 <label className="text-xs text-muted-foreground block mb-1">{t("estudos.formato")}</label>
-                <select name="type" defaultValue={editingStudy.type} className={inpCls}>
-                  {STUDY_TYPES.map((st) => (
-                    <option key={st.id} value={st.id}>{st.icon} {t("studyType." + st.id)}</option>
-                  ))}
-                </select>
+                <TaxonomySelect
+                  scope="studyTypes"
+                  name="type"
+                  defaultValue={editingStudy.type}
+                  onAdd={addCustomItem}
+                  className={inpCls}
+                />
               </div>
             </div>
             <div>

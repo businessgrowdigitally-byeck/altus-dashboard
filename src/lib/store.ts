@@ -107,6 +107,27 @@ export type KaizenEntry = {
   updatedAt: string;
 };
 
+/** Itens customizados adicionados pelo usuário em cada dropdown de taxonomia. */
+export type CustomTaxonomy = {
+  financeCategories: { id: string; icon: string }[];
+  studyAreas: string[];
+  studyTypes: { id: string; icon: string }[];
+  genres: string[];
+  workoutTypes: string[];
+};
+
+export type TextTaxonomyScope = "studyAreas" | "genres" | "workoutTypes";
+export type IconTaxonomyScope = "financeCategories" | "studyTypes";
+export type TaxonomyScope = TextTaxonomyScope | IconTaxonomyScope;
+
+export const EMPTY_CUSTOM_TAXONOMY: CustomTaxonomy = {
+  financeCategories: [],
+  studyAreas: [],
+  studyTypes: [],
+  genres: [],
+  workoutTypes: [],
+};
+
 type State = {
   version: number;
   profile: Profile;
@@ -121,6 +142,7 @@ type State = {
   goalsDaily: GoalDaily[];
   completions: DailyCompletion[];
   kaizen: KaizenEntry[];
+  customTaxonomy: CustomTaxonomy;
 
   addTransaction: (t: Omit<Transaction, "id">) => void;
   updateTransaction: (id: string, patch: Partial<Omit<Transaction, "id">>) => void;
@@ -148,6 +170,7 @@ type State = {
   updateKaizen: (id: string, patch: Partial<Omit<KaizenEntry, "id">>) => void;
   removeKaizen: (id: string) => void;
   upsertKaizenByDate: (date: string, data: Pick<KaizenEntry, "improvedToday" | "improveTomorrow" | "notes">) => void;
+  addCustomItem: (scope: TaxonomyScope, value: string) => void;
   recomputeLinkedGoals: () => void;
   pushChat: (m: ChatMsg) => void;
   updateLastAssistant: (content: string) => void;
@@ -237,12 +260,13 @@ const initial = {
   goalsDaily: sampleGoalsDaily,
   completions: [] as DailyCompletion[],
   kaizen: [] as KaizenEntry[],
+  customTaxonomy: EMPTY_CUSTOM_TAXONOMY,
 };
 
 /** Campos que são sincronizados com a nuvem (tudo menos as funções do store). */
 export const SYNC_KEYS = [
   "version", "profile", "settings", "transactions", "weights", "workouts",
-  "books", "studies", "chat", "goalsMacro", "goalsDaily", "completions", "kaizen",
+  "books", "studies", "chat", "goalsMacro", "goalsDaily", "completions", "kaizen", "customTaxonomy",
 ] as const;
 
 /** Estado de uma conta recém-criada: sem nenhum dado de exemplo. */
@@ -258,6 +282,7 @@ export const emptyState = {
   goalsDaily: [] as GoalDaily[],
   completions: [] as DailyCompletion[],
   kaizen: [] as KaizenEntry[],
+  customTaxonomy: EMPTY_CUSTOM_TAXONOMY,
   // Conta nova não tem altura: o card de IMC só aparece depois que a pessoa informa.
   profile: { ...initial.profile, name: "", height: 0 },
 };
@@ -324,6 +349,20 @@ export const useStore = create<State>()(
           return { kaizen: s.kaizen.map((k) => k.date === date ? { ...k, ...data, updatedAt: new Date().toISOString() } : k) };
         }
         return { kaizen: [{ id: uid(), date, ...data, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }, ...s.kaizen] };
+      }),
+      addCustomItem: (scope, value) => set((s) => {
+        const trimmed = value.trim();
+        if (!trimmed) return s;
+        const tax = s.customTaxonomy;
+        if (scope === "financeCategories" || scope === "studyTypes") {
+          const list = tax[scope] as { id: string; icon: string }[];
+          if (list.some((x) => x.id === trimmed)) return s;
+          const icon = scope === "financeCategories" ? "🏷️" : "📘";
+          return { customTaxonomy: { ...tax, [scope]: [{ id: trimmed, icon }, ...list] } };
+        }
+        const lst = tax[scope] as string[];
+        if (lst.includes(trimmed)) return s;
+        return { customTaxonomy: { ...tax, [scope]: [trimmed, ...lst] } };
       }),
       recomputeLinkedGoals: () => set((s) => ({ goalsMacro: recomputeGoals(s) })),
       pushChat: (m) => set((s) => ({ chat: [...s.chat, m] })),

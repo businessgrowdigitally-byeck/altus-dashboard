@@ -141,4 +141,7 @@ export const common = {
   "greeting.morning": { pt: "Bom dia", en: "Good morning", es: "Buenos días" },
   "greeting.afternoon": { pt: "Boa tarde", en: "Good afternoon", es: "Buenas tardes" },
   "greeting.evening": { pt: "Boa noite", en: "Good evening", es: "Buenas noches" },
+
+  "taxonomy.addNew": { pt: "➕ Nova...", en: "➕ New...", es: "➕ Nueva..." },
+  "taxonomy.newPlaceholder": { pt: "Nome da nova", en: "New item name", es: "Nombre del nuevo" },
 } as const;

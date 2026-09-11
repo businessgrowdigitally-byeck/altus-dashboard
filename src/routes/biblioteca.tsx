@@ -1,8 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useStore, type Book } from "@/lib/store";
-import { fmtDate, GENRES, todayISO } from "@/lib/format";
+import { fmtDate, todayISO } from "@/lib/format";
 import { GlassCard, KpiCard, PageHeader, Section } from "@/components/primitives";
+import { TaxonomySelect, useTaxonomyOptions } from "@/components/TaxonomySelect";
 import { Star, Trash2, Pencil, BookOpen, Eye } from "lucide-react";
 import { Modal, ConfirmButton, inpCls, btnGold } from "@/components/Modal";
 import { toast } from "sonner";
@@ -34,9 +35,10 @@ const GENRE_COLORS: Record<string, string> = {
 
 function Biblioteca() {
   const t = useT();
-  const { books, addBook, updateBook, removeBook } = useStore();
+  const { books, addBook, updateBook, removeBook, addCustomItem } = useStore();
   const [editingBook, setEditingBook] = useState<Book | null>(null);
   const [viewingBook, setViewingBook] = useState<Book | null>(null);
+  const genreOptions = useTaxonomyOptions("genres");
 
   const [form, setForm] = useState({
     title: "",
@@ -173,17 +175,13 @@ function Biblioteca() {
               value={form.pages}
               onChange={(e) => setForm({ ...form, pages: e.target.value })}
             />
-            <select
-              className={inpCls}
+            <TaxonomySelect
+              scope="genres"
               value={form.genre}
-              onChange={(e) => setForm({ ...form, genre: e.target.value })}
-            >
-              {GENRES.map((g) => (
-                <option key={g} value={g}>
-                  {t(`genre.${g}`)}
-                </option>
-              ))}
-            </select>
+              onChange={(v) => setForm({ ...form, genre: v })}
+              onAdd={addCustomItem}
+              className={inpCls}
+            />
             <input
               className={inpCls}
               type="date"
@@ -243,9 +241,9 @@ function Biblioteca() {
           onChange={(e) => setFilterGenre(e.target.value)}
         >
           <option value="Todos">{t("common.all")}</option>
-          {GENRES.map((g) => (
-            <option key={g} value={g}>
-              {t(`genre.${g}`)}
+          {genreOptions.map((g) => (
+            <option key={g.id} value={g.id}>
+              {g.label}
             </option>
           ))}
         </select>
@@ -525,13 +523,13 @@ function Biblioteca() {
                 <label className="text-xs text-muted-foreground block mb-1">
                   {t("biblioteca.genre")}
                 </label>
-                <select name="genre" defaultValue={editingBook.genre} className={inpCls}>
-                  {GENRES.map((g) => (
-                    <option key={g} value={g}>
-                      {t(`genre.${g}`)}
-                    </option>
-                  ))}
-                </select>
+                <TaxonomySelect
+                  scope="genres"
+                  name="genre"
+                  defaultValue={editingBook.genre}
+                  onAdd={addCustomItem}
+                  className={inpCls}
+                />
               </div>
               <div>
                 <label className="text-xs text-muted-foreground block mb-1">

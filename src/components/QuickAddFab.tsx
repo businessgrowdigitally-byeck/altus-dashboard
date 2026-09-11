@@ -2,9 +2,10 @@ import { useState } from "react";
 import { Plus, Wallet, HeartPulse, BookOpen, GraduationCap, Dumbbell, Check } from "lucide-react";
 import { Modal, inpCls, btnGold } from "./Modal";
 import { useStore } from "@/lib/store";
-import { todayISO, CATEGORIES, WORKOUT_TYPES, STUDY_AREAS, GENRES } from "@/lib/format";
+import { todayISO } from "@/lib/format";
 import { toast } from "sonner";
 import { useT } from "@/lib/i18n";
+import { TaxonomySelect } from "./TaxonomySelect";
 
 type QuickActionType = "menu" | "transaction" | "weight" | "workout" | "study" | "book";
 
@@ -13,7 +14,7 @@ export function QuickAddFab() {
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
   const t = useT();
-  const { addTransaction, addWeight, addWorkout, addStudy, addBook } = useStore();
+  const { addTransaction, addWeight, addWorkout, addStudy, addBook, addCustomItem } = useStore();
 
   const showFeedback = (msg: string) => {
     setSuccessMsg(msg);
@@ -151,13 +152,12 @@ export function QuickAddFab() {
               <label className="text-xs text-muted-foreground block mb-1">
                 {t("quickAdd.category")}
               </label>
-              <select name="category" className={inpCls}>
-                {CATEGORIES.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.icon} {t("cat." + c.id)}
-                  </option>
-                ))}
-              </select>
+              <TaxonomySelect
+                  scope="financeCategories"
+                  name="category"
+                  onAdd={addCustomItem}
+                  className={inpCls}
+                />
             </div>
             <div>
               <label className="text-xs text-muted-foreground block mb-1">
@@ -287,13 +287,12 @@ export function QuickAddFab() {
               <label className="text-xs text-muted-foreground block mb-1">
                 {t("quickAdd.workoutType")}
               </label>
-              <select name="type" className={inpCls}>
-                {WORKOUT_TYPES.map((w) => (
-                  <option key={w} value={w}>
-                    {t("workout." + w)}
-                  </option>
-                ))}
-              </select>
+              <TaxonomySelect
+                  scope="workoutTypes"
+                  name="type"
+                  onAdd={addCustomItem}
+                  className={inpCls}
+                />
             </div>
             <div>
               <label className="text-xs text-muted-foreground block mb-1">
@@ -395,13 +394,12 @@ export function QuickAddFab() {
                 <label className="text-xs text-muted-foreground block mb-1">
                   {t("quickAdd.area")}
                 </label>
-                <select name="area" className={inpCls}>
-                  {STUDY_AREAS.map((a) => (
-                    <option key={a} value={a}>
-                      {t("area." + a)}
-                    </option>
-                  ))}
-                </select>
+                <TaxonomySelect
+                  scope="studyAreas"
+                  name="area"
+                  onAdd={addCustomItem}
+                  className={inpCls}
+                />
               </div>
               <div>
                 <label className="text-xs text-muted-foreground block mb-1">
@@ -496,13 +494,12 @@ export function QuickAddFab() {
                 <label className="text-xs text-muted-foreground block mb-1">
                   {t("quickAdd.genre")}
                 </label>
-                <select name="genre" className={inpCls}>
-                  {GENRES.map((g) => (
-                    <option key={g} value={g}>
-                      {t("genre." + g)}
-                    </option>
-                  ))}
-                </select>
+                <TaxonomySelect
+                  scope="genres"
+                  name="genre"
+                  onAdd={addCustomItem}
+                  className={inpCls}
+                />
               </div>
               <div>
                 <label className="text-xs text-muted-foreground block mb-1">
