@@ -11,9 +11,9 @@ const AREAS: GoalArea[] = ["Finanças", "Corpo & Saúde", "Biblioteca", "Estudos
 const AREA_COLORS: Record<GoalArea, string> = {
   Finanças: "bg-gold/20 text-gold",
   "Corpo & Saúde": "bg-emerald-bgt/20 text-emerald-bgt",
-  Biblioteca: "bg-purple-500/20 text-purple-300",
-  Estudos: "bg-blue-500/20 text-blue-300",
-  Geral: "bg-white/10 text-white",
+  Biblioteca: "bg-purple-500/20 text-purple-700 dark:text-purple-300",
+  Estudos: "bg-blue-500/20 text-blue-700 dark:text-blue-300",
+  Geral: "bg-secondary/60 text-muted-foreground",
 };
 
 function areaT(t: (k: string, v?: Record<string, string | number>) => string, area: GoalArea) {
@@ -27,16 +27,16 @@ export function GoalsSection() {
     <section className="mt-8">
       <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
         <h2 className="font-display text-xl font-semibold">{t("goals.title")}</h2>
-        <div className="flex rounded-xl border border-white/10 overflow-hidden text-sm">
+        <div className="flex rounded-xl border border-border overflow-hidden text-sm">
           <button
             onClick={() => setTab("macro")}
-            className={`px-4 py-2 ${tab === "macro" ? "bg-gold text-[#0A0F1E] font-semibold" : "hover:bg-white/5"}`}
+            className={`px-4 py-2 ${tab === "macro" ? "bg-gold text-[#0A0F1E] font-semibold" : "hover:bg-muted/50"}`}
           >
             {t("goals.tabMacro")}
           </button>
           <button
             onClick={() => setTab("daily")}
-            className={`px-4 py-2 ${tab === "daily" ? "bg-gold text-[#0A0F1E] font-semibold" : "hover:bg-white/5"}`}
+            className={`px-4 py-2 ${tab === "daily" ? "bg-gold text-[#0A0F1E] font-semibold" : "hover:bg-muted/50"}`}
           >
             {t("goals.tabDaily")}
           </button>
@@ -115,13 +115,13 @@ function MacroTab() {
                 <div className="flex gap-1 opacity-0 group-hover:opacity-100 md:opacity-0 transition">
                   <button
                     onClick={() => setEditing(g)}
-                    className="p-1.5 rounded hover:bg-white/10 text-muted-foreground"
+                    className="p-1.5 rounded hover:bg-muted/80 text-muted-foreground"
                   >
                     <Pencil size={14} />
                   </button>
                   <ConfirmButton
                     onConfirm={() => removeGoalMacro(g.id)}
-                    className="p-1.5 rounded hover:bg-white/10 text-coral"
+                    className="p-1.5 rounded hover:bg-muted/80 text-coral"
                   >
                     <Trash2 size={14} />
                   </ConfirmButton>
@@ -133,7 +133,7 @@ function MacroTab() {
                 </span>
                 <span>{pct.toFixed(0)}%</span>
               </div>
-              <div className="h-2 bg-white/5 rounded-full overflow-hidden">
+              <div className="h-2 bg-muted/50 rounded-full overflow-hidden">
                 <div
                   className="h-full bg-gold rounded-full transition-all"
                   style={{ width: `${pct}%` }}
@@ -324,7 +324,7 @@ function MacroFormModal({
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 rounded-lg border border-white/10 text-sm"
+            className="px-4 py-2 rounded-lg border border-border text-sm"
           >
             {t("goals.cancelar")}
           </button>
@@ -411,7 +411,7 @@ function DailyTab() {
         </div>
       </div>
 
-      <div className="h-2 bg-white/5 rounded-full overflow-hidden">
+      <div className="h-2 bg-muted/50 rounded-full overflow-hidden">
         <div
           className="h-full bg-gold transition-all"
           style={{ width: `${todayActions.length ? (completed / todayActions.length) * 100 : 0}%` }}
@@ -432,7 +432,7 @@ function DailyTab() {
                 className={`px-3 py-1.5 rounded-lg text-xs transition border ${
                   active
                     ? "bg-gold text-[#0A0F1E] font-semibold border-gold"
-                    : "bg-white/5 hover:bg-white/10 border-white/10"
+                    : "bg-muted/50 hover:bg-muted/80 border-border"
                 } ${isToday ? "ring-1 ring-gold/40" : ""}`}
                 title={isToday ? "Hoje" : undefined}
               >
@@ -460,17 +460,17 @@ function DailyTab() {
           return (
             <div
               key={a.id}
-              className={`group flex items-center gap-3 p-2 rounded-lg hover:bg-white/5 transition ${done ? "opacity-50" : ""}`}
+              className={`group flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 transition ${done ? "opacity-50" : ""}`}
             >
               {isViewingToday ? (
                 <button
                   onClick={() => toggleCompletion(a.id, today)}
-                  className={`w-6 h-6 rounded-md border-2 flex items-center justify-center transition shrink-0 ${done ? "bg-emerald-bgt border-emerald-bgt" : "border-white/20 hover:border-gold"}`}
+                  className={`w-6 h-6 rounded-md border-2 flex items-center justify-center transition shrink-0 ${done ? "bg-emerald-bgt border-emerald-bgt" : "border-border hover:border-gold"}`}
                 >
                   {done && <Check size={14} className="text-black" />}
                 </button>
               ) : (
-                <div className="w-6 h-6 rounded-md border border-white/10 bg-white/5 shrink-0" title={t("goals.viewRoutine")} />
+                <div className="w-6 h-6 rounded-md border border-border bg-muted/50 shrink-0" title={t("goals.viewRoutine")} />
               )}
               <div className="flex-1 min-w-0">
                 <div className={`text-sm ${done ? "line-through" : ""}`}>{a.name}</div>
@@ -488,13 +488,13 @@ function DailyTab() {
               <div className="flex gap-1 opacity-0 group-hover:opacity-100 md:opacity-0 transition">
                 <button
                   onClick={() => setEditing(a)}
-                  className="p-1.5 rounded hover:bg-white/10 text-muted-foreground"
+                  className="p-1.5 rounded hover:bg-muted/80 text-muted-foreground"
                 >
                   <Pencil size={14} />
                 </button>
                 <ConfirmButton
                   onConfirm={() => removeGoalDaily(a.id)}
-                  className="p-1.5 rounded hover:bg-white/10 text-coral"
+                  className="p-1.5 rounded hover:bg-muted/80 text-coral"
                 >
                   <Trash2 size={14} />
                 </ConfirmButton>
@@ -634,7 +634,7 @@ function DailyFormModal({
                         : [...f.daysOfWeek, i],
                     })
                   }
-                  className={`px-3 py-1.5 rounded-lg text-xs transition ${active ? "bg-gold text-[#0A0F1E] font-semibold" : "bg-white/5 hover:bg-white/10"}`}
+                  className={`px-3 py-1.5 rounded-lg text-xs transition ${active ? "bg-gold text-[#0A0F1E] font-semibold" : "bg-muted/50 hover:bg-muted/80"}`}
                 >
                   {d}
                 </button>
@@ -661,7 +661,7 @@ function DailyFormModal({
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 rounded-lg border border-white/10 text-sm"
+            className="px-4 py-2 rounded-lg border border-border text-sm"
           >
             {t("goals.cancelar")}
           </button>
@@ -799,7 +799,7 @@ function Heatmap() {
           </p>
         </div>
         <div className="flex items-center gap-4 text-xs">
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white/5 border border-white/10">
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-muted/50 border border-border">
             <span className="text-gold font-bold">⚡ {stats.currentStreak}d</span>
             <span className="text-muted-foreground">{t("goals.streakAtual")}</span>
           </div>
@@ -859,7 +859,7 @@ function Heatmap() {
       </div>
 
       {hoveredDay && (
-        <div className="text-xs bg-white/5 border border-white/10 rounded-lg p-2.5 flex items-center justify-between text-muted-foreground animate-fadeIn">
+        <div className="text-xs bg-muted/50 border border-border rounded-lg p-2.5 flex items-center justify-between text-muted-foreground animate-fadeIn">
           <div>
             <span className="font-semibold text-foreground">{hoveredDay.date}</span>:{" "}
             {t("goals.hover", {

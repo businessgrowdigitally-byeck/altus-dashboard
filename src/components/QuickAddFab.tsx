@@ -49,35 +49,35 @@ export function QuickAddFab() {
         <div className="grid grid-cols-2 gap-3">
           <button
             onClick={() => setCurrentModal("transaction")}
-            className="glass rounded-xl p-4 flex flex-col items-center gap-2 hover:border-gold/40 hover:bg-white/10 transition text-center"
+            className="glass rounded-xl p-4 flex flex-col items-center gap-2 hover:border-gold/40 hover:bg-muted/80 transition text-center"
           >
             <span className="text-3xl">💰</span>
             <span className="text-sm font-medium">{t("quickAdd.transaction")}</span>
           </button>
           <button
             onClick={() => setCurrentModal("weight")}
-            className="glass rounded-xl p-4 flex flex-col items-center gap-2 hover:border-emerald-bgt/40 hover:bg-white/10 transition text-center"
+            className="glass rounded-xl p-4 flex flex-col items-center gap-2 hover:border-emerald-bgt/40 hover:bg-muted/80 transition text-center"
           >
             <span className="text-3xl">⚖️</span>
             <span className="text-sm font-medium">{t("quickAdd.weight")}</span>
           </button>
           <button
             onClick={() => setCurrentModal("workout")}
-            className="glass rounded-xl p-4 flex flex-col items-center gap-2 hover:border-purple-500/40 hover:bg-white/10 transition text-center"
+            className="glass rounded-xl p-4 flex flex-col items-center gap-2 hover:border-purple-500/40 hover:bg-muted/80 transition text-center"
           >
             <span className="text-3xl">💪</span>
             <span className="text-sm font-medium">{t("quickAdd.workout")}</span>
           </button>
           <button
             onClick={() => setCurrentModal("study")}
-            className="glass rounded-xl p-4 flex flex-col items-center gap-2 hover:border-blue-500/40 hover:bg-white/10 transition text-center"
+            className="glass rounded-xl p-4 flex flex-col items-center gap-2 hover:border-blue-500/40 hover:bg-muted/80 transition text-center"
           >
             <span className="text-3xl">🎓</span>
             <span className="text-sm font-medium">{t("quickAdd.study")}</span>
           </button>
           <button
             onClick={() => setCurrentModal("book")}
-            className="glass rounded-xl p-4 flex flex-col items-center gap-2 hover:border-amber-500/40 hover:bg-white/10 transition text-center col-span-2"
+            className="glass rounded-xl p-4 flex flex-col items-center gap-2 hover:border-amber-500/40 hover:bg-muted/80 transition text-center col-span-2"
           >
             <span className="text-3xl">📚</span>
             <span className="text-sm font-medium">{t("quickAdd.book")}</span>
@@ -112,12 +112,12 @@ export function QuickAddFab() {
             }}
             className="space-y-3"
           >
-            <div className="flex rounded-lg overflow-hidden border border-white/10">
-              <label className="flex-1 text-center py-2 text-sm font-medium cursor-pointer bg-white/5 has-[:checked]:bg-emerald-bgt has-[:checked]:text-black transition">
+            <div className="flex rounded-lg overflow-hidden border border-border">
+              <label className="flex-1 text-center py-2 text-sm font-medium cursor-pointer bg-muted/50 has-[:checked]:bg-emerald-bgt has-[:checked]:text-black transition">
                 <input type="radio" name="type" value="entrada" className="sr-only" />
                 {t("quickAdd.entrada")}
               </label>
-              <label className="flex-1 text-center py-2 text-sm font-medium cursor-pointer bg-white/5 has-[:checked]:bg-coral has-[:checked]:text-white transition">
+              <label className="flex-1 text-center py-2 text-sm font-medium cursor-pointer bg-muted/50 has-[:checked]:bg-coral has-[:checked]:text-white transition">
                 <input type="radio" name="type" value="saida" defaultChecked className="sr-only" />
                 {t("quickAdd.saida")}
               </label>
@@ -175,7 +175,7 @@ export function QuickAddFab() {
               <button
                 type="button"
                 onClick={() => setCurrentModal("menu")}
-                className="px-4 py-2 rounded-lg border border-white/10 text-sm"
+                className="px-4 py-2 rounded-lg border border-border text-sm"
               >
                 {t("quickAdd.back")}
               </button>
@@ -249,7 +249,7 @@ export function QuickAddFab() {
               <button
                 type="button"
                 onClick={() => setCurrentModal("menu")}
-                className="px-4 py-2 rounded-lg border border-white/10 text-sm"
+                className="px-4 py-2 rounded-lg border border-border text-sm"
               >
                 {t("quickAdd.back")}
               </button>
@@ -335,7 +335,7 @@ export function QuickAddFab() {
               <button
                 type="button"
                 onClick={() => setCurrentModal("menu")}
-                className="px-4 py-2 rounded-lg border border-white/10 text-sm"
+                className="px-4 py-2 rounded-lg border border-border text-sm"
               >
                 {t("quickAdd.back")}
               </button>
@@ -431,7 +431,7 @@ export function QuickAddFab() {
               <button
                 type="button"
                 onClick={() => setCurrentModal("menu")}
-                className="px-4 py-2 rounded-lg border border-white/10 text-sm"
+                className="px-4 py-2 rounded-lg border border-border text-sm"
               >
                 {t("quickAdd.back")}
               </button>
@@ -533,7 +533,7 @@ export function QuickAddFab() {
               <button
                 type="button"
                 onClick={() => setCurrentModal("menu")}
-                className="px-4 py-2 rounded-lg border border-white/10 text-sm"
+                className="px-4 py-2 rounded-lg border border-border text-sm"
               >
                 {t("quickAdd.back")}
               </button>

@@ -112,7 +112,7 @@ function Financas() {
             type="month"
             value={monthSel}
             onChange={(e) => setMonthSel(e.target.value)}
-            className="bg-secondary border border-white/10 rounded-lg px-3 py-2 text-sm"
+            className="bg-secondary border border-border rounded-lg px-3 py-2 text-sm"
           />
         }
       />
@@ -158,18 +158,18 @@ function Financas() {
         <GlassCard>
           <h3 className="font-display font-semibold mb-4">{t("financas.register")}</h3>
           <form onSubmit={submit} className="space-y-3">
-            <div className="flex rounded-lg overflow-hidden border border-white/10">
+            <div className="flex rounded-lg overflow-hidden border border-border">
               <button
                 type="button"
                 onClick={() => setForm({ ...form, type: "entrada" })}
-                className={`flex-1 py-2 text-sm font-medium transition ${form.type === "entrada" ? "bg-emerald-bgt text-black" : "hover:bg-white/5"}`}
+                className={`flex-1 py-2 text-sm font-medium transition ${form.type === "entrada" ? "bg-emerald-bgt text-black" : "hover:bg-muted/50"}`}
               >
                 {t("financas.entrada")}
               </button>
               <button
                 type="button"
                 onClick={() => setForm({ ...form, type: "saida" })}
-                className={`flex-1 py-2 text-sm font-medium transition ${form.type === "saida" ? "bg-coral text-white" : "hover:bg-white/5"}`}
+                className={`flex-1 py-2 text-sm font-medium transition ${form.type === "saida" ? "bg-coral text-white" : "hover:bg-muted/50"}`}
               >
                 {t("financas.saida")}
               </button>
@@ -189,7 +189,7 @@ function Financas() {
             <select
               value={form.category}
               onChange={(e) => setForm({ ...form, category: e.target.value })}
-              className="w-full bg-secondary border border-white/10 rounded-lg px-3 py-2 text-sm"
+              className="w-full bg-secondary border border-border rounded-lg px-3 py-2 text-sm"
             >
               {CATEGORIES.map((c) => (
                 <option key={c.id} value={c.id}>
@@ -222,7 +222,7 @@ function Financas() {
               return (
                 <div
                   key={tx.id}
-                  className="group flex items-center gap-3 p-2 rounded-lg hover:bg-white/5 transition"
+                  className="group flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 transition"
                 >
                   <span className="text-xl">{cat?.icon || "📦"}</span>
                   <div className="flex-1 min-w-0">
@@ -241,7 +241,7 @@ function Financas() {
                     <button
                       onClick={() => setEditing(tx)}
                       title={t("action.edit")}
-                      className="text-muted-foreground hover:text-foreground p-1 rounded hover:bg-white/10"
+                      className="text-muted-foreground hover:text-foreground p-1 rounded hover:bg-muted/80"
                     >
                       <Pencil size={14} />
                     </button>
@@ -251,7 +251,7 @@ function Financas() {
                         desc: tx.description,
                         value: brl(tx.value),
                       })}
-                      className="text-coral p-1 rounded hover:bg-white/10"
+                      className="text-coral p-1 rounded hover:bg-muted/80"
                     >
                       <Trash2 size={14} />
                     </ConfirmButton>
@@ -280,7 +280,7 @@ function Financas() {
       <Section title={t("financas.summary12")}>
         <GlassCard className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="text-muted-foreground border-b border-white/10">
+            <thead className="text-muted-foreground border-b border-border">
               <tr>
                 <th className="text-left py-2 px-2">{t("financas.month")}</th>
                 <th className="text-right py-2 px-2">{t("financas.income")}</th>
@@ -290,7 +290,7 @@ function Financas() {
             </thead>
             <tbody>
               {monthlySummary.map((m) => (
-                <tr key={m.mes} className="border-b border-white/5">
+                <tr key={m.mes} className="border-b border-border">
                   <td className="py-2 px-2">{m.mes}</td>
                   <td className="text-right text-emerald-bgt">{brl(m.entradas)}</td>
                   <td className="text-right text-coral">{brl(m.saidas)}</td>
@@ -373,7 +373,7 @@ function Financas() {
               <button
                 type="button"
                 onClick={() => setEditing(null)}
-                className="px-4 py-2 rounded-lg border border-white/10 text-sm"
+                className="px-4 py-2 rounded-lg border border-border text-sm"
               >
                 {t("financas.cancel")}
               </button>
@@ -399,7 +399,7 @@ function Input(props: React.InputHTMLAttributes<HTMLInputElement>) {
   return (
     <input
       {...props}
-      className="w-full bg-secondary border border-white/10 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gold/50 focus:border-gold/50 transition"
+      className="w-full bg-secondary border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gold/50 focus:border-gold/50 transition"
     />
   );
 }

@@ -5,7 +5,7 @@ export function GlassCard({ className, children }: { className?: string; childre
   return (
     <div
       className={cn(
-        "glass rounded-2xl p-5 transition-all duration-300 hover:border-white/20",
+        "glass rounded-2xl p-5 transition-all duration-300 hover:border-accent/40",
         className
       )}
     >

@@ -204,7 +204,7 @@ function Biblioteca() {
                 >
                   <Star
                     size={22}
-                    className={n <= form.rating ? "fill-[#F5C842] text-[#F5C842]" : "text-white/30"}
+                    className={n <= form.rating ? "fill-[#F5C842] text-[#F5C842]" : "text-muted-foreground/60"}
                   />
                 </button>
               ))}
@@ -273,14 +273,14 @@ function Biblioteca() {
                         setEditingBook(b);
                       }}
                       title={t("biblioteca.editBook")}
-                      className="p-1 rounded hover:bg-white/20 text-white/80 hover:text-white"
+                      className="p-1 rounded hover:bg-muted/80 text-muted-foreground hover:text-foreground"
                     >
                       <Pencil size={13} />
                     </button>
                     <ConfirmButton
                       onConfirm={() => removeBook(b.id)}
                       message={t("biblioteca.confirmDelete", { title: b.title })}
-                      className="p-1 rounded hover:bg-white/20 text-coral"
+                      className="p-1 rounded hover:bg-muted/80 text-coral"
                     >
                       <Trash2 size={13} />
                     </ConfirmButton>
@@ -296,7 +296,7 @@ function Biblioteca() {
                     <Star
                       key={n}
                       size={12}
-                      className={n <= b.rating ? "fill-[#F5C842] text-[#F5C842]" : "text-white/20"}
+                      className={n <= b.rating ? "fill-[#F5C842] text-[#F5C842]" : "text-muted-foreground/40"}
                     />
                   ))}
                   <span className="text-[10px] text-muted-foreground ml-1.5">{b.genre}</span>
@@ -306,7 +306,7 @@ function Biblioteca() {
                 )}
               </div>
 
-              <div className="pt-3 mt-3 border-t border-white/5 flex items-center justify-between">
+              <div className="pt-3 mt-3 border-t border-border flex items-center justify-between">
                 <span className="text-[11px] text-muted-foreground">{fmtDate(b.finishedAt)}</span>
                 {(b.notes || b.applications) && (
                   <button
@@ -388,7 +388,7 @@ function Biblioteca() {
                     key={n}
                     size={14}
                     className={
-                      n <= viewingBook.rating ? "fill-[#F5C842] text-[#F5C842]" : "text-white/20"
+                      n <= viewingBook.rating ? "fill-[#F5C842] text-[#F5C842]" : "text-muted-foreground/40"
                     }
                   />
                 ))}
@@ -396,7 +396,7 @@ function Biblioteca() {
             </div>
 
             {viewingBook.notes && (
-              <div className="p-3 rounded-lg bg-white/5 border border-white/10">
+              <div className="p-3 rounded-lg bg-muted/50 border border-border">
                 <h5 className="text-xs font-semibold uppercase tracking-wider text-gold mb-1.5">
                   {t("biblioteca.annotations")}
                 </h5>
@@ -407,7 +407,7 @@ function Biblioteca() {
             )}
 
             {viewingBook.applications && (
-              <div className="p-3 rounded-lg bg-white/5 border border-white/10">
+              <div className="p-3 rounded-lg bg-muted/50 border border-border">
                 <h5 className="text-xs font-semibold uppercase tracking-wider text-emerald-bgt mb-1.5">
                   {t("biblioteca.applications")}
                 </h5>
@@ -425,7 +425,7 @@ function Biblioteca() {
                   setViewingBook(null);
                   setEditingBook(b);
                 }}
-                className="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/15 text-sm transition"
+                className="px-4 py-2 rounded-lg bg-muted/60 hover:bg-muted/80 text-sm transition"
               >
                 {t("biblioteca.editBook")}
               </button>
@@ -575,7 +575,7 @@ function Biblioteca() {
               <button
                 type="button"
                 onClick={() => setEditingBook(null)}
-                className="px-4 py-2 rounded-lg border border-white/10 text-sm hover:bg-white/5 transition"
+                className="px-4 py-2 rounded-lg border border-border text-sm hover:bg-muted/50 transition"
               >
                 {t("common.cancel")}
               </button>

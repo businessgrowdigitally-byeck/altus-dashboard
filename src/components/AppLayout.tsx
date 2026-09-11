@@ -111,7 +111,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         </div>
         <button
           onClick={() => setOpen(!open)}
-          className="p-2 rounded-lg hover:bg-white/10 transition text-muted-foreground hover:text-foreground"
+          className="p-2 rounded-lg hover:bg-muted/80 transition text-muted-foreground hover:text-foreground"
         >
           {open ? <X size={20} /> : <Menu size={20} />}
         </button>
@@ -125,7 +125,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             open ? "translate-x-0" : "-translate-x-full md:translate-x-0",
           )}
         >
-          <div className="p-5 border-b border-white/10">
+          <div className="p-5 border-b border-border">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-600/30 to-indigo-900/40 border border-purple-500/30 flex items-center justify-center shadow-lg shadow-purple-950/50">
                 <svg
@@ -172,9 +172,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                   onClick={() => setOpen(false)}
                   className={cn(
                     "flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium transition-all duration-200",
-                    "hover:bg-white/5 hover:translate-x-1",
+                    "hover:bg-muted/50 hover:translate-x-1",
                     active
-                      ? "bg-gradient-to-r from-purple-900/50 to-indigo-900/30 text-purple-200 border border-purple-500/40 shadow-sm shadow-purple-900/20 font-semibold"
+                      ? "bg-gradient-to-r from-purple-950/80 to-indigo-900/60 text-purple-100 border border-purple-500/40 shadow-sm shadow-purple-900/30 font-semibold"
                       : "text-muted-foreground hover:text-foreground",
                   )}
                 >
@@ -185,9 +185,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             })}
           </nav>
 
-          <div className="p-4 border-t border-white/10 space-y-3">
+          <div className="p-4 border-t border-border space-y-3">
             <p className="text-xs italic text-muted-foreground leading-relaxed">"{dailyQuote()}"</p>
-            <div className="flex items-center justify-between gap-2 pt-1 border-t border-white/10">
+            <div className="flex items-center justify-between gap-2 pt-1 border-t border-border">
               <div className="min-w-0">
                 <div className="truncate text-xs text-muted-foreground" title={user?.email ?? ""}>
                   {user?.email}
@@ -198,7 +198,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               <button
                 onClick={handleSignOut}
                 title={t("auth.signOut")}
-                className="shrink-0 p-2 rounded-md text-muted-foreground hover:bg-white/10 hover:text-foreground transition"
+                className="shrink-0 p-2 rounded-md text-muted-foreground hover:bg-muted/80 hover:text-foreground transition"
               >
                 <LogOut size={16} />
               </button>

@@ -348,7 +348,7 @@ function Dashboard() {
           <h1 className="font-display text-2xl md:text-4xl font-extrabold text-foreground tracking-tight">
             {t("heroTitle")}
           </h1>
-          <p className="mt-2 text-sm md:text-base text-purple-200/80 leading-relaxed max-w-xl">
+          <p className="mt-2 text-sm md:text-base text-purple-700/80 dark:text-purple-200/80 leading-relaxed max-w-xl">
             {t("heroSubtitle")}
           </p>
 
@@ -409,7 +409,7 @@ function Dashboard() {
             </div>
             <div className="text-right">
               <span className="text-xs text-muted-foreground">{t("weeklyProgress")}</span>
-              <div className="font-display text-2xl font-black text-purple-300">
+              <div className="font-display text-2xl font-black text-purple-700 dark:text-purple-300">
                 {weeklyProgress}%
               </div>
             </div>
@@ -417,7 +417,7 @@ function Dashboard() {
 
           {/* Progress Bar & Mountain Visual */}
           <div className="mt-4 space-y-2">
-            <div className="h-3 w-full rounded-full bg-white/5 overflow-hidden border border-white/10 p-0.5">
+            <div className="h-3 w-full rounded-full bg-muted overflow-hidden border border-border p-0.5">
               <div
                 className="h-full rounded-full bg-gradient-to-r from-purple-600 via-purple-400 to-indigo-400 shadow-[0_0_12px_rgba(168,85,247,0.8)] transition-all duration-500"
                 style={{ width: `${Math.min(100, Math.max(5, weeklyProgress))}%` }}
@@ -426,24 +426,24 @@ function Dashboard() {
           </div>
 
           {/* Quick Counter Badges */}
-          <div className="grid grid-cols-3 gap-3 mt-4 pt-3 border-t border-white/5 text-xs">
-            <div className="flex items-center justify-between p-2 rounded-xl bg-white/5">
+          <div className="grid grid-cols-3 gap-3 mt-4 pt-3 border-t border-border text-xs">
+            <div className="flex items-center justify-between p-2 rounded-xl bg-muted/50">
               <div className="flex items-center gap-1.5 text-muted-foreground">
-                <Target size={14} className="text-purple-400" />
+                <Target size={14} className="text-purple-500" />
                 <span>{t("pillarMetas")}</span>
               </div>
               <span className="font-bold text-foreground">{goalsMacro.length} →</span>
               </div>
-              <div className="flex items-center justify-between p-2 rounded-xl bg-white/5">
+              <div className="flex items-center justify-between p-2 rounded-xl bg-muted/50">
                 <div className="flex items-center gap-1.5 text-muted-foreground">
-                  <CheckSquare size={14} className="text-purple-400" />
+                  <CheckSquare size={14} className="text-purple-500" />
                   <span>{t("pillarTarefas")}</span>
                 </div>
                 <span className="font-bold text-foreground">{todayActions.length} →</span>
               </div>
-              <div className="flex items-center justify-between p-2 rounded-xl bg-white/5">
+              <div className="flex items-center justify-between p-2 rounded-xl bg-muted/50">
                 <div className="flex items-center gap-1.5 text-muted-foreground">
-                  <Sparkles size={14} className="text-purple-400" />
+                  <Sparkles size={14} className="text-purple-500" />
                   <span>{t("pillarHabitos")}</span>
                 </div>
                 <span className="font-bold text-foreground">
@@ -462,11 +462,11 @@ function Dashboard() {
                 {t("focoDaSemana")}
               </h4>
             </div>
-            <p className="text-sm font-semibold text-purple-200 mt-2">{t("consistencia")}</p>
+            <p className="text-sm font-semibold text-purple-700 dark:text-purple-200 mt-2">{t("consistencia")}</p>
             <p className="text-xs text-muted-foreground mt-2 leading-relaxed">{t("quote")}</p>
           </div>
 
-          <div className="mt-4 pt-3 border-t border-white/5 flex items-center justify-between text-xs text-purple-300">
+          <div className="mt-4 pt-3 border-t border-border flex items-center justify-between text-xs text-purple-700 dark:text-purple-300">
             <span>{t("objetivoCiclo")}</span>
             <ArrowRight size={14} />
           </div>
@@ -485,7 +485,7 @@ function Dashboard() {
             </h3>
             <p className="text-xs text-muted-foreground">{t("hojeSub")}</p>
           </div>
-          <span className="text-xs px-3 py-1 rounded-full bg-purple-500/15 text-purple-300 border border-purple-500/30">
+          <span className="text-xs px-3 py-1 rounded-full bg-purple-500/15 text-purple-700 dark:text-purple-300 border border-purple-500/30">
             {t("actionsDone", { done: todayDone, total: todayActions.length })}
           </span>
         </div>
@@ -503,7 +503,7 @@ function Dashboard() {
                 className={`group flex items-center justify-between p-3.5 rounded-xl border transition cursor-pointer select-none ${
                   done
                     ? "bg-purple-950/20 border-purple-500/30 opacity-70"
-                    : "bg-white/5 border-white/10 hover:border-purple-500/40 hover:bg-white/10"
+                    : "bg-muted/50 border-border hover:border-purple-500/40 hover:bg-muted/80"
                 }`}
               >
                 <div className="flex items-center gap-3">
@@ -511,7 +511,7 @@ function Dashboard() {
                     className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition ${
                       done
                         ? "bg-purple-600 border-purple-500 text-white"
-                        : "border-white/30 group-hover:border-purple-400"
+                        : "border-muted-foreground/30 group-hover:border-purple-400"
                     }`}
                   >
                     {done && <Check size={14} className="stroke-[3]" />}
@@ -656,10 +656,10 @@ function Dashboard() {
 
       <Modal open={showWelcomeModal} onClose={handleCloseModal} title={t("welcomeTitle")}>
         <form onSubmit={handleSaveName} className="space-y-4">
-          <p className="text-sm text-purple-200/80 leading-relaxed">{t("welcomeQuestion")}</p>
+          <p className="text-sm text-purple-700/80 dark:text-purple-200/80 leading-relaxed">{t("welcomeQuestion")}</p>
           <input
             type="text"
-            className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/40 focus:border-purple-500/50 transition text-foreground"
+            className="w-full bg-muted/50 border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/40 focus:border-purple-500/50 transition text-foreground"
             placeholder={t("namePlaceholder")}
             value={tempName}
             onChange={(e) => setTempName(e.target.value)}
@@ -670,7 +670,7 @@ function Dashboard() {
             <button
               type="button"
               onClick={handleCloseModal}
-              className="px-4 py-2 rounded-lg text-sm text-muted-foreground hover:bg-white/5 transition"
+              className="px-4 py-2 rounded-lg text-sm text-muted-foreground hover:bg-muted/50 transition"
             >
               {t("skip")}
             </button>

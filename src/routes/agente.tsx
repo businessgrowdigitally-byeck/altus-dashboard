@@ -222,7 +222,7 @@ function Agente() {
             key={p}
             onClick={() => send(t(p))}
             disabled={loading}
-            className="text-xs px-3 py-1.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 transition"
+            className="text-xs px-3 py-1.5 rounded-full bg-muted/50 hover:bg-muted/80 border border-border transition"
           >
             {p}
           </button>
@@ -235,7 +235,7 @@ function Agente() {
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && send()}
           placeholder={t("agente.placeholder")}
-          className="flex-1 bg-secondary border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-gold/50"
+          className="flex-1 bg-secondary border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-gold/50"
         />
         <button
           onClick={() => send()}
@@ -247,7 +247,7 @@ function Agente() {
         {chat.length > 0 && (
           <button
             onClick={clearChat}
-            className="px-3 rounded-xl border border-white/10 hover:bg-white/5 text-xs"
+            className="px-3 rounded-xl border border-border hover:bg-muted/50 text-xs"
           >
             {t("agente.clear")}
           </button>

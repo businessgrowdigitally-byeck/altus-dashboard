@@ -37,9 +37,9 @@ export function Modal({
       <div
         className={`relative glass-strong rounded-2xl w-full ${maxWidth} max-h-[90vh] overflow-y-auto shadow-2xl`}
       >
-        <div className="flex items-center justify-between p-5 border-b border-white/10">
+        <div className="flex items-center justify-between p-5 border-b border-border">
           <h3 className="font-display font-semibold text-lg">{title}</h3>
-          <button onClick={onClose} className="p-1 rounded hover:bg-white/10">
+          <button onClick={onClose} className="p-1 rounded hover:bg-muted/80">
             <X size={18} />
           </button>
         </div>
@@ -75,6 +75,6 @@ export function ConfirmButton({
 }
 
 export const inpCls =
-  "w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gold/40 focus:border-gold/50 transition";
+  "w-full bg-muted/40 border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gold/40 focus:border-gold/50 transition";
 export const btnGold =
   "bg-gold text-[#0A0F1E] font-semibold px-4 py-2.5 rounded-lg hover:brightness-110 transition";

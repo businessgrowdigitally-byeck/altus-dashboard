@@ -162,7 +162,7 @@ function Estudos() {
         <div className="relative flex-1">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <input
-            className="w-full bg-white/5 border border-white/10 rounded-xl pl-9 pr-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/40 text-foreground placeholder:text-muted-foreground/60"
+            className="w-full bg-muted/50 border border-border rounded-xl pl-9 pr-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/40 text-foreground placeholder:text-muted-foreground/60"
             placeholder={t("estudos.searchPlaceholder")}
             value={search}
             onChange={(e) => {
@@ -172,7 +172,7 @@ function Estudos() {
           />
         </div>
         <select
-          className="bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/40 text-foreground min-w-[180px]"
+          className="bg-muted/50 border border-border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/40 text-foreground min-w-[180px]"
           value={filterArea}
           onChange={(e) => {
             setFilterArea(e.target.value);
@@ -200,7 +200,7 @@ function Estudos() {
             className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium whitespace-nowrap transition ${
               activeTab === tab.id
                 ? "bg-gold text-[#0A0F1E] font-semibold shadow-lg shadow-gold/20"
-                : "bg-white/5 text-muted-foreground hover:bg-white/10 hover:text-white border border-white/10"
+                : "bg-muted/50 text-muted-foreground hover:bg-muted/80 hover:text-foreground border border-border"
             }`}
           >
             <span>{tab.icon}</span> {tab.label}
@@ -227,7 +227,7 @@ function Estudos() {
                       <div className="space-y-2">
                         {g.emProgresso.length === 0 && <p className="text-xs text-muted-foreground">—</p>}
                         {g.emProgresso.map((s) => (
-                          <div key={s.id} className="p-2 rounded-lg bg-white/5 border border-white/10">
+                          <div key={s.id} className="p-2 rounded-lg bg-muted/50 border border-border">
                             <div className="text-sm font-medium truncate">{s.topic}</div>
                             <div className="text-xs text-muted-foreground">{s.duration}min • {fmtDate(s.date)}</div>
                           </div>
@@ -239,7 +239,7 @@ function Estudos() {
                       <div className="space-y-2">
                         {g.concluidos.length === 0 && <p className="text-xs text-muted-foreground">—</p>}
                         {g.concluidos.map((s) => (
-                          <div key={s.id} className="p-2 rounded-lg bg-white/5 border border-white/10">
+                          <div key={s.id} className="p-2 rounded-lg bg-muted/50 border border-border">
                             <div className="text-sm font-medium truncate">{s.topic}</div>
                             <div className="text-xs text-muted-foreground">{s.duration}min • {fmtDate(s.date)}</div>
                           </div>
@@ -259,7 +259,7 @@ function Estudos() {
                   {calendario.map((d) => {
                     const isSelected = selectedDate === d.date;
                     const intensity = d.count === 0 ? 0 : d.count === 1 ? 1 : d.count >= 3 ? 3 : 2;
-                    const bg = intensity === 0 ? "bg-white/5 border-white/10" : intensity === 1 ? "bg-purple-500/30 border-purple-500/40" : intensity === 2 ? "bg-purple-500/60 border-purple-500/60" : "bg-gold border-gold text-[#0A0F1E]";
+                    const bg = intensity === 0 ? "bg-muted/50 border-border" : intensity === 1 ? "bg-purple-500/30 border-purple-500/40" : intensity === 2 ? "bg-purple-500/60 border-purple-500/60" : "bg-gold border-gold text-[#0A0F1E]";
                     return (
                       <button
                         key={d.date}
@@ -275,7 +275,7 @@ function Estudos() {
                 </div>
                 <div className="flex items-center gap-2 text-[10px] text-muted-foreground mt-3">
                   <span>menos</span>
-                  <span className="w-3 h-3 rounded-sm bg-white/5 border border-white/10" />
+                  <span className="w-3 h-3 rounded-sm bg-muted/50 border border-border" />
                   <span className="w-3 h-3 rounded-sm bg-purple-500/30 border border-purple-500/40" />
                   <span className="w-3 h-3 rounded-sm bg-purple-500/60 border border-purple-500/60" />
                   <span className="w-3 h-3 rounded-sm bg-gold border border-gold" />
@@ -288,7 +288,7 @@ function Estudos() {
                 {selectedDate && selectedDayStudies.length === 0 && <p className="text-sm text-muted-foreground">{t("estudos.calendarioEmpty")}</p>}
                 <div className="space-y-2">
                   {selectedDayStudies.map((s) => (
-                    <div key={s.id} className="p-3 rounded-xl bg-white/5 border border-white/10">
+                    <div key={s.id} className="p-3 rounded-xl bg-muted/50 border border-border">
                       <div className="font-medium text-sm">{s.topic}</div>
                       <div className="text-xs text-muted-foreground">{t("area." + s.area)} • {s.duration}min • {t("studyType." + s.type)}</div>
                       {s.learned && <p className="text-xs mt-1 whitespace-pre-wrap">{s.learned}</p>}
@@ -333,8 +333,8 @@ function Estudos() {
                                 <div className="flex items-center justify-between gap-2">
                                   <div className="flex items-center gap-2 flex-wrap">
                                     <h4 className="font-semibold">{s.topic}</h4>
-                                    <span className="text-xs px-2 py-0.5 rounded-full bg-white/10">{t("area." + s.area)}</span>
-                                    <span className="text-xs px-2 py-0.5 rounded-full bg-white/10">{s.duration}min</span>
+                                    <span className="text-xs px-2 py-0.5 rounded-full bg-muted/60">{t("area." + s.area)}</span>
+                                    <span className="text-xs px-2 py-0.5 rounded-full bg-muted/60">{s.duration}min</span>
                                     {s.status === "concluido" ? (
                                       <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-bgt/20 text-emerald-bgt">{t("estudos.statusConcluido")}</span>
                                     ) : (
@@ -342,10 +342,10 @@ function Estudos() {
                                     )}
                                   </div>
                                   <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition shrink-0">
-                                    <button onClick={() => setEditingStudy(s)} title={t("estudos.editarBtn")} className="p-1 rounded hover:bg-white/10 text-muted-foreground hover:text-foreground">
+                                    <button onClick={() => setEditingStudy(s)} title={t("estudos.editarBtn")} className="p-1 rounded hover:bg-muted/80 text-muted-foreground hover:text-foreground">
                                       <Pencil size={13} />
                                     </button>
-                                    <ConfirmButton onConfirm={() => removeStudy(s.id)} message={t("estudos.confirmDelete", { topic: s.topic })} className="p-1 rounded hover:bg-white/10 text-coral">
+                                    <ConfirmButton onConfirm={() => removeStudy(s.id)} message={t("estudos.confirmDelete", { topic: s.topic })} className="p-1 rounded hover:bg-muted/80 text-coral">
                                       <Trash2 size={13} />
                                     </ConfirmButton>
                                   </div>
@@ -413,11 +413,11 @@ function Estudos() {
               </div>
               <div>
                 <label className="text-xs text-muted-foreground block mb-1">{t("estudos.status")}</label>
-                <div className="flex rounded-lg overflow-hidden border border-white/10 text-sm">
-                  <button type="button" onClick={() => setForm({ ...form, status: "progresso" })} className={`flex-1 py-2 font-medium transition ${form.status === "progresso" ? "bg-gold text-[#0A0F1E]" : "hover:bg-white/5"}`}>
+                <div className="flex rounded-lg overflow-hidden border border-border text-sm">
+                  <button type="button" onClick={() => setForm({ ...form, status: "progresso" })} className={`flex-1 py-2 font-medium transition ${form.status === "progresso" ? "bg-gold text-[#0A0F1E]" : "hover:bg-muted/50"}`}>
                     {t("estudos.statusProgresso")}
                   </button>
-                  <button type="button" onClick={() => setForm({ ...form, status: "concluido" })} className={`flex-1 py-2 font-medium transition ${form.status === "concluido" ? "bg-emerald-bgt text-black" : "hover:bg-white/5"}`}>
+                  <button type="button" onClick={() => setForm({ ...form, status: "concluido" })} className={`flex-1 py-2 font-medium transition ${form.status === "concluido" ? "bg-emerald-bgt text-black" : "hover:bg-muted/50"}`}>
                     {t("estudos.statusConcluido")}
                   </button>
                 </div>
@@ -527,7 +527,7 @@ function Estudos() {
               <textarea name="insights" defaultValue={editingStudy.insights ?? ""} rows={2} className={inpCls} />
             </div>
             <div className="flex justify-end gap-2 pt-2">
-              <button type="button" onClick={() => setEditingStudy(null)} className="px-4 py-2 rounded-lg border border-white/10 text-sm hover:bg-white/5 transition">
+              <button type="button" onClick={() => setEditingStudy(null)} className="px-4 py-2 rounded-lg border border-border text-sm hover:bg-muted/50 transition">
                 {t("estudos.cancelar")}
               </button>
               <button type="submit" className={btnGold}>{t("estudos.salvarAlteracoes")}</button>

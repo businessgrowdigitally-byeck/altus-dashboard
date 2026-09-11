@@ -81,7 +81,7 @@ function Kaizen() {
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <h2 className="font-display text-xl font-semibold">{t("kaizen.history")}</h2>
         <input
-          className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/40 w-full sm:w-64 text-foreground placeholder:text-muted-foreground/60"
+          className="bg-muted/50 border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/40 w-full sm:w-64 text-foreground placeholder:text-muted-foreground/60"
           placeholder={t("kaizen.searchPh")}
           value={search}
           onChange={(e) => {
@@ -120,7 +120,7 @@ function Kaizen() {
                         </div>
                       )}
                       {k.notes && (
-                        <div className="bg-white/5 rounded-lg px-3 py-2 border border-white/5">
+                        <div className="bg-muted/50 rounded-lg px-3 py-2 border border-border">
                           <div className="text-[11px] uppercase tracking-wider text-muted-foreground">{t("kaizen.notesShort")}</div>
                           <p className="text-sm text-muted-foreground whitespace-pre-wrap mt-0.5">{k.notes}</p>
                         </div>
@@ -130,7 +130,7 @@ function Kaizen() {
                       <button
                         onClick={() => setEditing(k)}
                         title={t("action.edit")}
-                        className="p-1.5 rounded hover:bg-white/10 text-muted-foreground hover:text-foreground"
+                        className="p-1.5 rounded hover:bg-muted/80 text-muted-foreground hover:text-foreground"
                       >
                         <Pencil size={14} />
                       </button>
@@ -140,7 +140,7 @@ function Kaizen() {
                           toast.success(t("kaizen.removed"));
                         }}
                         message={t("kaizen.deleteConfirm")}
-                        className="p-1.5 rounded hover:bg-white/10 text-coral"
+                        className="p-1.5 rounded hover:bg-muted/80 text-coral"
                       >
                         <Trash2 size={14} />
                       </ConfirmButton>
@@ -195,7 +195,7 @@ function Kaizen() {
               <textarea name="notes" defaultValue={editing.notes} rows={3} className={inpCls} />
             </div>
             <div className="flex justify-end gap-2 pt-2">
-              <button type="button" onClick={() => setEditing(null)} className="px-4 py-2 rounded-lg border border-white/10 text-sm hover:bg-white/5 transition">
+              <button type="button" onClick={() => setEditing(null)} className="px-4 py-2 rounded-lg border border-border text-sm hover:bg-muted/50 transition">
                 {t("action.cancel")}
               </button>
               <button type="submit" className={btnGold}>

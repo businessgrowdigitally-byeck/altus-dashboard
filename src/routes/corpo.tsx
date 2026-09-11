@@ -160,7 +160,7 @@ function Corpo() {
               <button
                 key={f}
                 onClick={() => setFilter(f)}
-                className={`px-3 py-1 rounded-full text-xs transition ${filter === f ? "bg-gold text-[#0A0F1E] font-semibold" : "bg-white/5 hover:bg-white/10"}`}
+                className={`px-3 py-1 rounded-full text-xs transition ${filter === f ? "bg-gold text-[#0A0F1E] font-semibold" : "bg-muted/50 hover:bg-muted/80"}`}
               >
                 {f === "ALL" ? t("corpo.tudo") : f}
               </button>
@@ -219,7 +219,7 @@ function Corpo() {
           <h3 className="font-display font-semibold mb-4">{t("corpo.historicoDePeso")}</h3>
           <div className="max-h-[300px] overflow-y-auto">
             <table className="w-full text-sm">
-              <thead className="text-xs text-muted-foreground border-b border-white/10">
+              <thead className="text-xs text-muted-foreground border-b border-border">
                 <tr>
                   <th className="text-left py-1">{t("common.date")}</th>
                   <th className="text-right py-1">{t("corpo.peso")}</th>
@@ -239,7 +239,7 @@ function Corpo() {
                 {historyRows.map((w) => (
                   <tr
                     key={w.id}
-                    className="border-b border-white/5 group hover:bg-white/5 transition"
+                    className="border-b border-border group hover:bg-muted/50 transition"
                   >
                     <td className="py-2">{fmtDate(w.date)}</td>
                     <td className="text-right font-medium">{kg(w.weight)}</td>
@@ -256,14 +256,14 @@ function Corpo() {
                         <button
                           onClick={() => setEditingWeight(w)}
                           title={t("common.edit")}
-                          className="p-1 rounded hover:bg-white/10 text-muted-foreground hover:text-foreground"
+                          className="p-1 rounded hover:bg-muted/80 text-muted-foreground hover:text-foreground"
                         >
                           <Pencil size={13} />
                         </button>
                         <ConfirmButton
                           onConfirm={() => removeWeight(w.id)}
                           message={t("corpo.confirmExcluirPeso")}
-                          className="p-1 rounded hover:bg-white/10 text-coral"
+                          className="p-1 rounded hover:bg-muted/80 text-coral"
                         >
                           <Trash2 size={13} />
                         </ConfirmButton>
@@ -324,7 +324,7 @@ function Corpo() {
               {workouts.slice(0, 10).map((w) => (
                 <div
                   key={w.id}
-                  className="group flex items-center justify-between p-2.5 rounded-lg hover:bg-white/5 transition border border-transparent hover:border-white/5"
+                  className="group flex items-center justify-between p-2.5 rounded-lg hover:bg-muted/50 transition border border-transparent hover:border-border"
                 >
                   <div>
                     <div className="text-sm font-medium">{t("workout." + w.type)}</div>
@@ -336,14 +336,14 @@ function Corpo() {
                     <button
                       onClick={() => setEditingWorkout(w)}
                       title={t("common.edit")}
-                      className="p-1 rounded hover:bg-white/10 text-muted-foreground hover:text-foreground"
+                      className="p-1 rounded hover:bg-muted/80 text-muted-foreground hover:text-foreground"
                     >
                       <Pencil size={14} />
                     </button>
                     <ConfirmButton
                       onConfirm={() => removeWorkout(w.id)}
                       message={t("corpo.confirmExcluirTreino")}
-                      className="p-1 rounded hover:bg-white/10 text-coral"
+                      className="p-1 rounded hover:bg-muted/80 text-coral"
                     >
                       <Trash2 size={14} />
                     </ConfirmButton>
@@ -416,7 +416,7 @@ function Corpo() {
               <button
                 type="button"
                 onClick={() => setEditingWeight(null)}
-                className="px-4 py-2 rounded-lg border border-white/10 text-sm hover:bg-white/5 transition"
+                className="px-4 py-2 rounded-lg border border-border text-sm hover:bg-muted/50 transition"
               >
                 {t("common.cancel")}
               </button>
@@ -498,7 +498,7 @@ function Corpo() {
               <button
                 type="button"
                 onClick={() => setEditingWorkout(null)}
-                className="px-4 py-2 rounded-lg border border-white/10 text-sm hover:bg-white/5 transition"
+                className="px-4 py-2 rounded-lg border border-border text-sm hover:bg-muted/50 transition"
               >
                 {t("common.cancel")}
               </button>

@@ -68,7 +68,7 @@ export function KaizenTodayCard({ embedded = false }: Props) {
         <label className="block">
           <span className="text-xs text-muted-foreground block mb-1">{t("kaizen.q1")}</span>
           <textarea
-            className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/40 focus:border-purple-500/50 transition text-foreground placeholder:text-muted-foreground/60 min-h-[84px] resize-none"
+            className="w-full bg-muted/50 border border-border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/40 focus:border-purple-500/50 transition text-foreground placeholder:text-muted-foreground/60 min-h-[84px] resize-none"
             placeholder={t("kaizen.q1ph")}
             value={improvedToday}
             onChange={(e) => setImprovedToday(e.target.value)}
@@ -78,7 +78,7 @@ export function KaizenTodayCard({ embedded = false }: Props) {
         <label className="block">
           <span className="text-xs text-muted-foreground block mb-1">{t("kaizen.q2")}</span>
           <textarea
-            className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/40 focus:border-purple-500/50 transition text-foreground placeholder:text-muted-foreground/60 min-h-[84px] resize-none"
+            className="w-full bg-muted/50 border border-border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/40 focus:border-purple-500/50 transition text-foreground placeholder:text-muted-foreground/60 min-h-[84px] resize-none"
             placeholder={t("kaizen.q2ph")}
             value={improveTomorrow}
             onChange={(e) => setImproveTomorrow(e.target.value)}
@@ -90,7 +90,7 @@ export function KaizenTodayCard({ embedded = false }: Props) {
       <label className="block">
         <span className="text-xs text-muted-foreground block mb-1">{t("kaizen.notes")}</span>
         <textarea
-          className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/40 focus:border-purple-500/50 transition text-foreground placeholder:text-muted-foreground/60 min-h-[72px] resize-none"
+          className="w-full bg-muted/50 border border-border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/40 focus:border-purple-500/50 transition text-foreground placeholder:text-muted-foreground/60 min-h-[72px] resize-none"
           placeholder={t("kaizen.notesPh")}
           value={notes}
           onChange={(e) => setNotes(e.target.value)}

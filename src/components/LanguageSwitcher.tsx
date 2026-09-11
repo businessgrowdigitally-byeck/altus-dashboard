@@ -17,7 +17,7 @@ export function LanguageSwitcher() {
         <button
           aria-label={t("lang.change")}
           title={t("lang.change")}
-          className="inline-flex items-center gap-1.5 rounded-md border border-white/10 bg-background px-2.5 py-1.5 text-xs text-muted-foreground transition hover:bg-white/10 hover:text-foreground"
+          className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-2.5 py-1.5 text-xs text-muted-foreground transition hover:bg-muted/80 hover:text-foreground"
         >
           <Globe size={14} />
           <span>{LANGS.find((l) => l.code === lang)?.flag}</span>
@@ -28,7 +28,7 @@ export function LanguageSwitcher() {
           <button
             key={l.code}
             onClick={() => setLang(l.code)}
-            className={`flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-sm transition hover:bg-white/10 ${
+            className={`flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-sm transition hover:bg-muted/80 ${
               lang === l.code ? "font-semibold text-foreground" : "text-muted-foreground"
             }`}
           >

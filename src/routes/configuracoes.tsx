@@ -179,7 +179,7 @@ function Config() {
         <div className="space-y-4">
           <p className="text-sm text-muted-foreground">{t("config.clearWarning")}</p>
 
-          <div className="rounded-lg border border-white/10 p-3 space-y-2">
+          <div className="rounded-lg border border-border p-3 space-y-2">
             <div className="flex items-center justify-between gap-3">
               <span className="text-sm">{t("config.downloadBefore")}</span>
               <button onClick={download} className="text-sm text-gold hover:underline shrink-0">
@@ -207,7 +207,7 @@ function Config() {
                 setClearOpen(false);
                 setClearConfirm("");
               }}
-              className="px-4 py-2 rounded-lg border border-white/10 text-sm hover:bg-white/5 transition"
+              className="px-4 py-2 rounded-lg border border-border text-sm hover:bg-muted/50 transition"
             >
               {t("config.cancel")}
             </button>
@@ -228,13 +228,13 @@ function Config() {
             <div className="flex gap-2">
               <button
                 onClick={() => setSettings({ theme: "dark" })}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition ${settings.theme === "dark" ? "border-gold bg-gold/10" : "border-white/10"}`}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition ${settings.theme === "dark" ? "border-gold bg-gold/10" : "border-border"}`}
               >
                 <Moon size={16} /> {t("config.themeDark")}
               </button>
               <button
                 onClick={() => setSettings({ theme: "light" })}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition ${settings.theme === "light" ? "border-gold bg-gold/10" : "border-white/10"}`}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition ${settings.theme === "light" ? "border-gold bg-gold/10" : "border-border"}`}
               >
                 <Sun size={16} /> {t("config.themeLight")}
               </button>
