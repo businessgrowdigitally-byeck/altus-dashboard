@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useStore } from "@/lib/store";
-import { brl, daysAgoISO, fmtDate, fmtDateLong, kg, todayISO } from "@/lib/format";
+import { brl, daysAgoISO, fmtDate, fmtDateLong, greeting, kg, todayISO } from "@/lib/format";
 import { GlassCard, KpiCard, PageHeader, Section } from "@/components/primitives";
 import { GoalsSection } from "@/components/GoalsSection";
 import { KaizenTodayCard } from "@/components/KaizenTodayCard";
@@ -75,9 +75,6 @@ function Dashboard() {
     setProfile,
   } = useStore();
   const t = useT();
-  const h = new Date().getHours();
-  const greet =
-    h < 12 ? t("greeting.morning") : h < 18 ? t("greeting.afternoon") : t("greeting.evening");
 
   // Avoid SSR/CSR hydration mismatch: render time-dependent strings only after mount.
   const [mounted, setMounted] = useState(false);
