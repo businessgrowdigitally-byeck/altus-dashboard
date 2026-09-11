@@ -70,49 +70,49 @@ export const greeting = (lang?: LangCode) => {
   return "Boa noite";
 };
 
-export const QUOTES: Record<LangCode, string[]> = {
-  pt: [
-    "Disciplina é a ponte entre objetivos e conquistas.",
-    "Você se torna aquilo que mede.",
-    "Pequenos ganhos diários se acumulam em grandes vitórias.",
-    "O que não é registrado, não é gerenciado.",
-    "Sua vida é a sua empresa mais importante.",
-    "Excelência é hábito, não acidente.",
-    "Cada decisão é um voto na pessoa que você quer se tornar.",
-    "Hoje é a versão mais nova de você.",
-    "Foco é dizer não a 100 boas ideias.",
-    "Constância vence intensidade.",
-  ],
-  en: [
-    "Discipline is the bridge between goals and achievement.",
-    "You become what you measure.",
-    "Small daily gains compound into great victories.",
-    "What is not recorded is not managed.",
-    "Your life is your most important business.",
-    "Excellence is a habit, not an accident.",
-    "Every decision is a vote for the person you want to become.",
-    "Today is the newest version of you.",
-    "Focus is saying no to 100 good ideas.",
-    "Consistency beats intensity.",
-  ],
-  es: [
-    "La disciplina es el puente entre objetivos y logros.",
-    "Te conviertes en lo que mides.",
-    "Pequeñas ganancias diarias se acumulan en grandes victorias.",
-    "Lo que no se registra no se gestiona.",
-    "Tu vida es tu empresa más importante.",
-    "La excelencia es un hábito, no un accidente.",
-    "Cada decisión es un voto por la persona que quieres ser.",
-    "Hoy es la versión más nueva de ti.",
-    "Enfocarse es decir no a 100 buenas ideas.",
-    "La constancia vence a la intensidad.",
-  ],
-};
+export const QUOTES = [
+  "Disciplina é a ponte entre objetivos e conquistas.",
+  "Você se torna aquilo que mede.",
+  "Pequenos ganhos diários se acumulam em grandes vitórias.",
+  "O que não é registrado, não é gerenciado.",
+  "Sua vida é a sua empresa mais importante.",
+  "Excelência é hábito, não acidente.",
+  "Cada decisão é um voto na pessoa que você quer se tornar.",
+  "Hoje é a versão mais nova de você.",
+  "Foco é dizer não a 100 boas ideias.",
+  "Constância vence intensidade.",
+];
+
+const QUOTES_EN = [
+  "Discipline is the bridge between goals and achievement.",
+  "You become what you measure.",
+  "Small daily gains compound into great victories.",
+  "What is not recorded is not managed.",
+  "Your life is your most important business.",
+  "Excellence is a habit, not an accident.",
+  "Every decision is a vote for the person you want to become.",
+  "Today is the newest version of you.",
+  "Focus is saying no to 100 good ideas.",
+  "Consistency beats intensity.",
+];
+
+const QUOTES_ES = [
+  "La disciplina es el puente entre objetivos y logros.",
+  "Te conviertes en lo que mides.",
+  "Pequeñas ganancias diarias se acumulan en grandes victorias.",
+  "Lo que no se registra no se gestiona.",
+  "Tu vida es tu empresa más importante.",
+  "La excelencia es un hábito, no un accidente.",
+  "Cada decisión es un voto por la persona que quieres ser.",
+  "Hoy es la versión más nueva de ti.",
+  "Enfocarse es decir no a 100 buenas ideas.",
+  "La constancia vence a la intensidad.",
+];
 
 export const dailyQuote = (lang?: LangCode) => {
   const l = lang ?? getCurrentLang();
   const day = Math.floor(Date.now() / (1000 * 60 * 60 * 24));
-  const arr = QUOTES[l] ?? QUOTES.pt;
+  const arr = l === "en" ? QUOTES_EN : l === "es" ? QUOTES_ES : QUOTES;
   return arr[day % arr.length];
 };
 
