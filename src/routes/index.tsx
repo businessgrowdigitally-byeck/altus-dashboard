@@ -340,7 +340,7 @@ function Dashboard() {
                 </linearGradient>
               </defs>
             </svg>
-            <span className="font-display font-extrabold text-2xl tracking-[0.18em] bg-gradient-to-r from-white via-purple-100 to-purple-300 bg-clip-text text-transparent">
+            <span className="font-display font-extrabold text-2xl tracking-[0.18em] bg-gradient-to-r from-slate-900 via-purple-900 to-purple-600 dark:from-white dark:via-purple-100 dark:to-purple-300 bg-clip-text text-transparent">
               ALTUS
             </span>
           </div>

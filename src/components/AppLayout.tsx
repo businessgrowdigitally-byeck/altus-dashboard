@@ -151,7 +151,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 </svg>
               </div>
               <div className="min-w-0">
-                <div className="font-display font-extrabold leading-none tracking-widest text-lg bg-gradient-to-r from-white via-purple-100 to-purple-300 bg-clip-text text-transparent">
+                <div className="font-display font-extrabold leading-none tracking-widest text-lg bg-gradient-to-r from-slate-900 via-purple-900 to-purple-600 dark:from-white dark:via-purple-100 dark:to-purple-300 bg-clip-text text-transparent">
                   ALTUS
                 </div>
                 <div className="text-[9px] uppercase tracking-[0.22em] text-purple-400 font-semibold mt-1">
