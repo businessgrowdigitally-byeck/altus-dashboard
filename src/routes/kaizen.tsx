@@ -81,7 +81,7 @@ function Kaizen() {
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <h2 className="font-display text-xl font-semibold">{t("kaizen.history")}</h2>
         <input
-          className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/40 w-full sm:w-64 text-white placeholder:text-muted-foreground/60"
+          className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/40 w-full sm:w-64 text-foreground placeholder:text-muted-foreground/60"
           placeholder={t("kaizen.searchPh")}
           value={search}
           onChange={(e) => {

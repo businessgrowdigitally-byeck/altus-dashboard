@@ -348,7 +348,7 @@ function Dashboard() {
             </span>
           </div>
 
-          <h1 className="font-display text-2xl md:text-4xl font-extrabold text-white tracking-tight">
+          <h1 className="font-display text-2xl md:text-4xl font-extrabold text-foreground tracking-tight">
             {t("heroTitle")}
           </h1>
           <p className="mt-2 text-sm md:text-base text-purple-200/80 leading-relaxed max-w-xl">
@@ -360,28 +360,28 @@ function Dashboard() {
             <div className="glass rounded-xl p-3 border border-purple-500/20">
               <div className="flex items-center gap-2 text-purple-400 mb-1">
                 <Target size={16} />
-                <span className="text-xs font-bold text-white">{t("pillarMetas")}</span>
+                <span className="text-xs font-bold text-foreground">{t("pillarMetas")}</span>
               </div>
               <p className="text-[11px] text-muted-foreground">{t("pillarMetasSub")}</p>
             </div>
             <div className="glass rounded-xl p-3 border border-purple-500/20">
               <div className="flex items-center gap-2 text-purple-400 mb-1">
                 <CheckSquare size={16} />
-                <span className="text-xs font-bold text-white">{t("pillarTarefas")}</span>
+                <span className="text-xs font-bold text-foreground">{t("pillarTarefas")}</span>
               </div>
               <p className="text-[11px] text-muted-foreground">{t("pillarTarefasSub")}</p>
             </div>
             <div className="glass rounded-xl p-3 border border-purple-500/20">
               <div className="flex items-center gap-2 text-purple-400 mb-1">
                 <Calendar size={16} />
-                <span className="text-xs font-bold text-white">{t("pillarHabitos")}</span>
+                <span className="text-xs font-bold text-foreground">{t("pillarHabitos")}</span>
               </div>
               <p className="text-[11px] text-muted-foreground">{t("pillarHabitosSub")}</p>
             </div>
             <div className="glass rounded-xl p-3 border border-purple-500/20">
               <div className="flex items-center gap-2 text-purple-400 mb-1">
                 <TrendingUp size={16} />
-                <span className="text-xs font-bold text-white">{t("pillarProgresso")}</span>
+                <span className="text-xs font-bold text-foreground">{t("pillarProgresso")}</span>
               </div>
               <p className="text-[11px] text-muted-foreground">{t("pillarProgressoSub")}</p>
             </div>
@@ -403,8 +403,8 @@ function Dashboard() {
         <div className="lg:col-span-2 glass-strong rounded-2xl p-5 border border-purple-500/20 relative overflow-hidden flex flex-col justify-between">
           <div className="flex items-start justify-between">
             <div>
-              <h3 className="font-display font-bold text-lg text-white">
-                {greet}, {userName} ☀️
+              <h3 className="font-display font-bold text-lg text-foreground">
+                {greeting()}, {userName} ☀️
               </h3>
               <p className="text-xs text-muted-foreground capitalize mt-0.5">
                 {mounted ? fmtDateLong(now) : t("loadingDate")}
@@ -435,21 +435,21 @@ function Dashboard() {
                 <Target size={14} className="text-purple-400" />
                 <span>{t("pillarMetas")}</span>
               </div>
-              <span className="font-bold text-white">{goalsMacro.length} →</span>
-            </div>
-            <div className="flex items-center justify-between p-2 rounded-xl bg-white/5">
-              <div className="flex items-center gap-1.5 text-muted-foreground">
-                <CheckSquare size={14} className="text-purple-400" />
-                <span>{t("pillarTarefas")}</span>
+              <span className="font-bold text-foreground">{goalsMacro.length} →</span>
               </div>
-              <span className="font-bold text-white">{todayActions.length} →</span>
-            </div>
-            <div className="flex items-center justify-between p-2 rounded-xl bg-white/5">
-              <div className="flex items-center gap-1.5 text-muted-foreground">
-                <Sparkles size={14} className="text-purple-400" />
-                <span>{t("pillarHabitos")}</span>
+              <div className="flex items-center justify-between p-2 rounded-xl bg-white/5">
+                <div className="flex items-center gap-1.5 text-muted-foreground">
+                  <CheckSquare size={14} className="text-purple-400" />
+                  <span>{t("pillarTarefas")}</span>
+                </div>
+                <span className="font-bold text-foreground">{todayActions.length} →</span>
               </div>
-              <span className="font-bold text-white">
+              <div className="flex items-center justify-between p-2 rounded-xl bg-white/5">
+                <div className="flex items-center gap-1.5 text-muted-foreground">
+                  <Sparkles size={14} className="text-purple-400" />
+                  <span>{t("pillarHabitos")}</span>
+                </div>
+                <span className="font-bold text-foreground">
                 {todayDone}/{todayActions.length} →
               </span>
             </div>
@@ -461,7 +461,7 @@ function Dashboard() {
           <div>
             <div className="flex items-center gap-2 text-purple-400 mb-2">
               <Brain size={20} />
-              <h4 className="font-display font-bold text-sm tracking-wide uppercase text-white">
+              <h4 className="font-display font-bold text-sm tracking-wide uppercase text-foreground">
                 {t("focoDaSemana")}
               </h4>
             </div>
@@ -483,7 +483,7 @@ function Dashboard() {
       >
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="font-display font-bold text-lg text-white flex items-center gap-2">
+            <h3 className="font-display font-bold text-lg text-foreground flex items-center gap-2">
               <span>📅</span> {t("hoje")}
             </h3>
             <p className="text-xs text-muted-foreground">{t("hojeSub")}</p>
@@ -521,7 +521,7 @@ function Dashboard() {
                   </div>
                   <div>
                     <span
-                      className={`text-sm font-medium ${done ? "line-through text-muted-foreground" : "text-white"}`}
+                      className={`text-sm font-medium ${done ? "line-through text-muted-foreground" : "text-foreground"}`}
                     >
                       {a.name}
                     </span>
@@ -662,7 +662,7 @@ function Dashboard() {
           <p className="text-sm text-purple-200/80 leading-relaxed">{t("welcomeQuestion")}</p>
           <input
             type="text"
-            className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/40 focus:border-purple-500/50 transition text-white"
+            className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/40 focus:border-purple-500/50 transition text-foreground"
             placeholder={t("namePlaceholder")}
             value={tempName}
             onChange={(e) => setTempName(e.target.value)}

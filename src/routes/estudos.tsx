@@ -162,7 +162,7 @@ function Estudos() {
         <div className="relative flex-1">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <input
-            className="w-full bg-white/5 border border-white/10 rounded-xl pl-9 pr-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/40 text-white placeholder:text-muted-foreground/60"
+            className="w-full bg-white/5 border border-white/10 rounded-xl pl-9 pr-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/40 text-foreground placeholder:text-muted-foreground/60"
             placeholder={t("estudos.searchPlaceholder")}
             value={search}
             onChange={(e) => {
@@ -172,7 +172,7 @@ function Estudos() {
           />
         </div>
         <select
-          className="bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/40 text-white min-w-[180px]"
+          className="bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/40 text-foreground min-w-[180px]"
           value={filterArea}
           onChange={(e) => {
             setFilterArea(e.target.value);
