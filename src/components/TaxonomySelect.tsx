@@ -43,8 +43,8 @@ export function useTaxonomyOptions(scope: TaxonomyScope): Option[] {
     }));
     const customs = customList.map((c) =>
       typeof c === "string"
-        ? { id: c, label: c }
-        : { id: c.id, icon: c.icon, label: c.id },
+        ? { id: c, label: taxLabel(t, prefix, c) }
+        : { id: c.id, icon: c.icon, label: taxLabel(t, prefix, c.id) },
     );
     return [...defaults, ...customs];
   }, [scope, custom, t]);

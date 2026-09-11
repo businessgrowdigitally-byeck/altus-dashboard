@@ -171,7 +171,7 @@ type State = {
   removeKaizen: (id: string) => void;
   upsertKaizenByDate: (date: string, data: Pick<KaizenEntry, "improvedToday" | "improveTomorrow" | "notes">) => void;
   addCustomItem: (scope: TaxonomyScope, value: string) => void;
-  renameCustomItem: (scope: TaxonomyScope, oldId: string, newId: string) => void;
+  renameCustomItem: (scope: TaxonomyScope, oldId: string, newId: string) => boolean;
   removeCustomItem: (scope: TaxonomyScope, id: string) => void;
   recomputeLinkedGoals: () => void;
   pushChat: (m: ChatMsg) => void;
@@ -366,9 +366,10 @@ export const useStore = create<State>()(
         if (lst.includes(trimmed)) return s;
         return { customTaxonomy: { ...tax, [scope]: [trimmed, ...lst] } };
       }),
-      renameCustomItem: (scope, oldId, newId) => set((s) => {
+      renameCustomItem: (scope, oldId, newId) => {
         const trimmed = newId.trim();
-        if (!trimmed || trimmed === oldId) return s;
+        if (!trimmed || trimmed === oldId) return false;
+        const s = get();
         const tax = s.customTaxonomy;
         const conflitoIcon = (list: { id: string; icon: string }[]) =>
           list.some((x) => x.id === trimmed && x.id !== oldId);
@@ -377,38 +378,33 @@ export const useStore = create<State>()(
         // Renomear para um nome que já existe seria uma fusão silenciosa — cancelamos.
         switch (scope) {
           case "financeCategories":
-            if (conflitoIcon(tax.financeCategories)) return s;
-            return {
-              customTaxonomy: { ...tax, financeCategories: tax.financeCategories.map((x) => x.id === oldId ? { ...x, id: trimmed } : x) },
-              transactions: s.transactions.map((t) => t.category === oldId ? { ...t, category: trimmed } : t),
-            };
+            if (conflitoIcon(tax.financeCategories)) return false;
+            set({ customTaxonomy: { ...tax, financeCategories: tax.financeCategories.map((x) => x.id === oldId ? { ...x, id: trimmed } : x) },
+              transactions: s.transactions.map((t) => t.category === oldId ? { ...t, category: trimmed } : t) });
+            return true;
           case "studyTypes":
-            if (conflitoIcon(tax.studyTypes)) return s;
-            return {
-              customTaxonomy: { ...tax, studyTypes: tax.studyTypes.map((x) => x.id === oldId ? { ...x, id: trimmed } : x) },
-              studies: s.studies.map((st) => st.type === oldId ? { ...st, type: trimmed } : st),
-            };
+            if (conflitoIcon(tax.studyTypes)) return false;
+            set({ customTaxonomy: { ...tax, studyTypes: tax.studyTypes.map((x) => x.id === oldId ? { ...x, id: trimmed } : x) },
+              studies: s.studies.map((st) => st.type === oldId ? { ...st, type: trimmed } : st) });
+            return true;
           case "studyAreas":
-            if (conflitoTexto(tax.studyAreas)) return s;
-            return {
-              customTaxonomy: { ...tax, studyAreas: tax.studyAreas.map((x) => x === oldId ? trimmed : x) },
-              studies: s.studies.map((st) => st.area === oldId ? { ...st, area: trimmed } : st),
-            };
+            if (conflitoTexto(tax.studyAreas)) return false;
+            set({ customTaxonomy: { ...tax, studyAreas: tax.studyAreas.map((x) => x === oldId ? trimmed : x) },
+              studies: s.studies.map((st) => st.area === oldId ? { ...st, area: trimmed } : st) });
+            return true;
           case "genres":
-            if (conflitoTexto(tax.genres)) return s;
-            return {
-              customTaxonomy: { ...tax, genres: tax.genres.map((x) => x === oldId ? trimmed : x) },
-              books: s.books.map((b) => b.genre === oldId ? { ...b, genre: trimmed } : b),
-            };
+            if (conflitoTexto(tax.genres)) return false;
+            set({ customTaxonomy: { ...tax, genres: tax.genres.map((x) => x === oldId ? trimmed : x) },
+              books: s.books.map((b) => b.genre === oldId ? { ...b, genre: trimmed } : b) });
+            return true;
           case "workoutTypes":
-            if (conflitoTexto(tax.workoutTypes)) return s;
-            return {
-              customTaxonomy: { ...tax, workoutTypes: tax.workoutTypes.map((x) => x === oldId ? trimmed : x) },
-              workouts: s.workouts.map((w) => w.type === oldId ? { ...w, type: trimmed } : w),
-            };
+            if (conflitoTexto(tax.workoutTypes)) return false;
+            set({ customTaxonomy: { ...tax, workoutTypes: tax.workoutTypes.map((x) => x === oldId ? trimmed : x) },
+              workouts: s.workouts.map((w) => w.type === oldId ? { ...w, type: trimmed } : w) });
+            return true;
         }
-        return s;
-      }),
+        return true;
+      },
       removeCustomItem: (scope, id) => set((s) => {
         const tax = s.customTaxonomy;
         if (scope === "financeCategories")

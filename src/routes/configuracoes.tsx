@@ -77,10 +77,10 @@ function Config() {
     if (!renameTarget) return;
     const v = renameValue.trim();
     if (!v) return;
-    renameCustomItem(renameTarget.scope, renameTarget.id, v);
+    const ok = renameCustomItem(renameTarget.scope, renameTarget.id, v);
     setRenameTarget(null);
     setRenameValue("");
-    toast.success(t("config.categorySaved"));
+    toast.success(t(ok ? "config.categorySaved" : "config.categoryExists"));
   };
 
   const sections: { scope: TaxonomyScope; label: string; items: string[]; icons?: Record<string, string> }[] = [

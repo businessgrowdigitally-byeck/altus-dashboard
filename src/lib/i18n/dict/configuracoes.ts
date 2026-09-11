@@ -40,6 +40,11 @@ export const configuracoes = {
     en: "Category updated.",
     es: "Categoría actualizada.",
   },
+  "config.categoryExists": {
+    pt: "Já existe uma categoria com esse nome.",
+    en: "A category with that name already exists.",
+    es: "Ya existe una categoría con ese nombre.",
+  },
   "config.categoryRemoved": {
     pt: "Categoria removida.",
     en: "Category removed.",
@@ -49,11 +54,6 @@ export const configuracoes = {
     pt: "Excluir esta categoria? Os registros existentes manterão o texto atual.",
     en: "Remove this category? Existing records keep their current text.",
     es: "¿Eliminar esta categoría? Los registros existentes conservan su texto actual.",
-  },
-  "config.categorySections": {
-    pt: "Categorias por área",
-    en: "Categories by area",
-    es: "Categorías por área",
   },
   "config.categoryFinance": { pt: "Finanças", en: "Finance", es: "Finanzas" },
   "config.categoryStudyAreas": { pt: "Estudos — áreas", en: "Studies — areas", es: "Estudios — áreas" },
