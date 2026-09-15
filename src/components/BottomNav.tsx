@@ -1,7 +1,9 @@
 import { Link } from "@tanstack/react-router";
+import { Ellipsis, Home } from "lucide-react";
 import { AREA_DEFS, type AreaDef, type AreaKey } from "@/lib/areas";
 import { useT } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 
 const MAX_NAV_AREAS = 4;
 
@@ -26,30 +28,32 @@ export function BottomNav({
     .slice(0, MAX_NAV_AREAS);
 
   return (
-    <div className="md:hidden fixed bottom-0 inset-x-0 z-40 glass-strong border-t border-purple-500/20 pb-[env(safe-area-inset-bottom)]">
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(0,1fr))]">
-        <BottomLink active={pathname === "/"} to="/" label="🏠" title={t("nav.dashboard")} />
+    <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 border-t border-border bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl" aria-label={t("nav.mobileNavigation")}>
+      <div className="mx-auto grid max-w-lg grid-cols-[repeat(auto-fit,minmax(0,1fr))] px-1">
+        <BottomLink active={pathname === "/"} to="/" icon={Home} title={t("nav.dashboard")} />
         {primaries.map((def) => (
           <BottomLink
             key={def.key}
             active={pathname === def.to}
             to={def.to}
-            label={def.emoji}
+            icon={def.icon}
             title={t(def.i18nKey)}
           />
         ))}
-        <button
+        <Button
+          type="button"
+          variant="ghost"
           onClick={onOpenMore}
           className={cn(
-            "flex flex-col items-center justify-center gap-0.5 py-2.5 pt-3 text-[10px] font-medium transition-colors",
-            "text-muted-foreground hover:text-foreground",
+            "h-auto min-w-0 rounded-none px-1 py-2.5 text-[10px] font-medium",
+            "flex flex-col items-center justify-center gap-1 text-muted-foreground hover:bg-transparent hover:text-foreground",
           )}
         >
-          <span className="text-lg leading-none">⋯</span>
-          <span>{t("pz.nav.more")}</span>
-        </button>
+          <Ellipsis className="size-5" strokeWidth={1.8} />
+          <span className="max-w-full truncate">{t("pz.nav.more")}</span>
+        </Button>
       </div>
-    </div>
+    </nav>
   );
 }
 
@@ -57,12 +61,12 @@ type BottomNavTarget = AreaDef["to"] | "/";
 
 function BottomLink({
   to,
-  label,
+  icon: Icon,
   title,
   active,
 }: {
   to: BottomNavTarget;
-  label: string;
+  icon: AreaDef["icon"];
   title: string;
   active: boolean;
 }) {
@@ -70,12 +74,13 @@ function BottomLink({
     <Link
       to={to}
       className={cn(
-        "flex flex-col items-center justify-center gap-0.5 py-2.5 pt-3 text-[10px] font-medium transition-colors",
-        active ? "text-purple-300" : "text-muted-foreground hover:text-foreground",
+        "relative flex min-w-0 flex-col items-center justify-center gap-1 px-1 py-2.5 text-[10px] font-medium transition-colors",
+        active ? "text-primary" : "text-muted-foreground hover:text-foreground",
       )}
     >
-      <span className="text-lg leading-none">{label}</span>
-      <span>{title}</span>
+      {active && <span className="absolute inset-x-1/4 top-0 h-0.5 rounded-full bg-primary shadow-[0_0_12px_var(--primary)]" />}
+      <Icon className="size-5 shrink-0" strokeWidth={active ? 2.3 : 1.8} />
+      <span className="max-w-full truncate">{title}</span>
     </Link>
   );
 }

@@ -8,6 +8,8 @@ export const common = {
   "nav.agente": { pt: "Agente IA", en: "AI Agent", es: "Agente IA" },
   "nav.kaizen": { pt: "Kaizen Diário", en: "Daily Kaizen", es: "Kaizen Diario" },
   "nav.configuracoes": { pt: "Configurações", en: "Settings", es: "Configuración" },
+  "nav.mobileNavigation": { pt: "Navegação principal", en: "Main navigation", es: "Navegación principal" },
+  "nav.moreDescription": { pt: "Outras áreas e sua conta", en: "Other areas and your account", es: "Otras áreas y tu cuenta" },
 
   "app.tagline": { pt: "Organize • Foque • Conquiste", en: "Organize • Focus • Conquer", es: "Organiza • Enfoca • Conquista" },
   "app.defaultUser": { pt: "Visionário", en: "Visionary", es: "Visionario" },
