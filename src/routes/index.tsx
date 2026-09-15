@@ -694,7 +694,7 @@ function Dashboard() {
           )},
         ]
           .sort((a, b) => kpiOrder(a.area) - kpiOrder(b.area))
-          .map((k) => <Fragment key={k.area}>{k.node}</Fragment>)}
+          .map((k) => <Fragment key={k.area}>{k.node}</Fragment>))}
       </div>
 
       {/* Atividade Recente */}
