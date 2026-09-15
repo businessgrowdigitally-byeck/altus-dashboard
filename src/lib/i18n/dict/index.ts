@@ -11,6 +11,7 @@ import { quickAdd } from "./quickAdd";
 import { auth } from "./auth";
 import { terms } from "./terms";
 import { kaizen } from "./kaizen";
+import { personalization } from "./personalization";
 
 /** Dicionário unificado de todas as chaves de tradução (PT/EN/ES). */
 export const DICT = {
@@ -27,6 +28,7 @@ export const DICT = {
   ...auth,
   ...terms,
   ...kaizen,
+  ...personalization,
 } as const;
 
 export type DictKey = keyof typeof DICT;

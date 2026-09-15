@@ -1,8 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { useStore, type TaxonomyScope } from "@/lib/store";
+import { AREA_DEFS } from "@/lib/areas";
 import { GlassCard, PageHeader, Section } from "@/components/primitives";
 import { Modal, ConfirmButton } from "@/components/Modal";
+import { PrimaryAreaPicker } from "@/components/PrimaryAreaPicker";
 import { todayISO } from "@/lib/format";
 import { Pencil, Trash2 } from "lucide-react";
 import { Moon, Sun } from "lucide-react";
@@ -20,7 +22,7 @@ const ACCENTS = [
 ] as const;
 
 function Config() {
-  const { profile, setProfile, settings, setSettings, exportAll, importAll, clearAll, customTaxonomy, renameCustomItem, removeCustomItem } = useStore();
+  const { profile, setProfile, settings, setSettings, exportAll, importAll, clearAll, customTaxonomy, renameCustomItem, removeCustomItem, primaryAreas, setPrimaryAreas } = useStore();
   const [importText, setImportText] = useState("");
   const [clearOpen, setClearOpen] = useState(false);
   const [clearConfirm, setClearConfirm] = useState("");
@@ -167,6 +169,24 @@ function Config() {
               onChange={(e) => setProfile({ maxExpenses: +e.target.value })}
             />
           </Field>
+        </GlassCard>
+      </Section>
+
+      <Section title={t("pz.config.title")}>
+        <GlassCard className="space-y-3">
+          <p className="text-xs text-muted-foreground">{t("pz.config.hint")}</p>
+          <PrimaryAreaPicker value={primaryAreas} onChange={setPrimaryAreas} />
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-muted-foreground">
+              {primaryAreas.length} {t("pz.commonOf")} {AREA_DEFS.length}
+            </span>
+            <button
+              onClick={() => setPrimaryAreas(AREA_DEFS.map((d) => d.key))}
+              className="text-xs text-gold hover:underline"
+            >
+              {t("pz.config.selectAll")}
+            </button>
+          </div>
         </GlassCard>
       </Section>
 

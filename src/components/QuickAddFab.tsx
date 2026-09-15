@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { Plus, Wallet, HeartPulse, BookOpen, GraduationCap, Dumbbell, Check } from "lucide-react";
+import { Plus, Check } from "lucide-react";
 import { Modal, inpCls, btnGold } from "./Modal";
 import { useStore } from "@/lib/store";
+import { type AreaKey } from "@/lib/areas";
 import { todayISO } from "@/lib/format";
 import { toast } from "sonner";
 import { useT } from "@/lib/i18n";
@@ -9,12 +10,35 @@ import { TaxonomySelect } from "./TaxonomySelect";
 
 type QuickActionType = "menu" | "transaction" | "weight" | "workout" | "study" | "book";
 
+const ACTION_AREAS: Record<QuickActionType, AreaKey> = {
+  transaction: "financas",
+  weight: "corpo",
+  workout: "corpo",
+  study: "estudos",
+  book: "biblioteca",
+};
+
 export function QuickAddFab() {
   const [currentModal, setCurrentModal] = useState<QuickActionType | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
   const t = useT();
-  const { addTransaction, addWeight, addWorkout, addStudy, addBook, addCustomItem } = useStore();
+  const { addTransaction, addWeight, addWorkout, addStudy, addBook, addCustomItem, primaryAreas } =
+    useStore();
+
+  const actions: { key: QuickActionType; emoji: string; label: string; hover: string }[] = [
+    { key: "transaction", emoji: "💰", label: t("quickAdd.transaction"), hover: "hover:border-gold/40" },
+    { key: "weight", emoji: "⚖️", label: t("quickAdd.weight"), hover: "hover:border-emerald-bgt/40" },
+    { key: "workout", emoji: "💪", label: t("quickAdd.workout"), hover: "hover:border-purple-500/40" },
+    { key: "study", emoji: "🎓", label: t("quickAdd.study"), hover: "hover:border-blue-500/40" },
+    { key: "book", emoji: "📚", label: t("quickAdd.book"), hover: "hover:border-amber-500/40" },
+  ];
+
+  const sortedActions = [...actions].sort((a, b) => {
+    const fa = primaryAreas.indexOf(ACTION_AREAS[a.key]);
+    const fb = primaryAreas.indexOf(ACTION_AREAS[b.key]);
+    return (fa === -1 ? primaryAreas.length : fa) - (fb === -1 ? primaryAreas.length : fb);
+  });
 
   const showFeedback = (msg: string) => {
     setSuccessMsg(msg);
@@ -26,7 +50,7 @@ export function QuickAddFab() {
     <>
       {/* Toast Feedback */}
       {successMsg && (
-        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 bg-emerald-bgt text-black text-xs font-semibold px-4 py-2 rounded-full shadow-xl flex items-center gap-2 animate-bounce">
+        <div className="fixed bottom-28 left-1/2 -translate-x-1/2 z-50 bg-emerald-bgt text-black text-xs font-semibold px-4 py-2 rounded-full shadow-xl flex items-center gap-2 animate-bounce">
           <Check size={16} /> {successMsg}
         </div>
       )}
@@ -35,7 +59,7 @@ export function QuickAddFab() {
       <button
         onClick={() => setCurrentModal("menu")}
         aria-label={t("quickAdd.fab")}
-        className="md:hidden fixed bottom-6 right-6 z-40 w-14 h-14 rounded-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-xl shadow-purple-900/50 border border-purple-400/30 flex items-center justify-center active:scale-95 transition-all"
+        className="md:hidden fixed bottom-20 right-6 z-40 w-14 h-14 rounded-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-xl shadow-purple-900/50 border border-purple-400/30 flex items-center justify-center active:scale-95 transition-all"
       >
         <Plus size={28} className="transition-transform duration-200" />
       </button>
@@ -48,41 +72,16 @@ export function QuickAddFab() {
       >
         <p className="text-xs text-muted-foreground mb-4">{t("quickAdd.subtitle")}</p>
         <div className="grid grid-cols-2 gap-3">
-          <button
-            onClick={() => setCurrentModal("transaction")}
-            className="glass rounded-xl p-4 flex flex-col items-center gap-2 hover:border-gold/40 hover:bg-muted/80 transition text-center"
-          >
-            <span className="text-3xl">💰</span>
-            <span className="text-sm font-medium">{t("quickAdd.transaction")}</span>
-          </button>
-          <button
-            onClick={() => setCurrentModal("weight")}
-            className="glass rounded-xl p-4 flex flex-col items-center gap-2 hover:border-emerald-bgt/40 hover:bg-muted/80 transition text-center"
-          >
-            <span className="text-3xl">⚖️</span>
-            <span className="text-sm font-medium">{t("quickAdd.weight")}</span>
-          </button>
-          <button
-            onClick={() => setCurrentModal("workout")}
-            className="glass rounded-xl p-4 flex flex-col items-center gap-2 hover:border-purple-500/40 hover:bg-muted/80 transition text-center"
-          >
-            <span className="text-3xl">💪</span>
-            <span className="text-sm font-medium">{t("quickAdd.workout")}</span>
-          </button>
-          <button
-            onClick={() => setCurrentModal("study")}
-            className="glass rounded-xl p-4 flex flex-col items-center gap-2 hover:border-blue-500/40 hover:bg-muted/80 transition text-center"
-          >
-            <span className="text-3xl">🎓</span>
-            <span className="text-sm font-medium">{t("quickAdd.study")}</span>
-          </button>
-          <button
-            onClick={() => setCurrentModal("book")}
-            className="glass rounded-xl p-4 flex flex-col items-center gap-2 hover:border-amber-500/40 hover:bg-muted/80 transition text-center col-span-2"
-          >
-            <span className="text-3xl">📚</span>
-            <span className="text-sm font-medium">{t("quickAdd.book")}</span>
-          </button>
+          {sortedActions.map((a) => (
+            <button
+              key={a.key}
+              onClick={() => setCurrentModal(a.key)}
+              className={`glass rounded-xl p-4 flex flex-col items-center gap-2 ${a.hover} hover:bg-muted/80 transition text-center`}
+            >
+              <span className="text-3xl">{a.emoji}</span>
+              <span className="text-sm font-medium">{a.label}</span>
+            </button>
+          ))}
         </div>
       </Modal>
 

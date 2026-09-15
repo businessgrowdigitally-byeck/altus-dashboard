@@ -2,11 +2,6 @@ import { useState } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
 import {
   Home,
-  Wallet,
-  HeartPulse,
-  BookOpen,
-  GraduationCap,
-  Bot,
   Settings,
   Menu,
   X,
@@ -14,29 +9,25 @@ import {
   Cloud,
   CloudOff,
   Loader2,
-  Sparkles,
 } from "lucide-react";
 import { useStore } from "@/lib/store";
+import { AREA_DEFS } from "@/lib/areas";
 import { dailyQuote } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { QuickAddFab } from "@/components/QuickAddFab";
-import { AI_AGENT_ENABLED } from "@/lib/features";
+import { BottomNav } from "@/components/BottomNav";
 import { useAuth } from "@/lib/auth";
 import { useSyncStatus } from "@/lib/sync";
 import { flushSync } from "@/lib/sync";
 import { useT } from "@/lib/i18n";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 
-const NAV = [
+const FIXED_NAV = [
   { to: "/", i18nKey: "nav.dashboard", icon: Home, emoji: "🏠" },
-  { to: "/financas", i18nKey: "nav.financas", icon: Wallet, emoji: "💰" },
-  { to: "/corpo", i18nKey: "nav.corpo", icon: HeartPulse, emoji: "⚖️" },
-  { to: "/biblioteca", i18nKey: "nav.biblioteca", icon: BookOpen, emoji: "📚" },
-  { to: "/estudos", i18nKey: "nav.estudos", icon: GraduationCap, emoji: "🎓" },
-  { to: "/kaizen", i18nKey: "nav.kaizen", icon: Sparkles, emoji: "🌱" },
-  ...(AI_AGENT_ENABLED ? [{ to: "/agente", i18nKey: "nav.agente", icon: Bot, emoji: "🤖" }] : []),
   { to: "/configuracoes", i18nKey: "nav.configuracoes", icon: Settings, emoji: "⚙️" },
 ] as const;
+
+type RoutePath = "/" | "/financas" | "/corpo" | "/biblioteca" | "/estudos" | "/kaizen" | "/agente" | "/configuracoes";
 
 /** Mostra se as alterações já foram para a nuvem. */
 function SyncBadge() {
@@ -65,6 +56,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
   const t = useT();
   const profileName = useStore((s) => s.profile.name);
+  const primaryAreas = useStore((s) => s.primaryAreas);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const { user, signOut } = useAuth();
   const name =
@@ -73,6 +65,11 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     user?.user_metadata?.name ||
     user?.email?.split("@")[0] ||
     "Visionário";
+
+  const primaryNav = primaryAreas
+    .map((key) => AREA_DEFS.find((d) => d.key === key))
+    .filter((d): d is NonNullable<typeof d> => Boolean(d));
+  const moreNav = AREA_DEFS.filter((d) => !primaryAreas.includes(d.key));
 
   async function handleSignOut() {
     await flushSync();
@@ -163,26 +160,35 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           </div>
 
           <nav className="flex-1 px-3 py-4 space-y-1.5 overflow-y-auto">
-            {NAV.map((n) => {
-              const active = pathname === n.to;
-              return (
-                <Link
-                  key={n.to}
-                  to={n.to}
-                  onClick={() => setOpen(false)}
-                  className={cn(
-                    "flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium transition-all duration-200",
-                    "hover:bg-muted/50 hover:translate-x-1",
-                    active
-                      ? "bg-gradient-to-r from-purple-950/80 to-indigo-900/60 text-purple-100 border border-purple-500/40 shadow-sm shadow-purple-900/30 font-semibold"
-                      : "text-muted-foreground hover:text-foreground",
-                  )}
-                >
-                  <span className="text-lg">{n.emoji}</span>
-                  <span>{t(n.i18nKey)}</span>
-                </Link>
-              );
-            })}
+            {FIXED_NAV.slice(0, 1).map((n) => (
+              <NavItem key={n.to} to={n.to} emoji={n.emoji} label={t(n.i18nKey)} active={pathname === n.to} onNavigate={() => setOpen(false)} />
+            ))}
+
+            {primaryNav.length > 0 && (
+              <>
+                <div className="pt-3 pb-1 text-[10px] uppercase tracking-[0.2em] text-purple-400/70 font-semibold px-3.5">
+                  {t("pz.nav.primary")}
+                </div>
+                {primaryNav.map((d) => (
+                  <NavItem key={d.key} to={d.to} emoji={d.emoji} label={t(d.i18nKey)} active={pathname === d.to} onNavigate={() => setOpen(false)} />
+                ))}
+              </>
+            )}
+
+            {moreNav.length > 0 && (
+              <>
+                <div className="pt-3 pb-1 text-[10px] uppercase tracking-[0.2em] text-muted-foreground/70 font-semibold px-3.5">
+                  {t("pz.nav.more")}
+                </div>
+                {moreNav.map((d) => (
+                  <NavItem key={d.key} to={d.to} emoji={d.emoji} label={t(d.i18nKey)} active={pathname === d.to} onNavigate={() => setOpen(false)} />
+                ))}
+              </>
+            )}
+
+            {FIXED_NAV.slice(1).map((n) => (
+              <NavItem key={n.to} to={n.to} emoji={n.emoji} label={t(n.i18nKey)} active={pathname === n.to} onNavigate={() => setOpen(false)} />
+            ))}
           </nav>
 
           <div className="p-4 border-t border-border space-y-3">
@@ -213,9 +219,47 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           />
         )}
 
-        <main className="flex-1 min-w-0 p-4 md:p-8 max-w-[1400px] mx-auto w-full">{children}</main>
+        <main className="flex-1 min-w-0 p-4 md:p-8 max-w-[1400px] mx-auto w-full pb-28 md:pb-8">
+          {children}
+        </main>
       </div>
       <QuickAddFab />
+      <BottomNav
+        primaryAreas={primaryAreas}
+        pathname={pathname}
+        onOpenMore={() => setOpen(true)}
+      />
     </div>
+  );
+}
+
+function NavItem({
+  to,
+  emoji,
+  label,
+  active,
+  onNavigate,
+}: {
+  to: RoutePath;
+  emoji: string;
+  label: string;
+  active: boolean;
+  onNavigate: () => void;
+}) {
+  return (
+    <Link
+      to={to}
+      onClick={onNavigate}
+      className={cn(
+        "flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium transition-all duration-200",
+        "hover:bg-muted/50 hover:translate-x-1",
+        active
+          ? "bg-gradient-to-r from-purple-950/80 to-indigo-900/60 text-purple-100 border border-purple-500/40 shadow-sm shadow-purple-900/30 font-semibold"
+          : "text-muted-foreground hover:text-foreground",
+      )}
+    >
+      <span className="text-lg">{emoji}</span>
+      <span>{label}</span>
+    </Link>
   );
 }

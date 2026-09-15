@@ -1,5 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { useStore } from "@/lib/store";
 import { brl, daysAgoISO, fmtDate, fmtDateLong, greeting, kg, todayISO } from "@/lib/format";
 import { GlassCard, KpiCard, PageHeader, Section } from "@/components/primitives";
@@ -17,8 +17,10 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { useSyncStatus } from "@/lib/sync";
-import { Modal } from "@/components/Modal";
 import { useT } from "@/lib/i18n";
+import { OnboardingModal } from "@/components/OnboardingModal";
+import { AREA_DEFS, type AreaKey } from "@/lib/areas";
+import { cn } from "@/lib/utils";
 import {
   LineChart,
   Line,
@@ -71,8 +73,10 @@ function Dashboard() {
     goalsMacro,
     goalsDaily,
     completions,
+    primaryAreas,
     toggleCompletion,
     setProfile,
+    setPrimaryAreas,
   } = useStore();
   const t = useT();
 
@@ -239,8 +243,7 @@ function Dashboard() {
 
   const { user } = useAuth();
   const { status: syncStatus } = useSyncStatus();
-  const [showWelcomeModal, setShowWelcomeModal] = useState(false);
-  const [tempName, setTempName] = useState("");
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   const userName =
     profile.name ||
@@ -249,33 +252,45 @@ function Dashboard() {
     user?.email?.split("@")[0] ||
     "Visionário";
 
-  useEffect(() => {
-    if (mounted && syncStatus === "saved" && !profile.name && user) {
-      const sessionSkipped = sessionStorage.getItem("altus_welcome_skipped");
-      if (!sessionSkipped) {
-        setShowWelcomeModal(true);
-        const initialName =
-          user?.user_metadata?.full_name ||
-          user?.user_metadata?.name ||
-          user?.email?.split("@")[0] ||
-          "";
-        setTempName(initialName);
-      }
-    }
-  }, [mounted, syncStatus, profile.name, user]);
+  // Hierarquia do dashboard: áreas prioritárias primeiro, resto ao final.
+  const orderedAreas: AreaKey[] = useMemo(() => {
+    const rest = AREA_DEFS.map((d) => d.key).filter((k) => !primaryAreas.includes(k));
+    return [...(primaryAreas.length > 0 ? primaryAreas : AREA_DEFS.map((d) => d.key)), ...rest];
+  }, [primaryAreas]);
 
-  const handleSaveName = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (tempName.trim()) {
-      setProfile({ name: tempName.trim() });
-      setShowWelcomeModal(false);
-    }
+  const kpiOrder = (key: AreaKey) => {
+    const i = orderedAreas.indexOf(key);
+    return i === -1 ? orderedAreas.length : i;
   };
 
-  const handleCloseModal = () => {
-    setProfile({ name: userName });
-    setShowWelcomeModal(false);
-    sessionStorage.setItem("altus_welcome_skipped", "true");
+  useEffect(() => {
+    if (mounted && syncStatus === "saved" && user) {
+      if (!profile.name) {
+        const sessionSkipped = sessionStorage.getItem("altus_onboarding_skipped");
+        if (!sessionSkipped) {
+          setShowOnboarding(true);
+        }
+      } else if (primaryAreas.length === 0) {
+        // conta antiga sem preferência persistida: mantém tudo visível
+        setPrimaryAreas(AREA_DEFS.map((d) => d.key));
+      }
+    }
+  }, [mounted, syncStatus, profile.name, primaryAreas.length, user, setPrimaryAreas]);
+
+  const handleOnboardingComplete = (name: string, areas: AreaKey[]) => {
+    setProfile({ name });
+    setPrimaryAreas(areas.length > 0 ? areas : AREA_DEFS.map((d) => d.key));
+    setShowOnboarding(false);
+    sessionStorage.removeItem("altus_onboarding_skipped");
+  };
+
+  const handleOnboardingSkip = () => {
+    if (!profile.name) {
+      setProfile({ name: userName });
+    }
+    setPrimaryAreas(AREA_DEFS.map((d) => d.key));
+    setShowOnboarding(false);
+    sessionStorage.setItem("altus_onboarding_skipped", "true");
   };
 
   return (
@@ -391,6 +406,42 @@ function Dashboard() {
             <span>{t("ctaElevate")}</span>
             <ArrowRight size={16} />
           </a>
+        </div>
+      </div>
+
+      {/* Priority Areas Quick Access */}
+      <div>
+        <PageHeader
+          title={t("pz.dashboard.sectionTitle")}
+          subtitle={
+            primaryAreas.length === AREA_DEFS.length
+              ? t("pz.dashboard.allAreas")
+              : t("pz.dashboard.sectionSubtitle")
+          }
+        />
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+          {AREA_DEFS.map((area) => (
+            <Link
+              key={area.key}
+              to={area.to}
+              className={cn(
+                "group glass rounded-xl p-4 border transition-all duration-200",
+                primaryAreas.includes(area.key)
+                  ? "border-purple-500/30 hover:border-purple-500/60 hover:bg-muted/60"
+                  : "border-border opacity-60 hover:opacity-100 hover:border-purple-500/40 hover:bg-muted/60",
+              )}
+            >
+              <div className="flex flex-col gap-2">
+                <span className="text-2xl">{area.emoji}</span>
+                <span className="text-sm font-semibold text-foreground group-hover:text-purple-300 transition-colors">
+                  {t(area.i18nKey)}
+                </span>
+                <span className="text-[11px] text-muted-foreground flex items-center gap-1">
+                  {t("pz.dashboard.viewArea")} <ArrowRight size={12} className="group-hover:translate-x-0.5 transition-transform" />
+                </span>
+              </div>
+            </Link>
+          ))}
         </div>
       </div>
 
@@ -541,85 +592,109 @@ function Dashboard() {
       <div>
         <PageHeader title={t("reportTitle")} subtitle={t("reportSubtitle")} />
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <KpiCard
-            label={t("kpiSaldo")}
-            value={brl(balance)}
-            icon="💰"
-            tone={balance >= 0 ? "positive" : "negative"}
-            delta={`${brl(income)} − ${brl(expense)}`}
-          />
-          <KpiCard
-            label={t("kpiPeso")}
-            value={lastW ? kg(lastW.weight) : "—"}
-            icon="⚖️"
-            delta={
-              lastW && prevW
-                ? `${weightDelta >= 0 ? "+" : ""}${weightDelta.toFixed(1)} kg ${t("deltaVsWeek")}`
-                : t("deltaNoData")
-            }
-          />
-          <KpiCard
-            label={t("kpiLivros", { year: yearKey })}
-            value={booksThisYear}
-            icon="📚"
-            tone="gold"
-          />
-          <KpiCard label={t("kpiStreak")} value={`${streak} d`} icon="🎯" tone="gold" />
+          {([
+            { area: "financas" as AreaKey, node: (
+              <KpiCard
+                label={t("kpiSaldo")}
+                value={brl(balance)}
+                icon="💰"
+                tone={balance >= 0 ? "positive" : "negative"}
+                delta={`${brl(income)} − ${brl(expense)}`}
+              />
+            )},
+            { area: "corpo" as AreaKey, node: (
+              <KpiCard
+                label={t("kpiPeso")}
+                value={lastW ? kg(lastW.weight) : "—"}
+                icon="⚖️"
+                delta={
+                  lastW && prevW
+                    ? `${weightDelta >= 0 ? "+" : ""}${weightDelta.toFixed(1)} kg ${t("deltaVsWeek")}`
+                    : t("deltaNoData")
+                }
+              />
+            )},
+            { area: "biblioteca" as AreaKey, node: (
+              <KpiCard
+                label={t("kpiLivros", { year: yearKey })}
+                value={booksThisYear}
+                icon="📚"
+                tone="gold"
+              />
+            )},
+            { area: "estudos" as AreaKey, node: (
+              <KpiCard label={t("kpiStreak")} value={`${streak} d`} icon="🎯" tone="gold" />
+            )},
+          ]
+            .sort((a, b) => kpiOrder(a.area) - kpiOrder(b.area))
+            .map((k) => <Fragment key={k.area}>{k.node}</Fragment>)}
         </div>
       </div>
 
       {/* Mini-Gráficos */}
       <div className="grid md:grid-cols-2 gap-4">
-        <MiniChart title={t("chartSaldo")}>
-          <ResponsiveContainer width="100%" height={180}>
-            <LineChart data={finTrend}>
-              <CartesianGrid strokeOpacity={0.1} />
-              <XAxis dataKey="date" fontSize={10} stroke="#888" />
-              <YAxis fontSize={10} stroke="#888" />
-              <Tooltip contentStyle={tooltipStyle} formatter={(v: number) => brl(v)} />
-              <Line
-                type="monotone"
-                dataKey="saldo"
-                stroke="#8B5CF6"
-                strokeWidth={2.5}
-                dot={false}
-              />
-            </LineChart>
-          </ResponsiveContainer>
-        </MiniChart>
-        <MiniChart title={t("chartPeso")}>
-          <ResponsiveContainer width="100%" height={180}>
-            <LineChart data={weightTrend}>
-              <CartesianGrid strokeOpacity={0.1} />
-              <XAxis dataKey="date" fontSize={10} stroke="#888" />
-              <YAxis domain={["auto", "auto"]} fontSize={10} stroke="#888" />
-              <Tooltip contentStyle={tooltipStyle} />
-              <Line type="monotone" dataKey="peso" stroke="#2ECC71" strokeWidth={2.5} dot />
-            </LineChart>
-          </ResponsiveContainer>
-        </MiniChart>
-        <MiniChart title={t("chartLivros", { year: yearKey })}>
-          <ResponsiveContainer width="100%" height={180}>
-            <BarChart data={booksPerMonth}>
-              <CartesianGrid strokeOpacity={0.1} />
-              <XAxis dataKey="mes" fontSize={10} stroke="#888" />
-              <YAxis fontSize={10} stroke="#888" />
-              <Tooltip contentStyle={tooltipStyle} />
-              <Bar dataKey="livros" fill="#F5C842" radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </MiniChart>
-        <MiniChart title={t("chartEstudo")}>
-          <ResponsiveContainer width="100%" height={180}>
-            <BarChart data={studyWeekly}>
-              <CartesianGrid strokeOpacity={0.1} />
-              <XAxis dataKey="sem" fontSize={10} stroke="#888" />
-              <YAxis fontSize={10} stroke="#888" />
-              <Tooltip contentStyle={tooltipStyle} />
-              <Bar dataKey="horas" fill="#A855F7" radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </MiniChart>
+        {([
+          { area: "financas" as AreaKey, node: (
+            <MiniChart title={t("chartSaldo")}>
+              <ResponsiveContainer width="100%" height={180}>
+                <LineChart data={finTrend}>
+                  <CartesianGrid strokeOpacity={0.1} />
+                  <XAxis dataKey="date" fontSize={10} stroke="#888" />
+                  <YAxis fontSize={10} stroke="#888" />
+                  <Tooltip contentStyle={tooltipStyle} formatter={(v: number) => brl(v)} />
+                  <Line
+                    type="monotone"
+                    dataKey="saldo"
+                    stroke="#8B5CF6"
+                    strokeWidth={2.5}
+                    dot={false}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </MiniChart>
+          )},
+          { area: "corpo" as AreaKey, node: (
+            <MiniChart title={t("chartPeso")}>
+              <ResponsiveContainer width="100%" height={180}>
+                <LineChart data={weightTrend}>
+                  <CartesianGrid strokeOpacity={0.1} />
+                  <XAxis dataKey="date" fontSize={10} stroke="#888" />
+                  <YAxis domain={["auto", "auto"]} fontSize={10} stroke="#888" />
+                  <Tooltip contentStyle={tooltipStyle} />
+                  <Line type="monotone" dataKey="peso" stroke="#2ECC71" strokeWidth={2.5} dot />
+                </LineChart>
+              </ResponsiveContainer>
+            </MiniChart>
+          )},
+          { area: "biblioteca" as AreaKey, node: (
+            <MiniChart title={t("chartLivros", { year: yearKey })}>
+              <ResponsiveContainer width="100%" height={180}>
+                <BarChart data={booksPerMonth}>
+                  <CartesianGrid strokeOpacity={0.1} />
+                  <XAxis dataKey="mes" fontSize={10} stroke="#888" />
+                  <YAxis fontSize={10} stroke="#888" />
+                  <Tooltip contentStyle={tooltipStyle} />
+                  <Bar dataKey="livros" fill="#F5C842" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </MiniChart>
+          )},
+          { area: "estudos" as AreaKey, node: (
+            <MiniChart title={t("chartEstudo")}>
+              <ResponsiveContainer width="100%" height={180}>
+                <BarChart data={studyWeekly}>
+                  <CartesianGrid strokeOpacity={0.1} />
+                  <XAxis dataKey="sem" fontSize={10} stroke="#888" />
+                  <YAxis fontSize={10} stroke="#888" />
+                  <Tooltip contentStyle={tooltipStyle} />
+                  <Bar dataKey="horas" fill="#A855F7" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </MiniChart>
+          )},
+        ]
+          .sort((a, b) => kpiOrder(a.area) - kpiOrder(b.area))
+          .map((k) => <Fragment key={k.area}>{k.node}</Fragment>)}
       </div>
 
       {/* Atividade Recente */}
@@ -654,35 +729,13 @@ function Dashboard() {
       {/* Seção Completa de Metas & Rotina */}
       <GoalsSection />
 
-      <Modal open={showWelcomeModal} onClose={handleCloseModal} title={t("welcomeTitle")}>
-        <form onSubmit={handleSaveName} className="space-y-4">
-          <p className="text-sm text-purple-700/80 dark:text-purple-200/80 leading-relaxed">{t("welcomeQuestion")}</p>
-          <input
-            type="text"
-            className="w-full bg-muted/50 border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/40 focus:border-purple-500/50 transition text-foreground"
-            placeholder={t("namePlaceholder")}
-            value={tempName}
-            onChange={(e) => setTempName(e.target.value)}
-            required
-            autoFocus
-          />
-          <div className="flex justify-end gap-2 pt-2">
-            <button
-              type="button"
-              onClick={handleCloseModal}
-              className="px-4 py-2 rounded-lg text-sm text-muted-foreground hover:bg-muted/50 transition"
-            >
-              {t("skip")}
-            </button>
-            <button
-              type="submit"
-              className="px-4 py-2 rounded-lg text-sm font-semibold bg-gradient-to-r from-[#6E38F7] to-[#9055FF] text-white hover:brightness-110 transition shadow-lg shadow-purple-600/25"
-            >
-              {t("saveName")}
-            </button>
-          </div>
-        </form>
-      </Modal>
+      <OnboardingModal
+        open={showOnboarding}
+        initialName={userName}
+        initialAreas={primaryAreas}
+        onComplete={handleOnboardingComplete}
+        onSkip={handleOnboardingSkip}
+      />
     </div>
   );
 }

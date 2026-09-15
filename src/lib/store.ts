@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { daysAgoISO, todayISO } from "./format";
+import { ALL_AREA_KEYS, type AreaKey } from "./areas";
 
 export type Transaction = {
   id: string;
@@ -132,6 +133,8 @@ type State = {
   version: number;
   profile: Profile;
   settings: Settings;
+  /** Áreas marcadas como prioritárias pelo usuário (ordem = prioridade). */
+  primaryAreas: AreaKey[];
   transactions: Transaction[];
   weights: WeightEntry[];
   workouts: Workout[];
@@ -179,6 +182,7 @@ type State = {
   clearChat: () => void;
   setProfile: (p: Partial<Profile>) => void;
   setSettings: (s: Partial<Settings>) => void;
+  setPrimaryAreas: (areas: AreaKey[]) => void;
   exportAll: () => string;
   /** Devolve o que deu errado, ou null em caso de sucesso. */
   importAll: (json: string) => string | null;
@@ -252,6 +256,7 @@ const initial = {
   version: 2,
   profile: { name: "Visionário", goalWeight: 75, incomeTarget: 10000, maxExpenses: 6000, height: 1.75 } as Profile,
   settings: { theme: "dark" as const, accent: "gold" as const, geminiKey: "" },
+  primaryAreas: [...ALL_AREA_KEYS] as AreaKey[],
   transactions: sampleTransactions,
   weights: sampleWeights,
   workouts: sampleWorkouts,
@@ -267,7 +272,7 @@ const initial = {
 
 /** Campos que são sincronizados com a nuvem (tudo menos as funções do store). */
 export const SYNC_KEYS = [
-  "version", "profile", "settings", "transactions", "weights", "workouts",
+  "version", "profile", "settings", "primaryAreas", "transactions", "weights", "workouts",
   "books", "studies", "chat", "goalsMacro", "goalsDaily", "completions", "kaizen", "customTaxonomy",
 ] as const;
 
@@ -429,6 +434,8 @@ export const useStore = create<State>()(
       clearChat: () => set({ chat: [] }),
       setProfile: (p) => set((s) => ({ profile: { ...s.profile, ...p } })),
       setSettings: (sx) => set((s) => ({ settings: { ...s.settings, ...sx } })),
+      setPrimaryAreas: (areas) =>
+        set({ primaryAreas: [...new Set(areas.filter((a) => (ALL_AREA_KEYS as string[]).includes(a)))] }),
       exportAll: () => {
         const s = get() as unknown as Record<string, unknown>;
         const out: Record<string, unknown> = {};
