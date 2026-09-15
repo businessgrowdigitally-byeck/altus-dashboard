@@ -10,7 +10,7 @@ import { TaxonomySelect } from "./TaxonomySelect";
 
 type QuickActionType = "menu" | "transaction" | "weight" | "workout" | "study" | "book";
 
-const ACTION_AREAS: Record<QuickActionType, AreaKey> = {
+const ACTION_AREAS: Partial<Record<QuickActionType, AreaKey>> = {
   transaction: "financas",
   weight: "corpo",
   workout: "corpo",
@@ -35,8 +35,10 @@ export function QuickAddFab() {
   ];
 
   const sortedActions = [...actions].sort((a, b) => {
-    const fa = primaryAreas.indexOf(ACTION_AREAS[a.key]);
-    const fb = primaryAreas.indexOf(ACTION_AREAS[b.key]);
+    const aa = ACTION_AREAS[a.key];
+    const ab = ACTION_AREAS[b.key];
+    const fa = aa ? primaryAreas.indexOf(aa) : -1;
+    const fb = ab ? primaryAreas.indexOf(ab) : -1;
     return (fa === -1 ? primaryAreas.length : fa) - (fb === -1 ? primaryAreas.length : fb);
   });
 

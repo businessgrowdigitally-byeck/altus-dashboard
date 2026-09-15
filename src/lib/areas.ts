@@ -30,6 +30,6 @@ export const AREA_DEFS: AreaDef[] = [
   { key: "estudos", to: "/estudos", i18nKey: "nav.estudos", icon: GraduationCap, emoji: "🎓" },
   { key: "kaizen", to: "/kaizen", i18nKey: "nav.kaizen", icon: Sparkles, emoji: "🌱" },
   ...(AI_AGENT_ENABLED
-    ? [{ key: "agente", to: "/agente", i18nKey: "nav.agente", icon: Bot, emoji: "🤖" }]
+    ? ([{ key: "agente", to: "/agente", i18nKey: "nav.agente", icon: Bot, emoji: "🤖" }] as AreaDef[])
     : []),
 ];
