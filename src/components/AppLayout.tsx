@@ -3,12 +3,11 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import {
   Home,
   Settings,
-  Menu,
-  X,
   LogOut,
   Cloud,
   CloudOff,
   Loader2,
+  ChevronRight,
 } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { AREA_DEFS } from "@/lib/areas";
@@ -21,6 +20,15 @@ import { useSyncStatus } from "@/lib/sync";
 import { flushSync } from "@/lib/sync";
 import { useT } from "@/lib/i18n";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import {
+  Drawer,
+  DrawerClose,
+  DrawerContent,
+  DrawerDescription,
+  DrawerHeader,
+  DrawerTitle,
+} from "@/components/ui/drawer";
+import { Button } from "@/components/ui/button";
 
 const FIXED_NAV = [
   { to: "/", i18nKey: "nav.dashboard", icon: Home, emoji: "🏠" },
@@ -53,7 +61,7 @@ function SyncBadge() {
 }
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
-  const [open, setOpen] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
   const t = useT();
   const profileName = useStore((s) => s.profile.name);
   const primaryAreas = useStore((s) => s.primaryAreas);
@@ -79,7 +87,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen text-foreground">
       {/* Mobile topbar */}
-      <div className="md:hidden flex items-center justify-between p-4 glass-strong sticky top-0 z-30 border-b border-purple-500/20">
+      <header className="md:hidden sticky top-0 z-30 grid grid-cols-[minmax(0,1fr)_auto] items-center border-b border-border bg-background/90 px-4 py-3 backdrop-blur-xl">
         <div className="flex items-center gap-2.5">
           <svg
             viewBox="0 0 36 36"
@@ -106,21 +114,12 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             ALTUS
           </span>
         </div>
-        <button
-          onClick={() => setOpen(!open)}
-          className="p-2 rounded-lg hover:bg-muted/80 transition text-muted-foreground hover:text-foreground"
-        >
-          {open ? <X size={20} /> : <Menu size={20} />}
-        </button>
-      </div>
+        <LanguageSwitcher />
+      </header>
 
       <div className="flex">
         <aside
-          className={cn(
-            "fixed md:sticky top-0 z-40 h-screen w-64 shrink-0 transition-transform duration-300",
-            "glass-strong border-r flex flex-col",
-            open ? "translate-x-0" : "-translate-x-full md:translate-x-0",
-          )}
+          className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r border-border bg-sidebar md:flex"
         >
           <div className="p-5 border-b border-border">
             <div className="flex items-center gap-3">
@@ -161,7 +160,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
           <nav className="flex-1 px-3 py-4 space-y-1.5 overflow-y-auto">
             {FIXED_NAV.slice(0, 1).map((n) => (
-              <NavItem key={n.to} to={n.to} emoji={n.emoji} label={t(n.i18nKey)} active={pathname === n.to} onNavigate={() => setOpen(false)} />
+              <NavItem key={n.to} to={n.to} emoji={n.emoji} label={t(n.i18nKey)} active={pathname === n.to} />
             ))}
 
             {primaryNav.length > 0 && (
@@ -170,7 +169,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                   {t("pz.nav.primary")}
                 </div>
                 {primaryNav.map((d) => (
-                  <NavItem key={d.key} to={d.to} emoji={d.emoji} label={t(d.i18nKey)} active={pathname === d.to} onNavigate={() => setOpen(false)} />
+                  <NavItem key={d.key} to={d.to} emoji={d.emoji} label={t(d.i18nKey)} active={pathname === d.to} />
                 ))}
               </>
             )}
@@ -181,13 +180,13 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                   {t("pz.nav.more")}
                 </div>
                 {moreNav.map((d) => (
-                  <NavItem key={d.key} to={d.to} emoji={d.emoji} label={t(d.i18nKey)} active={pathname === d.to} onNavigate={() => setOpen(false)} />
+                  <NavItem key={d.key} to={d.to} emoji={d.emoji} label={t(d.i18nKey)} active={pathname === d.to} />
                 ))}
               </>
             )}
 
             {FIXED_NAV.slice(1).map((n) => (
-              <NavItem key={n.to} to={n.to} emoji={n.emoji} label={t(n.i18nKey)} active={pathname === n.to} onNavigate={() => setOpen(false)} />
+              <NavItem key={n.to} to={n.to} emoji={n.emoji} label={t(n.i18nKey)} active={pathname === n.to} />
             ))}
           </nav>
 
@@ -212,22 +211,24 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           </div>
         </aside>
 
-        {open && (
-          <div
-            className="md:hidden fixed inset-0 bg-black/50 z-30"
-            onClick={() => setOpen(false)}
-          />
-        )}
-
         <main className="flex-1 min-w-0 p-4 md:p-8 max-w-[1400px] mx-auto w-full pb-28 md:pb-8">
           {children}
         </main>
       </div>
       <QuickAddFab />
-      <BottomNav
+      {!moreOpen && (
+        <BottomNav
+          primaryAreas={primaryAreas}
+          pathname={pathname}
+          onOpenMore={() => setMoreOpen(true)}
+        />
+      )}
+      <MobileMoreDrawer
+        open={moreOpen}
+        onOpenChange={setMoreOpen}
         primaryAreas={primaryAreas}
-        pathname={pathname}
-        onOpenMore={() => setOpen(true)}
+        email={user?.email}
+        onSignOut={handleSignOut}
       />
     </div>
   );
@@ -238,18 +239,15 @@ function NavItem({
   emoji,
   label,
   active,
-  onNavigate,
 }: {
   to: RoutePath;
   emoji: string;
   label: string;
   active: boolean;
-  onNavigate: () => void;
 }) {
   return (
     <Link
       to={to}
-      onClick={onNavigate}
       className={cn(
         "flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium transition-all duration-200",
         "hover:bg-muted/50 hover:translate-x-1",
@@ -261,5 +259,76 @@ function NavItem({
       <span className="text-lg">{emoji}</span>
       <span>{label}</span>
     </Link>
+  );
+}
+
+function MobileMoreDrawer({
+  open,
+  onOpenChange,
+  primaryAreas,
+  email,
+  onSignOut,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  primaryAreas: (typeof AREA_DEFS)[number]["key"][];
+  email?: string;
+  onSignOut: () => Promise<void>;
+}) {
+  const t = useT();
+  const bottomAreaKeys = new Set(primaryAreas.slice(0, 4));
+  const remainingAreas = AREA_DEFS.filter((area) => !bottomAreaKeys.has(area.key));
+
+  return (
+    <Drawer open={open} onOpenChange={onOpenChange} shouldScaleBackground={false}>
+      <DrawerContent className="mx-auto max-h-[78vh] max-w-lg border-border bg-popover/98 px-3 pb-[calc(1rem+env(safe-area-inset-bottom))] backdrop-blur-xl md:hidden">
+        <DrawerHeader className="px-2 pb-3 pt-2 text-left">
+          <DrawerTitle className="font-display text-xl">{t("pz.nav.more")}</DrawerTitle>
+          <DrawerDescription>{t("nav.moreDescription")}</DrawerDescription>
+        </DrawerHeader>
+
+        <div className="grid grid-cols-2 gap-2">
+          {remainingAreas.map((area) => {
+            const Icon = area.icon;
+            return (
+              <DrawerClose key={area.key} asChild>
+                <Link
+                  to={area.to}
+                  className="flex min-w-0 items-center gap-3 rounded-lg border border-border bg-secondary/50 p-3.5 text-sm font-medium text-foreground transition-colors hover:border-primary/40 hover:bg-accent/15"
+                >
+                  <span className="grid size-9 shrink-0 place-items-center rounded-md bg-primary/10 text-primary">
+                    <Icon className="size-4.5" />
+                  </span>
+                  <span className="min-w-0 flex-1 truncate">{t(area.i18nKey)}</span>
+                </Link>
+              </DrawerClose>
+            );
+          })}
+          <DrawerClose asChild>
+            <Link
+              to="/configuracoes"
+              className="flex min-w-0 items-center gap-3 rounded-lg border border-border bg-secondary/50 p-3.5 text-sm font-medium text-foreground transition-colors hover:border-primary/40 hover:bg-accent/15"
+            >
+              <span className="grid size-9 shrink-0 place-items-center rounded-md bg-primary/10 text-primary">
+                <Settings className="size-4.5" />
+              </span>
+              <span className="min-w-0 flex-1 truncate">{t("nav.configuracoes")}</span>
+              <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+            </Link>
+          </DrawerClose>
+        </div>
+
+        <div className="mt-4 grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2 border-t border-border px-1 pt-4">
+          <div className="min-w-0">
+            <p className="truncate text-xs text-muted-foreground">{email}</p>
+            <SyncBadge />
+          </div>
+          <LanguageSwitcher />
+          <Button type="button" variant="ghost" size="icon" onClick={onSignOut} aria-label={t("auth.signOut")} title={t("auth.signOut")}>
+            <LogOut className="size-4" />
+          </Button>
+        </div>
+      </DrawerContent>
+    </Drawer>
   );
 }
