@@ -10,7 +10,7 @@ import { TaxonomySelect } from "./TaxonomySelect";
 
 type QuickActionType = "menu" | "transaction" | "weight" | "workout" | "study" | "book";
 
-const ACTION_AREAS: Record<QuickActionType, AreaKey> = {
+const ACTION_AREAS: Partial<Record<QuickActionType, AreaKey>> = {
   transaction: "financas",
   weight: "corpo",
   workout: "corpo",
