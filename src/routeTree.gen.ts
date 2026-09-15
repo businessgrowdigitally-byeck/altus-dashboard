@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as KaizenRouteImport } from './routes/kaizen'
 import { Route as FinancasRouteImport } from './routes/financas'
 import { Route as EstudosRouteImport } from './routes/estudos'
 import { Route as CorpoRouteImport } from './routes/corpo'
@@ -18,6 +19,11 @@ import { Route as AgenteRouteImport } from './routes/agente'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
 
+const KaizenRoute = KaizenRouteImport.update({
+  id: '/kaizen',
+  path: '/kaizen',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const FinancasRoute = FinancasRouteImport.update({
   id: '/financas',
   path: '/financas',
@@ -67,6 +73,7 @@ export interface FileRoutesByFullPath {
   '/corpo': typeof CorpoRoute
   '/estudos': typeof EstudosRoute
   '/financas': typeof FinancasRoute
+  '/kaizen': typeof KaizenRoute
   '/api/chat': typeof ApiChatRoute
 }
 export interface FileRoutesByTo {
@@ -77,6 +84,7 @@ export interface FileRoutesByTo {
   '/corpo': typeof CorpoRoute
   '/estudos': typeof EstudosRoute
   '/financas': typeof FinancasRoute
+  '/kaizen': typeof KaizenRoute
   '/api/chat': typeof ApiChatRoute
 }
 export interface FileRoutesById {
@@ -88,6 +96,7 @@ export interface FileRoutesById {
   '/corpo': typeof CorpoRoute
   '/estudos': typeof EstudosRoute
   '/financas': typeof FinancasRoute
+  '/kaizen': typeof KaizenRoute
   '/api/chat': typeof ApiChatRoute
 }
 export interface FileRouteTypes {
@@ -100,6 +109,7 @@ export interface FileRouteTypes {
     | '/corpo'
     | '/estudos'
     | '/financas'
+    | '/kaizen'
     | '/api/chat'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -110,6 +120,7 @@ export interface FileRouteTypes {
     | '/corpo'
     | '/estudos'
     | '/financas'
+    | '/kaizen'
     | '/api/chat'
   id:
     | '__root__'
@@ -120,6 +131,7 @@ export interface FileRouteTypes {
     | '/corpo'
     | '/estudos'
     | '/financas'
+    | '/kaizen'
     | '/api/chat'
   fileRoutesById: FileRoutesById
 }
@@ -131,11 +143,19 @@ export interface RootRouteChildren {
   CorpoRoute: typeof CorpoRoute
   EstudosRoute: typeof EstudosRoute
   FinancasRoute: typeof FinancasRoute
+  KaizenRoute: typeof KaizenRoute
   ApiChatRoute: typeof ApiChatRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/kaizen': {
+      id: '/kaizen'
+      path: '/kaizen'
+      fullPath: '/kaizen'
+      preLoaderRoute: typeof KaizenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/financas': {
       id: '/financas'
       path: '/financas'
@@ -203,6 +223,7 @@ const rootRouteChildren: RootRouteChildren = {
   CorpoRoute: CorpoRoute,
   EstudosRoute: EstudosRoute,
   FinancasRoute: FinancasRoute,
+  KaizenRoute: KaizenRoute,
   ApiChatRoute: ApiChatRoute,
 }
 export const routeTree = rootRouteImport
