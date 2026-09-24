@@ -1,14 +1,17 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useStore, type WeightEntry, type Workout } from "@/lib/store";
-import { daysAgoISO, fmtDate, kg, todayISO } from "@/lib/format";
+import { daysAgoISO, fmtDate, kg, toISODate, todayISO } from "@/lib/format";
 import { GlassCard, KpiCard, PageHeader, Section } from "@/components/primitives";
 import { TaxonomySelect, taxLabel } from "@/components/TaxonomySelect";
-import { Pencil, Trash2 } from "lucide-react";
+import { Activity, Check, Dumbbell, Flame, HeartPulse, Pencil, Timer, Trash2, Trophy } from "lucide-react";
 import { Modal, ConfirmButton, inpCls, btnGold } from "@/components/Modal";
 import { useT } from "@/lib/i18n";
+import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import {
+  Bar,
+  BarChart,
   LineChart,
   Line,
   XAxis,
@@ -19,7 +22,22 @@ import {
   CartesianGrid,
 } from "recharts";
 
-export const Route = createFileRoute("/corpo")({ component: Corpo });
+const TITLE = "Corpo & Saúde | ALTUS";
+const DESCRIPTION = "Acompanhe peso, IMC, constância e evolução dos seus treinos no ALTUS.";
+
+export const Route = createFileRoute("/corpo")({
+  component: Corpo,
+  head: () => ({
+    meta: [
+      { title: TITLE },
+      { name: "description", content: DESCRIPTION },
+      { property: "og:title", content: TITLE },
+      { property: "og:description", content: DESCRIPTION },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
+});
 
 function Corpo() {
   const {
@@ -36,6 +54,7 @@ function Corpo() {
   } = useStore();
   const t = useT();
   const [filter, setFilter] = useState<"1M" | "3M" | "6M" | "1A" | "ALL">("3M");
+  const [workoutMetric, setWorkoutMetric] = useState<"sessions" | "minutes">("sessions");
 
   const [editingWeight, setEditingWeight] = useState<WeightEntry | null>(null);
   const [editingWorkout, setEditingWorkout] = useState<Workout | null>(null);
@@ -97,6 +116,58 @@ function Corpo() {
   }, [weights]);
 
   const [wo, setWo] = useState({ date: todayISO(), type: "Musculação", duration: "", notes: "" });
+
+  const workoutInsights = useMemo(() => {
+    const uniqueDates = [...new Set(workouts.map((workout) => workout.date))].sort();
+    const dateSet = new Set(uniqueDates);
+    const reference = new Date(`${todayISO()}T12:00:00`);
+    if (!dateSet.has(toISODate(reference))) reference.setDate(reference.getDate() - 1);
+
+    let currentStreak = 0;
+    const cursor = new Date(reference);
+    while (dateSet.has(toISODate(cursor))) {
+      currentStreak += 1;
+      cursor.setDate(cursor.getDate() - 1);
+    }
+
+    let bestStreak = 0;
+    let runningStreak = 0;
+    let previous: Date | null = null;
+    uniqueDates.forEach((date) => {
+      const current = new Date(`${date}T12:00:00`);
+      const gap = previous ? Math.round((current.getTime() - previous.getTime()) / 86_400_000) : 0;
+      runningStreak = previous && gap === 1 ? runningStreak + 1 : 1;
+      bestStreak = Math.max(bestStreak, runningStreak);
+      previous = current;
+    });
+
+    const today = new Date(`${todayISO()}T12:00:00`);
+    const startOfWeek = new Date(today);
+    const mondayOffset = (today.getDay() + 6) % 7;
+    startOfWeek.setDate(today.getDate() - mondayOffset);
+    const weekDays = Array.from({ length: 7 }, (_, index) => {
+      const date = new Date(startOfWeek);
+      date.setDate(startOfWeek.getDate() + index);
+      const iso = toISODate(date);
+      return { iso, label: new Intl.DateTimeFormat(undefined, { weekday: "narrow" }).format(date), day: date.getDate(), trained: dateSet.has(iso), future: date > today };
+    });
+    const thisWeek = weekDays.filter((day) => day.trained).length;
+
+    const weekly = Array.from({ length: 6 }, (_, index) => {
+      const start = new Date(startOfWeek);
+      start.setDate(startOfWeek.getDate() - (5 - index) * 7);
+      const end = new Date(start);
+      end.setDate(start.getDate() + 6);
+      const inWeek = workouts.filter((workout) => workout.date >= toISODate(start) && workout.date <= toISODate(end));
+      return {
+        week: new Intl.DateTimeFormat(undefined, { day: "2-digit", month: "short" }).format(start),
+        sessions: inWeek.length,
+        minutes: inWeek.reduce((total, workout) => total + workout.duration, 0),
+      };
+    });
+
+    return { currentStreak, bestStreak, thisWeek, weekDays, weekly };
+  }, [workouts]);
   const submitWorkout = (e: React.FormEvent) => {
     e.preventDefault();
     const d = parseInt(wo.duration, 10);
@@ -280,9 +351,78 @@ function Corpo() {
       </div>
 
       <Section title={t("corpo.resumoDeTreinos")}>
-        <div className="grid lg:grid-cols-2 gap-4">
+        <div className="grid gap-4 lg:grid-cols-[0.9fr_1.4fr]">
+          <GlassCard className="relative overflow-hidden border-primary/20 bg-primary/5 hover:border-primary/30">
+            <div className="absolute right-0 top-0 h-28 w-28 rounded-full bg-primary/10 blur-3xl" />
+            <div className="relative">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                  <Flame className="size-4 text-gold" />
+                  {t("corpo.constancia")}
+                </div>
+                <span className="rounded-full border border-success/20 bg-success/10 px-2.5 py-1 text-xs font-semibold text-success">
+                  {workoutInsights.thisWeek} {t("corpo.treinos")}
+                </span>
+              </div>
+              <div className="mt-5 flex items-end gap-2">
+                <strong className="font-display text-5xl leading-none text-foreground">{workoutInsights.currentStreak}</strong>
+                <span className="pb-1 text-sm text-muted-foreground">{t("corpo.diasSeguidos", { v: "" }).trim()}</span>
+              </div>
+              <p className="mt-2 text-sm text-muted-foreground">
+                {workoutInsights.currentStreak ? t("corpo.continueAssim") : t("corpo.comeceSequencia")}
+              </p>
+              <div className="mt-5 grid grid-cols-7 gap-1.5" aria-label={t("corpo.frequenciaSemanal")}>
+                {workoutInsights.weekDays.map((day) => (
+                  <div key={day.iso} className="text-center">
+                    <span className="mb-2 block text-[10px] font-semibold uppercase text-muted-foreground">{day.label}</span>
+                    <div className={`mx-auto flex size-8 items-center justify-center rounded-full border text-xs font-semibold transition ${day.trained ? "border-success bg-success text-primary-foreground shadow-[0_0_18px_color-mix(in_oklch,var(--success)_35%,transparent)]" : day.future ? "border-border bg-muted/20 text-muted-foreground/50" : "border-border bg-muted/50 text-muted-foreground"}`}>
+                      {day.trained ? <Check className="size-4" strokeWidth={3} /> : day.day}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-5 grid grid-cols-2 divide-x divide-border border-t border-border pt-4">
+                <div>
+                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground"><Trophy className="size-3.5 text-gold" />{t("corpo.melhorSequencia")}</div>
+                  <div className="mt-1 font-display text-xl font-semibold">{workoutInsights.bestStreak} {t("corpo.dias")}</div>
+                </div>
+                <div className="pl-4">
+                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground"><Activity className="size-3.5 text-success" />{t("corpo.frequenciaSemanal")}</div>
+                  <div className="mt-1 font-display text-xl font-semibold">{workoutInsights.thisWeek}<span className="text-sm text-muted-foreground">/7</span></div>
+                </div>
+              </div>
+            </div>
+          </GlassCard>
+
           <GlassCard>
-            <h3 className="font-display font-semibold mb-4">{t("corpo.registrarTreino")}</h3>
+            <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <h3 className="font-display font-semibold">{t("corpo.progressoTreinos")}</h3>
+                <p className="mt-0.5 text-xs text-muted-foreground">{t("corpo.ultimasSemanas")}</p>
+              </div>
+              <div className="flex rounded-lg border border-border bg-muted/30 p-1">
+                <Button type="button" size="sm" variant="ghost" onClick={() => setWorkoutMetric("sessions")} className={workoutMetric === "sessions" ? "bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground" : "text-muted-foreground"}>{t("corpo.sessoes")}</Button>
+                <Button type="button" size="sm" variant="ghost" onClick={() => setWorkoutMetric("minutes")} className={workoutMetric === "minutes" ? "bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground" : "text-muted-foreground"}>{t("corpo.minutos")}</Button>
+              </div>
+            </div>
+            <ResponsiveContainer width="100%" height={230}>
+              <BarChart data={workoutInsights.weekly} barCategoryGap="32%">
+                <CartesianGrid vertical={false} stroke="var(--border)" strokeOpacity={0.55} />
+                <XAxis dataKey="week" stroke="var(--muted-foreground)" fontSize={10} tickLine={false} axisLine={false} />
+                <YAxis allowDecimals={false} stroke="var(--muted-foreground)" fontSize={10} tickLine={false} axisLine={false} width={28} />
+                <Tooltip contentStyle={ttStyle} cursor={{ fill: "var(--muted)", opacity: 0.25 }} />
+                <Bar dataKey={workoutMetric} fill="var(--success)" radius={[5, 5, 2, 2]} maxBarSize={34} />
+              </BarChart>
+            </ResponsiveContainer>
+          </GlassCard>
+        </div>
+
+        <div className="grid lg:grid-cols-2 gap-4 mt-4">
+          <GlassCard>
+            <div className="mb-4 flex items-center gap-2">
+              <div className="flex size-9 items-center justify-center rounded-lg bg-primary/10 text-primary"><Dumbbell className="size-4" /></div>
+              <h3 className="font-display font-semibold">{t("corpo.registrarTreino")}</h3>
+            </div>
             <form onSubmit={submitWorkout} className="space-y-3">
               <input
                 className={inpCls}
@@ -317,20 +457,29 @@ function Corpo() {
             </form>
           </GlassCard>
           <GlassCard>
-            <h3 className="font-display font-semibold mb-4">{t("corpo.ultimosTreinos")}</h3>
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="font-display font-semibold">{t("corpo.ultimosTreinos")}</h3>
+              <span className="text-xs text-muted-foreground">{workouts.length} {t("corpo.treinos")}</span>
+            </div>
             <div className="space-y-2 max-h-[280px] overflow-y-auto">
               {workouts.slice(0, 10).map((w) => (
                 <div
                   key={w.id}
-                  className="group flex items-center justify-between p-2.5 rounded-lg hover:bg-muted/50 transition border border-transparent hover:border-border"
+                  className="group flex items-center justify-between gap-3 rounded-lg border border-border/70 bg-muted/20 p-3 transition hover:border-primary/25 hover:bg-muted/40"
                 >
-                  <div>
+                  <div className="flex min-w-0 items-center gap-3">
+                    <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                      {w.type.toLowerCase().includes("cardio") ? <HeartPulse className="size-4" /> : <Dumbbell className="size-4" />}
+                    </div>
+                    <div className="min-w-0">
                     <div className="text-sm font-medium">{taxLabel(t, "workout.", w.type)}</div>
-                    <div className="text-xs text-muted-foreground">
-                      {fmtDate(w.date)} • {w.duration}min {w.notes ? `• ${w.notes}` : ""}
+                      <div className="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-muted-foreground">
+                        <span>{fmtDate(w.date)}</span><span className="flex items-center gap-1"><Timer className="size-3" />{w.duration} min</span>{w.notes && <span className="truncate">{w.notes}</span>}
+                      </div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition">
+                  <div className="flex shrink-0 items-center gap-1">
+                    <span className="mr-1 hidden items-center gap-1 text-[10px] font-semibold text-success sm:flex"><Check className="size-3" />{t("corpo.concluido")}</span>
                     <button
                       onClick={() => setEditingWorkout(w)}
                       title={t("common.edit")}
@@ -512,8 +661,9 @@ function Corpo() {
 }
 
 const ttStyle = {
-  backgroundColor: "rgba(12,11,24,0.95)",
-  border: "1px solid rgba(255,255,255,0.1)",
+  backgroundColor: "var(--popover)",
+  color: "var(--popover-foreground)",
+  border: "1px solid var(--border)",
   borderRadius: 8,
   fontSize: 12,
 };
