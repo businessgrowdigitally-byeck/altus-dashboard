@@ -46,6 +46,7 @@ export const corpo = {
   "corpo.constancia": { pt: "Constância", en: "Consistency", es: "Constancia" },
   "corpo.sequenciaAtual": { pt: "sequência atual", en: "current streak", es: "racha actual" },
   "corpo.diasSeguidos": { pt: "{v} dias seguidos", en: "{v} days in a row", es: "{v} días seguidos" },
+  "corpo.diasSeguidosLabel": { pt: "dias seguidos", en: "days in a row", es: "días seguidos" },
   "corpo.melhorSequencia": { pt: "Melhor sequência", en: "Best streak", es: "Mejor racha" },
   "corpo.frequenciaSemanal": { pt: "Frequência semanal", en: "Weekly frequency", es: "Frecuencia semanal" },
   "corpo.treinosEstaSemana": { pt: "treinos esta semana", en: "workouts this week", es: "entrenamientos esta semana" },

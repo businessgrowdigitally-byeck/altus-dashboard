@@ -6,7 +6,7 @@ import { GlassCard, KpiCard, PageHeader, Section } from "@/components/primitives
 import { TaxonomySelect, taxLabel } from "@/components/TaxonomySelect";
 import { Activity, Check, Dumbbell, Flame, HeartPulse, Pencil, Timer, Trash2, Trophy } from "lucide-react";
 import { Modal, ConfirmButton, inpCls, btnGold } from "@/components/Modal";
-import { useT } from "@/lib/i18n";
+import { useI18n } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import {
@@ -52,7 +52,7 @@ function Corpo() {
     removeWorkout,
     addCustomItem,
   } = useStore();
-  const t = useT();
+  const { t, locale } = useI18n();
   const [filter, setFilter] = useState<"1M" | "3M" | "6M" | "1A" | "ALL">("3M");
   const [workoutMetric, setWorkoutMetric] = useState<"sessions" | "minutes">("sessions");
 
@@ -149,7 +149,7 @@ function Corpo() {
       const date = new Date(startOfWeek);
       date.setDate(startOfWeek.getDate() + index);
       const iso = toISODate(date);
-      return { iso, label: new Intl.DateTimeFormat(undefined, { weekday: "narrow" }).format(date), day: date.getDate(), trained: dateSet.has(iso), future: date > today };
+      return { iso, label: new Intl.DateTimeFormat(locale, { weekday: "narrow" }).format(date), day: date.getDate(), trained: dateSet.has(iso), future: date > today };
     });
     const thisWeek = weekDays.filter((day) => day.trained).length;
 
@@ -160,14 +160,14 @@ function Corpo() {
       end.setDate(start.getDate() + 6);
       const inWeek = workouts.filter((workout) => workout.date >= toISODate(start) && workout.date <= toISODate(end));
       return {
-        week: new Intl.DateTimeFormat(undefined, { day: "2-digit", month: "short" }).format(start),
+        week: new Intl.DateTimeFormat(locale, { day: "2-digit", month: "short" }).format(start),
         sessions: inWeek.length,
         minutes: inWeek.reduce((total, workout) => total + workout.duration, 0),
       };
     });
 
     return { currentStreak, bestStreak, thisWeek, weekDays, weekly };
-  }, [workouts]);
+  }, [locale, workouts]);
   const submitWorkout = (e: React.FormEvent) => {
     e.preventDefault();
     const d = parseInt(wo.duration, 10);
@@ -366,7 +366,7 @@ function Corpo() {
               </div>
               <div className="mt-5 flex items-end gap-2">
                 <strong className="font-display text-5xl leading-none text-foreground">{workoutInsights.currentStreak}</strong>
-                <span className="pb-1 text-sm text-muted-foreground">{t("corpo.diasSeguidos", { v: "" }).trim()}</span>
+                <span className="pb-1 text-sm text-muted-foreground">{t("corpo.diasSeguidosLabel")}</span>
               </div>
               <p className="mt-2 text-sm text-muted-foreground">
                 {workoutInsights.currentStreak ? t("corpo.continueAssim") : t("corpo.comeceSequencia")}
