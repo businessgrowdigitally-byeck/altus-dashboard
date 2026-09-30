@@ -23,6 +23,14 @@ export const supabaseConfigured = Boolean(url && anonKey);
 
 const isBrowser = typeof window !== "undefined";
 
+// Fallback é uma facilidade temporária para o MVP. Produção deve definir as
+// variáveis; este aviso roda só no navegador e não quebra nada se faltarem.
+if (isBrowser && (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY)) {
+  console.warn(
+    "[ALTUS] Usando URL/chave anon padrão do Supabase. Configure VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY nas variáveis de ambiente do projeto.",
+  );
+}
+
 export const supabase = createClient(url, anonKey, {
   auth: {
     persistSession: isBrowser,

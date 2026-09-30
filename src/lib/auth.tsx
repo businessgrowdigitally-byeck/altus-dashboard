@@ -7,12 +7,17 @@ type AuthValue = {
   session: Session | null;
   /** true enquanto verificamos se já existe uma sessão salva no navegador */
   loading: boolean;
+  /** true quando o usuário veio pelo link de redefinição de senha e precisa trocá-la */
+  isRecovery: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
   /** retorna true quando o Supabase exige confirmação de e-mail antes do login */
   signUp: (email: string, password: string) => Promise<boolean>;
   signOut: () => Promise<void>;
   sendReset: (email: string) => Promise<void>;
+  /** Define a nova senha escolhida pelo usuário na tela de recuperação. */
+  updatePassword: (password: string) => Promise<void>;
+  clearRecovery: () => void;
 };
 
 const AuthContext = createContext<AuthValue | null>(null);
@@ -33,6 +38,7 @@ export function traduzErro(message: string): string {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isRecovery, setIsRecovery] = useState(false);
 
   useEffect(() => {
     if (!supabaseConfigured) {
@@ -42,10 +48,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     supabase.auth
       .getSession()
-      .then(({ data }) => setSession(data.session))
+      .then(({ data }) => {
+        // O link de recuperação chega com #type=recovery no hash — confirmação
+        // extra caso o evento abaixo demore ou se perca no fluxo de SSR.
+        const params = typeof window !== "undefined" ? new URLSearchParams(window.location.hash.slice(1)) : null;
+        if (params?.get("type") === "recovery" && data.session) setIsRecovery(true);
+        setSession(data.session);
+      })
       .finally(() => setLoading(false));
 
-    const { data } = supabase.auth.onAuthStateChange((_event, next) => setSession(next));
+    const { data } = supabase.auth.onAuthStateChange((event, next) => {
+      if (event === "PASSWORD_RECOVERY") setIsRecovery(true);
+      setSession(next);
+    });
     return () => data.subscription.unsubscribe();
   }, []);
 
@@ -53,6 +68,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     user: session?.user ?? null,
     session,
     loading,
+    isRecovery,
     signIn: async (email, password) => {
       const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
       if (error) throw new Error(traduzErro(error.message));
@@ -72,13 +88,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return !data.session;
     },
     signOut: async () => {
-      await supabase.auth.signOut();
+      const { error } = await supabase.auth.signOut();
+      if (error) throw new Error(traduzErro(error.message));
     },
     sendReset: async (email) => {
       const redirectTo = typeof window !== "undefined" ? window.location.origin : undefined;
       const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), { redirectTo });
       if (error) throw new Error(traduzErro(error.message));
     },
+    updatePassword: async (password) => {
+      const { error } = await supabase.auth.updateUser({ password });
+      if (error) throw new Error(traduzErro(error.message));
+    },
+    clearRecovery: () => setIsRecovery(false),
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

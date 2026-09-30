@@ -1,26 +1,35 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { Loader2 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { supabaseConfigured } from "@/lib/supabase";
 import { useT } from "@/lib/i18n";
 
-type Mode = "login" | "signup" | "reset";
+type Mode = "login" | "signup" | "reset" | "recovery";
 
 const TITLES: Record<Mode, { title: string; subtitle: string; action: string }> = {
   login: { title: "title.login", subtitle: "subtitle.login", action: "action.login" },
   signup: { title: "title.signup", subtitle: "subtitle.signup", action: "action.signup" },
   reset: { title: "title.reset", subtitle: "subtitle.reset", action: "action.reset" },
+  recovery: { title: "title.newPassword", subtitle: "subtitle.newPassword", action: "action.updatePassword" },
 };
 
-export function AuthScreen() {
-  const { signIn, signUp, sendReset, signInWithGoogle } = useAuth();
+export function AuthScreen({ recovery = false }: { recovery?: boolean }) {
+  const { signIn, signUp, sendReset, signInWithGoogle, updatePassword, signOut, clearRecovery } = useAuth();
   const t = useT();
-  const [mode, setMode] = useState<Mode>("login");
+  const [mode, setMode] = useState<Mode>(recovery ? "recovery" : "login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+
+  // Ao encerrar a recuperação no sucesso, esvaziamos o estado de senha.
+  useEffect(() => {
+    if (!recovery) return;
+    setPassword("");
+    setConfirm("");
+  }, [recovery]);
 
   function switchMode(next: Mode) {
     setMode(next);
@@ -42,9 +51,26 @@ export function AuthScreen() {
           setNotice(t("notice.signup"));
           setMode("login");
         }
-      } else {
+      } else if (mode === "reset") {
         await sendReset(email);
         setNotice(t("notice.reset"));
+      } else {
+        if (password.length < 6) {
+          setError(t("error.passwordTooShort"));
+          return;
+        }
+        if (password !== confirm) {
+          setError(t("error.passwordMismatch"));
+          return;
+        }
+        await updatePassword(password);
+        setNotice(t("notice.passwordUpdated"));
+        // Encerra a sessão de recuperação: volta para o login com a nova senha.
+        setTimeout(() => {
+          void signOut()
+            .catch(() => {})
+            .finally(clearRecovery);
+        }, 1600);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : t("error.generic"));
@@ -75,23 +101,63 @@ export function AuthScreen() {
       <p className="mt-1 text-sm text-muted-foreground">{t(meta.subtitle)}</p>
 
       <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-        <div className="space-y-1.5">
-          <label htmlFor="email" className="text-sm font-medium text-foreground">
-            {t("label.email")}
-          </label>
-          <input
-            id="email"
-            type="email"
-            required
-            autoComplete="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="voce@email.com"
-            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-primary"
-          />
-        </div>
+        {mode !== "recovery" && (
+          <div className="space-y-1.5">
+            <label htmlFor="email" className="text-sm font-medium text-foreground">
+              {t("label.email")}
+            </label>
+            <input
+              id="email"
+              type="email"
+              required
+              autoComplete="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="voce@email.com"
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-primary"
+            />
+          </div>
+        )}
 
-        {mode !== "reset" && (
+        {mode === "recovery" && (
+          <div className="space-y-1.5">
+            <label htmlFor="recovery-password" className="text-sm font-medium text-foreground">
+              {t("label.newPassword")}
+            </label>
+            <input
+              id="recovery-password"
+              type="password"
+              required
+              minLength={6}
+              autoComplete="new-password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder={t("placeholder.password")}
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-primary"
+            />
+          </div>
+        )}
+
+        {mode === "recovery" && (
+          <div className="space-y-1.5">
+            <label htmlFor="recovery-confirm" className="text-sm font-medium text-foreground">
+              {t("label.confirmPassword")}
+            </label>
+            <input
+              id="recovery-confirm"
+              type="password"
+              required
+              minLength={6}
+              autoComplete="new-password"
+              value={confirm}
+              onChange={(e) => setConfirm(e.target.value)}
+              placeholder={t("placeholder.confirmPassword")}
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-primary"
+            />
+          </div>
+        )}
+
+        {mode !== "reset" && mode !== "recovery" && (
           <div className="space-y-1.5">
             <label htmlFor="password" className="text-sm font-medium text-foreground">
               {t("label.password")}
@@ -131,7 +197,7 @@ export function AuthScreen() {
         </button>
       </form>
 
-      {mode !== "reset" && (
+      {mode !== "reset" && mode !== "recovery" && (
         <div className="mt-4 space-y-4">
           <div className="relative flex items-center justify-center">
             <div className="w-full border-t border-border" />
@@ -195,7 +261,7 @@ export function AuthScreen() {
             </p>
           </>
         )}
-        {mode !== "login" && (
+        {mode !== "login" && mode !== "recovery" && (
           <p>
             <button
               type="button"

@@ -6,6 +6,7 @@ import { Bot, Send, Sparkles } from "lucide-react";
 import { AI_AGENT_ENABLED } from "@/lib/features";
 import { daysAgoISO, todayISO } from "@/lib/format";
 import { useT } from "@/lib/i18n";
+import { useAuth } from "@/lib/auth";
 
 export const Route = createFileRoute("/agente")({
   // Agente vendido separadamente como add-on: rota desativada nesta versão.
@@ -39,6 +40,7 @@ function Agente() {
     completions,
   } = useStore();
   const t = useT();
+  const { session } = useAuth();
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -129,7 +131,11 @@ function Agente() {
       })();
       const res = await fetch("/api/chat", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          // A rota só aceita chamadas autenticadas: prova nossa identidade com o token da sessão.
+          ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+        },
         body: JSON.stringify({ messages: history, context: buildContext(), lang }),
       });
 

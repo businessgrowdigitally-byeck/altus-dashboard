@@ -22,6 +22,22 @@ export const common = {
   "sync.loadErrorDesc": { pt: "Tente novamente ou volte mais tarde.", en: "Try again or come back later.", es: "Inténtalo de nuevo o vuelve más tarde." },
   "sync.loadErrorRetry": { pt: "Tentar novamente", en: "Try again", es: "Intentar de nuevo" },
   "auth.signOut": { pt: "Sair da conta", en: "Sign out", es: "Cerrar sesión" },
+  "auth.signOutFailed": {
+    pt: "Não foi possível encerrar a sessão. Verifique sua conexão e tente novamente.",
+    en: "We couldn't sign you out. Check your connection and try again.",
+    es: "No se pudo cerrar la sesión. Revisa tu conexión e inténtalo de nuevo.",
+  },
+  "auth.signOutWarnTitle": { pt: "Alterações não salvas", en: "Unsaved changes", es: "Cambios sin guardar" },
+  "auth.signOutWarnDesc": {
+    pt: "Algumas alterações podem não ter sido salvas na nuvem. Deseja sair mesmo assim?",
+    en: "Some changes may not have been saved to the cloud. Sign out anyway?",
+    es: "Es posible que algunos cambios no se hayan guardado en la nube. ¿Salir de todos modos?",
+  },
+  "auth.signOutWarnConfirm": {
+    pt: "Sair mesmo assim",
+    en: "Sign out anyway",
+    es: "Salir de todos modos",
+  },
 
   "lang.label": { pt: "Idioma", en: "Language", es: "Idioma" },
   "lang.change": { pt: "Alterar idioma", en: "Change language", es: "Cambiar idioma" },

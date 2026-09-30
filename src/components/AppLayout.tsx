@@ -29,6 +29,7 @@ import {
   DrawerTitle,
 } from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
+import { Modal } from "@/components/Modal";
 
 const FIXED_NAV = [
   { to: "/", i18nKey: "nav.dashboard", icon: Home, emoji: "🏠" },
@@ -61,7 +62,10 @@ function SyncBadge() {
 }
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
-  const [moreOpen, setMoreOpen] = useState(false);
+const [moreOpen, setMoreOpen] = useState(false);
+  const [signOutWarn, setSignOutWarn] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
+  const [signOutError, setSignOutError] = useState<string | null>(null);
   const t = useT();
   const profileName = useStore((s) => s.profile.name);
   const primaryAreas = useStore((s) => s.primaryAreas);
@@ -80,8 +84,39 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const moreNav = AREA_DEFS.filter((d) => !primaryAreas.includes(d.key));
 
   async function handleSignOut() {
-    await flushSync();
-    await signOut();
+    if (signingOut) return;
+    // Garante que o que estava pendente subiu antes de sair. Se a nuvem não
+    // confirmar, avisamos antes de encerrar a sessão — o logout limpa o local.
+    try {
+      await flushSync();
+    } catch {
+      /* queda de rede: a confirmação abaixo decide */
+    }
+    if (useSyncStatus.getState().status === "error") {
+      setSignOutError(null);
+      setSignOutWarn(true);
+      return;
+    }
+    await doSignOut();
+  }
+
+  async function doSignOut() {
+    if (signingOut) return;
+    setSigningOut(true);
+    setSignOutError(null);
+    try {
+      await signOut();
+    } catch {
+      setSignOutError(t("auth.signOutFailed"));
+    } finally {
+      setSigningOut(false);
+      setMoreOpen(false);
+    }
+  }
+
+  function confirmSignOutWarn() {
+    setSignOutWarn(false);
+    void doSignOut();
   }
 
   return (
@@ -197,7 +232,11 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 <div className="truncate text-xs text-muted-foreground" title={user?.email ?? ""}>
                   {user?.email}
                 </div>
-                <SyncBadge />
+                {signOutError ? (
+                  <div className="mt-0.5 text-[10px] text-destructive">{signOutError}</div>
+                ) : (
+                  <SyncBadge />
+                )}
               </div>
               <LanguageSwitcher />
               <button
@@ -230,6 +269,27 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         email={user?.email}
         onSignOut={handleSignOut}
       />
+
+      {signOutWarn && (
+        <Modal open onClose={() => setSignOutWarn(false)} title={t("auth.signOutWarnTitle")} maxWidth="max-w-sm">
+          <p className="text-sm text-muted-foreground">{t("auth.signOutWarnDesc")}</p>
+          <div className="flex justify-end gap-2 mt-5">
+            <button
+              onClick={() => setSignOutWarn(false)}
+              className="px-4 py-2 text-sm rounded-lg border border-border hover:bg-muted/60 transition"
+            >
+              {t("action.cancel")}
+            </button>
+            <button
+              onClick={confirmSignOutWarn}
+              disabled={signingOut}
+              className="px-4 py-2 text-sm rounded-lg bg-destructive text-white font-semibold hover:opacity-90 disabled:opacity-50 transition"
+            >
+              {t("auth.signOutWarnConfirm")}
+            </button>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }

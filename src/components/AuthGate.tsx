@@ -11,16 +11,22 @@ import { useT } from "@/lib/i18n";
  */
 export function AuthGate({ children }: { children: ReactNode }) {
   const t = useT();
-  const { user, loading } = useAuth();
+  const { user, loading, isRecovery } = useAuth();
   const status = useSyncStatus((s) => s.status);
   const syncError = useSyncStatus((s) => s.error);
 
   const userId = user?.id ?? null;
 
   useEffect(() => {
+    // Durante a recuperação de senha não carregamos nem salvamos dados: o único
+    // caminho é trocar a senha primeiro.
+    if (isRecovery) {
+      stopSync();
+      return;
+    }
     if (userId) void startSync(userId);
     else stopSync();
-  }, [userId]);
+  }, [userId, isRecovery]);
 
   // Garante que alterações recentes sejam enviadas se a aba for fechada.
   useEffect(() => {
@@ -32,6 +38,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
 
   if (loading) return <Splash label={t("sync.loading")} />;
   if (!user) return <AuthScreen />;
+  if (isRecovery) return <AuthScreen recovery />;
 
   if (status === "loading" || status === "idle") return <Splash label={t("sync.loading")} />;
 

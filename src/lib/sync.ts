@@ -29,6 +29,8 @@ export const useSyncStatus = create<{
 
 const TABLE = "user_data";
 const DEBOUNCE_MS = 1200;
+/** Teto de tamanho do estado completo salvo na nuvem (proteção contra estouro). */
+const MAX_SNAPSHOT_BYTES = 8 * 1024 * 1024;
 
 let unsubscribeStore: (() => void) | null = null;
 let saveTimer: ReturnType<typeof setTimeout> | null = null;
@@ -46,12 +48,45 @@ function snapshot(): Snapshot {
   return JSON.parse(JSON.stringify(out)) as Snapshot;
 }
 
+/**
+ * Sanitiza o que vem da nuvem: copia apenas as chaves conhecidas e com o tipo
+ * certo. Um cliente autenticado consegue gravar qualquer JSON na própria linha
+ * pela API anon; sem esse filtro, uma linha adulterada substituiria funções do
+ * store (ex.: "addTransaction") e quebraria o app de forma permanente.
+ */
+function sanitizeSnapshot(value: unknown): object {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+  const src = value as Record<string, unknown>;
+  const out: Record<string, unknown> = {};
+  for (const key of SYNC_KEYS) {
+    if (!(key in src)) continue;
+    const v = src[key];
+    const esperaLista = Array.isArray((emptyState as Record<string, unknown>)[key]);
+    if (esperaLista) {
+      if (Array.isArray(v)) out[key] = v;
+      continue;
+    }
+    if (key === "version") {
+      if (typeof v === "number") out[key] = v;
+      continue;
+    }
+    if (v !== null && typeof v === "object" && !Array.isArray(v)) out[key] = v;
+  }
+  return out;
+}
+
 async function push(userId: string) {
   const { set } = useSyncStatus.getState();
   set("saving");
+  const snap = snapshot();
+  const snapJson = JSON.stringify(snap);
+  if (new TextEncoder().encode(snapJson).length > MAX_SNAPSHOT_BYTES) {
+    set("error", "Dados grandes demais para salvar. Remova registros antigos e tente novamente.");
+    return;
+  }
   const { error } = await supabase
     .from(TABLE)
-    .upsert({ user_id: userId, data: snapshot(), updated_at: new Date().toISOString() });
+    .upsert({ user_id: userId, data: snap, updated_at: new Date().toISOString() });
   if (error) set("error", error.message);
   else set("saved");
 }
@@ -88,8 +123,8 @@ export async function startSync(userId: string) {
   }
 
   if (data?.data && Object.keys(data.data).length > 0) {
-    // Conta existente: a nuvem é a fonte da verdade.
-    useStore.setState({ ...emptyState, ...(data.data as object) });
+    // Conta existente: a nuvem é a fonte da verdade (com filtro de chaves).
+    useStore.setState({ ...emptyState, ...sanitizeSnapshot(data.data) });
   } else {
     // Conta nova: começa limpa e cria a linha na nuvem.
     useStore.setState({ ...emptyState });
