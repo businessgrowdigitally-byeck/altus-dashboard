@@ -5,6 +5,8 @@ import { brl, daysAgoISO, fmtDate, fmtDateLong, greeting, kg, todayISO } from "@
 import { GlassCard, KpiCard, PageHeader, Section } from "@/components/primitives";
 import { GoalsSection } from "@/components/GoalsSection";
 import { KaizenTodayCard } from "@/components/KaizenTodayCard";
+import { PrimaryAreaPicker } from "@/components/PrimaryAreaPicker";
+import { Modal, btnGold } from "@/components/Modal";
 import {
   Check,
   ArrowRight,
@@ -244,6 +246,7 @@ function Dashboard() {
   const { user } = useAuth();
   const { status: syncStatus } = useSyncStatus();
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [showAreaPicker, setShowAreaPicker] = useState(false);
 
   const userName =
     profile.name ||
@@ -262,6 +265,128 @@ function Dashboard() {
     const i = orderedAreas.indexOf(key);
     return i === -1 ? orderedAreas.length : i;
   };
+
+  const prioritySet = useMemo(() => new Set(primaryAreas), [primaryAreas]);
+
+  const kpis: { area: AreaKey; node: React.ReactNode }[] = [
+    {
+      area: "financas",
+      node: (
+        <KpiCard
+          label={t("kpiSaldo")}
+          value={brl(balance)}
+          icon="💰"
+          tone={balance >= 0 ? "positive" : "negative"}
+          delta={`${brl(income)} − ${brl(expense)}`}
+        />
+      ),
+    },
+    {
+      area: "corpo",
+      node: (
+        <KpiCard
+          label={t("kpiPeso")}
+          value={lastW ? kg(lastW.weight) : "—"}
+          icon="⚖️"
+          delta={
+            lastW && prevW
+              ? `${weightDelta >= 0 ? "+" : ""}${weightDelta.toFixed(1)} kg ${t("deltaVsWeek")}`
+              : t("deltaNoData")
+          }
+        />
+      ),
+    },
+    {
+      area: "biblioteca",
+      node: (
+        <KpiCard
+          label={t("kpiLivros", { year: yearKey })}
+          value={booksThisYear}
+          icon="📚"
+          tone="gold"
+        />
+      ),
+    },
+    {
+      area: "estudos",
+      node: <KpiCard label={t("kpiStreak")} value={`${streak} d`} icon="🎯" tone="gold" />,
+    },
+  ];
+
+  const visibleKpis = kpis
+    .filter((k) => prioritySet.has(k.area))
+    .sort((a, b) => kpiOrder(a.area) - kpiOrder(b.area));
+
+  const miniCharts: { area: AreaKey; node: React.ReactNode }[] = [
+    {
+      area: "financas",
+      node: (
+        <MiniChart title={t("chartSaldo")}>
+          <ResponsiveContainer width="100%" height={180}>
+            <LineChart data={finTrend}>
+              <CartesianGrid strokeOpacity={0.1} />
+              <XAxis dataKey="date" fontSize={10} stroke="#888" />
+              <YAxis fontSize={10} stroke="#888" />
+              <Tooltip contentStyle={tooltipStyle} formatter={(v: number) => brl(v)} />
+              <Line type="monotone" dataKey="saldo" stroke="#8B5CF6" strokeWidth={2.5} dot={false} />
+            </LineChart>
+          </ResponsiveContainer>
+        </MiniChart>
+      ),
+    },
+    {
+      area: "corpo",
+      node: (
+        <MiniChart title={t("chartPeso")}>
+          <ResponsiveContainer width="100%" height={180}>
+            <LineChart data={weightTrend}>
+              <CartesianGrid strokeOpacity={0.1} />
+              <XAxis dataKey="date" fontSize={10} stroke="#888" />
+              <YAxis domain={["auto", "auto"]} fontSize={10} stroke="#888" />
+              <Tooltip contentStyle={tooltipStyle} />
+              <Line type="monotone" dataKey="peso" stroke="#2ECC71" strokeWidth={2.5} dot />
+            </LineChart>
+          </ResponsiveContainer>
+        </MiniChart>
+      ),
+    },
+    {
+      area: "biblioteca",
+      node: (
+        <MiniChart title={t("chartLivros", { year: yearKey })}>
+          <ResponsiveContainer width="100%" height={180}>
+            <BarChart data={booksPerMonth}>
+              <CartesianGrid strokeOpacity={0.1} />
+              <XAxis dataKey="mes" fontSize={10} stroke="#888" />
+              <YAxis fontSize={10} stroke="#888" />
+              <Tooltip contentStyle={tooltipStyle} />
+              <Bar dataKey="livros" fill="#F5C842" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </MiniChart>
+      ),
+    },
+    {
+      area: "estudos",
+      node: (
+        <MiniChart title={t("chartEstudo")}>
+          <ResponsiveContainer width="100%" height={180}>
+            <BarChart data={studyWeekly}>
+              <CartesianGrid strokeOpacity={0.1} />
+              <XAxis dataKey="sem" fontSize={10} stroke="#888" />
+              <YAxis fontSize={10} stroke="#888" />
+              <Tooltip contentStyle={tooltipStyle} />
+              <Bar dataKey="horas" fill="#A855F7" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </MiniChart>
+      ),
+    },
+  ];
+
+  const visibleCharts = miniCharts
+    .filter((k) => prioritySet.has(k.area))
+    .sort((a, b) => kpiOrder(a.area) - kpiOrder(b.area));
 
   useEffect(() => {
     if (mounted && syncStatus === "saved" && user) {
@@ -417,6 +542,15 @@ function Dashboard() {
             primaryAreas.length === AREA_DEFS.length
               ? t("pz.dashboard.allAreas")
               : t("pz.dashboard.sectionSubtitle")
+          }
+          right={
+            <button
+              onClick={() => setShowAreaPicker(true)}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-purple-500/40 bg-purple-500/10 text-sm font-medium text-purple-700 dark:text-purple-300 hover:bg-purple-500/20 transition-colors"
+            >
+              <Sparkles size={14} />
+              {t("pz.dashboard.manage")}
+            </button>
           }
         />
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
@@ -586,116 +720,28 @@ function Dashboard() {
         </div>
       </div>
 
-      <KaizenTodayCard embedded />
+      {prioritySet.has("kaizen") && <KaizenTodayCard embedded />}
 
-      {/* Relatório Executivo - KPIs Gerais */}
-      <div>
-        <PageHeader title={t("reportTitle")} subtitle={t("reportSubtitle")} />
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {([
-            { area: "financas" as AreaKey, node: (
-              <KpiCard
-                label={t("kpiSaldo")}
-                value={brl(balance)}
-                icon="💰"
-                tone={balance >= 0 ? "positive" : "negative"}
-                delta={`${brl(income)} − ${brl(expense)}`}
-              />
-            )},
-            { area: "corpo" as AreaKey, node: (
-              <KpiCard
-                label={t("kpiPeso")}
-                value={lastW ? kg(lastW.weight) : "—"}
-                icon="⚖️"
-                delta={
-                  lastW && prevW
-                    ? `${weightDelta >= 0 ? "+" : ""}${weightDelta.toFixed(1)} kg ${t("deltaVsWeek")}`
-                    : t("deltaNoData")
-                }
-              />
-            )},
-            { area: "biblioteca" as AreaKey, node: (
-              <KpiCard
-                label={t("kpiLivros", { year: yearKey })}
-                value={booksThisYear}
-                icon="📚"
-                tone="gold"
-              />
-            )},
-            { area: "estudos" as AreaKey, node: (
-              <KpiCard label={t("kpiStreak")} value={`${streak} d`} icon="🎯" tone="gold" />
-            )},
-          ]
-            .sort((a, b) => kpiOrder(a.area) - kpiOrder(b.area))
-            .map((k) => <Fragment key={k.area}>{k.node}</Fragment>))}
+{/* Relatório Executivo - KPIs das áreas prioritárias */}
+      {visibleKpis.length > 0 && (
+        <div>
+          <PageHeader title={t("reportTitle")} subtitle={t("reportSubtitle")} />
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            {visibleKpis.map((k) => (
+              <Fragment key={k.area}>{k.node}</Fragment>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* Mini-Gráficos */}
-      <div className="grid md:grid-cols-2 gap-4">
-        {([
-          { area: "financas" as AreaKey, node: (
-            <MiniChart title={t("chartSaldo")}>
-              <ResponsiveContainer width="100%" height={180}>
-                <LineChart data={finTrend}>
-                  <CartesianGrid strokeOpacity={0.1} />
-                  <XAxis dataKey="date" fontSize={10} stroke="#888" />
-                  <YAxis fontSize={10} stroke="#888" />
-                  <Tooltip contentStyle={tooltipStyle} formatter={(v: number) => brl(v)} />
-                  <Line
-                    type="monotone"
-                    dataKey="saldo"
-                    stroke="#8B5CF6"
-                    strokeWidth={2.5}
-                    dot={false}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </MiniChart>
-          )},
-          { area: "corpo" as AreaKey, node: (
-            <MiniChart title={t("chartPeso")}>
-              <ResponsiveContainer width="100%" height={180}>
-                <LineChart data={weightTrend}>
-                  <CartesianGrid strokeOpacity={0.1} />
-                  <XAxis dataKey="date" fontSize={10} stroke="#888" />
-                  <YAxis domain={["auto", "auto"]} fontSize={10} stroke="#888" />
-                  <Tooltip contentStyle={tooltipStyle} />
-                  <Line type="monotone" dataKey="peso" stroke="#2ECC71" strokeWidth={2.5} dot />
-                </LineChart>
-              </ResponsiveContainer>
-            </MiniChart>
-          )},
-          { area: "biblioteca" as AreaKey, node: (
-            <MiniChart title={t("chartLivros", { year: yearKey })}>
-              <ResponsiveContainer width="100%" height={180}>
-                <BarChart data={booksPerMonth}>
-                  <CartesianGrid strokeOpacity={0.1} />
-                  <XAxis dataKey="mes" fontSize={10} stroke="#888" />
-                  <YAxis fontSize={10} stroke="#888" />
-                  <Tooltip contentStyle={tooltipStyle} />
-                  <Bar dataKey="livros" fill="#F5C842" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </MiniChart>
-          )},
-          { area: "estudos" as AreaKey, node: (
-            <MiniChart title={t("chartEstudo")}>
-              <ResponsiveContainer width="100%" height={180}>
-                <BarChart data={studyWeekly}>
-                  <CartesianGrid strokeOpacity={0.1} />
-                  <XAxis dataKey="sem" fontSize={10} stroke="#888" />
-                  <YAxis fontSize={10} stroke="#888" />
-                  <Tooltip contentStyle={tooltipStyle} />
-                  <Bar dataKey="horas" fill="#A855F7" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </MiniChart>
-          )},
-        ]
-          .sort((a, b) => kpiOrder(a.area) - kpiOrder(b.area))
-          .map((k) => <Fragment key={k.area}>{k.node}</Fragment>))}
-      </div>
+{/* Mini-Gráficos das áreas prioritárias */}
+      {visibleCharts.length > 0 && (
+        <div className="grid md:grid-cols-2 gap-4">
+          {visibleCharts.map((k) => (
+            <Fragment key={k.area}>{k.node}</Fragment>
+          ))}
+        </div>
+      )}
 
       {/* Atividade Recente */}
       <Section title={t("recentActivity")}>
@@ -736,6 +782,20 @@ function Dashboard() {
         onComplete={handleOnboardingComplete}
         onSkip={handleOnboardingSkip}
       />
+
+      <Modal
+        open={showAreaPicker}
+        onClose={() => setShowAreaPicker(false)}
+        title={t("pz.config.title")}
+      >
+        <p className="text-xs text-muted-foreground mb-4">{t("pz.config.hint")}</p>
+        <PrimaryAreaPicker value={primaryAreas} onChange={setPrimaryAreas} />
+        <div className="flex justify-end gap-2 pt-5">
+          <button onClick={() => setShowAreaPicker(false)} className={btnGold}>
+            {t("action.close")}
+          </button>
+        </div>
+      </Modal>
     </div>
   );
 }
