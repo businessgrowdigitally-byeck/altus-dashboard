@@ -1,5 +1,61 @@
 /** Textos do módulo de Metas (PT/EN/ES). */
 export const goals = {
+  "goals.viewMode": { pt: "Visualização da rotina", en: "Routine view", es: "Vista de la rutina" },
+  "goals.listView": { pt: "Lista", en: "List", es: "Lista" },
+  "goals.focusView": { pt: "Blocos de foco", en: "Focus blocks", es: "Bloques de enfoque" },
+  "goals.progressToday": { pt: "Progresso de hoje", en: "Today’s progress", es: "Progreso de hoy" },
+  "goals.routinePreview": {
+    pt: "Visualizando rotina · conclusões disponíveis apenas hoje",
+    en: "Routine preview · completion available only today",
+    es: "Vista de rutina · completar solo está disponible hoy",
+  },
+  "goals.duration": { pt: "Duração (minutos)", en: "Duration (minutes)", es: "Duración (minutos)" },
+  "goals.endsAt": { pt: "Término: {time}", en: "Ends at: {time}", es: "Termina a las {time}" },
+  "goals.invalidSchedule": {
+    pt: "Informe um horário válido e uma duração de 5 a 1440 minutos, em passos de 5, sem ultrapassar 24:00.",
+    en: "Enter a valid start time and duration of 5–1440 minutes in 5-minute steps, ending by 24:00.",
+    es: "Introduce una hora válida y una duración de 5 a 1440 minutos, en pasos de 5, sin superar las 24:00.",
+  },
+  "goals.reviewDuration": {
+    pt: "Revise a duração: o intervalo foi ajustado para exibição.",
+    en: "Review duration: the displayed interval was adjusted.",
+    es: "Revisa la duración: el intervalo mostrado fue ajustado.",
+  },
+  "goals.recurringEdit": {
+    pt: "Horário e duração se aplicam a todos os dias da semana selecionados.",
+    en: "Time and duration apply to all selected weekdays.",
+    es: "La hora y duración se aplican a todos los días seleccionados.",
+  },
+  "goals.completeAction": {
+    pt: "Concluir ação: {name}",
+    en: "Complete action: {name}",
+    es: "Completar acción: {name}",
+  },
+  "goals.completed": { pt: "Concluída", en: "Completed", es: "Completada" },
+  "goals.editAction": {
+    pt: "Editar ação: {name}",
+    en: "Edit action: {name}",
+    es: "Editar acción: {name}",
+  },
+  "goals.deleteAction": {
+    pt: "Excluir ação: {name}",
+    en: "Delete action: {name}",
+    es: "Eliminar acción: {name}",
+  },
+  "goals.unscheduled": { pt: "Sem horário", en: "Unscheduled", es: "Sin horario" },
+  "goals.blockDetails": { pt: "Detalhes do bloco", en: "Block details", es: "Detalles del bloque" },
+  "goals.closeDetails": { pt: "Fechar detalhes", en: "Close details", es: "Cerrar detalles" },
+  "goals.noScheduled": {
+    pt: "Nenhuma ação com horário neste dia.",
+    en: "No scheduled actions for this day.",
+    es: "No hay acciones con horario este día.",
+  },
+  "goals.currentTime": { pt: "Horário atual", en: "Current time", es: "Hora actual" },
+  "goals.blockHint": {
+    pt: "Selecione um bloco para ver os detalhes, concluir ou editar a ação.",
+    en: "Select a block to view details, complete or edit the action.",
+    es: "Selecciona un bloque para ver detalles, completar o editar la acción.",
+  },
   "goals.title": {
     pt: "🎯 Metas & Sistema Diário",
     en: "🎯 Goals & Daily System",
@@ -169,9 +225,21 @@ export const goals = {
   "goals.weekday.fri": { pt: "Sex", en: "Fri", es: "Vie" },
   "goals.weekday.sat": { pt: "Sáb", en: "Sat", es: "Sáb" },
 
-  "goals.labelDescricaoAcao": { pt: "Descrição curta (opcional, até 120 caracteres)", en: "Short description (optional, up to 120 chars)", es: "Descripción corta (opcional, hasta 120 caracteres)" },
-  "goals.placeholderDescricao": { pt: "Ex: 3x12 supino, sem celular", en: "E.g.: 3x12 bench, no phone", es: "Ej: 3x12 press, sin móvil" },
+  "goals.labelDescricaoAcao": {
+    pt: "Descrição curta (opcional, até 120 caracteres)",
+    en: "Short description (optional, up to 120 chars)",
+    es: "Descripción corta (opcional, hasta 120 caracteres)",
+  },
+  "goals.placeholderDescricao": {
+    pt: "Ex: 3x12 supino, sem celular",
+    en: "E.g.: 3x12 bench, no phone",
+    es: "Ej: 3x12 press, sin móvil",
+  },
   "goals.viewRoutine": { pt: "Ver rotina de", en: "View routine for", es: "Ver rutina de" },
   "goals.routineOf": { pt: "Rotina de", en: "Routine for", es: "Rutina de" },
-  "goals.noActionsDay": { pt: "Nenhuma ação para este dia.", en: "No actions for this day.", es: "Ninguna acción para este día." },
+  "goals.noActionsDay": {
+    pt: "Nenhuma ação para este dia.",
+    en: "No actions for this day.",
+    es: "Ninguna acción para este día.",
+  },
 } as const;

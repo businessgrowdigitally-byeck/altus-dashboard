@@ -92,6 +92,7 @@ export type GoalDaily = {
   area: GoalArea;
   linkedGoalId?: string | null;
   suggestedTime?: string; // HH:MM
+  durationMinutes?: number; // Optional for existing snapshots; default 30 minutes.
   daysOfWeek: number[]; // 0=Dom..6=Sáb
   description?: string; // nota curta 120c sobre a ação
 };

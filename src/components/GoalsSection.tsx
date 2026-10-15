@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { Pencil, Trash2, Plus, Check } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Pencil, Trash2, Plus } from "lucide-react";
 import { useStore, type GoalArea, type GoalMacro, type GoalDaily } from "@/lib/store";
 import { GlassCard } from "@/components/primitives";
 import { Modal, ConfirmButton, inpCls, btnGold } from "@/components/Modal";
@@ -7,14 +7,16 @@ import { toast } from "sonner";
 import { brl, toISODate, todayISO } from "@/lib/format";
 import { useT } from "@/lib/i18n";
 
+import { DailyActionsList, DailyFocusCalendar } from "./DailyFocusCalendar";
+import { DAILY_AREA_COLORS as AREA_COLORS } from "@/lib/goal-colors";
+import {
+  dailyInterval,
+  DEFAULT_DURATION,
+  minutesToTime,
+  validateSchedule,
+} from "@/lib/daily-schedule";
+
 const AREAS: GoalArea[] = ["Finanças", "Corpo & Saúde", "Biblioteca", "Estudos", "Geral"];
-const AREA_COLORS: Record<GoalArea, string> = {
-  Finanças: "bg-gold/20 text-gold",
-  "Corpo & Saúde": "bg-emerald-bgt/20 text-emerald-bgt",
-  Biblioteca: "bg-purple-500/20 text-purple-700 dark:text-purple-300",
-  Estudos: "bg-blue-500/20 text-blue-700 dark:text-blue-300",
-  Geral: "bg-secondary/60 text-muted-foreground",
-};
 
 function areaT(t: (k: string, v?: Record<string, string | number>) => string, area: GoalArea) {
   return t(`goals.area.${area}`);
@@ -343,6 +345,7 @@ function emptyDaily(): Omit<GoalDaily, "id"> {
     area: "Geral",
     linkedGoalId: null,
     suggestedTime: "",
+    durationMinutes: DEFAULT_DURATION,
     daysOfWeek: [1, 2, 3, 4, 5],
     description: "",
   };
@@ -361,16 +364,47 @@ function DailyTab() {
   } = useStore();
   const [editing, setEditing] = useState<GoalDaily | null>(null);
   const [creating, setCreating] = useState(false);
-  const today = todayISO();
-  const todayDow = new Date().getDay();
+  const [now, setNow] = useState(() => new Date());
+  const today = toISODate(now);
+  const todayDow = now.getDay();
+  const [view, setView] = useState<"list" | "focus">("list");
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(new Date()), 30_000);
+    try {
+      if (localStorage.getItem("altus-daily-view") === "focus") setView("focus");
+    } catch {
+      /* Storage may be disabled. */
+    }
+    return () => window.clearInterval(timer);
+  }, []);
+  const changeView = (next: "list" | "focus") => {
+    setView(next);
+    try {
+      localStorage.setItem("altus-daily-view", next);
+    } catch {
+      /* Keep the in-memory preference. */
+    }
+  };
   const [selectedDow, setSelectedDow] = useState(todayDow);
+  const previousDow = useRef(todayDow);
+  useEffect(() => {
+    const previous = previousDow.current;
+    setSelectedDow((selected) => (selected === previous ? todayDow : selected));
+    previousDow.current = todayDow;
+  }, [todayDow]);
 
   const todayActions = goalsDaily.filter((a) => a.daysOfWeek.includes(todayDow));
-  const doneIds = new Set(completions.filter((c) => c.date === today).map((c) => c.actionId));
+  const doneIds = useMemo(
+    () => new Set(completions.filter((c) => c.date === today).map((c) => c.actionId)),
+    [completions, today],
+  );
   const completed = todayActions.filter((a) => doneIds.has(a.id)).length;
 
   // A1: só visual — seletor mostra rotina do dia selecionado, sem afetar marcação de hoje
-  const displayedActions = goalsDaily.filter((a) => a.daysOfWeek.includes(selectedDow));
+  const displayedActions = useMemo(
+    () => goalsDaily.filter((a) => a.daysOfWeek.includes(selectedDow)),
+    [goalsDaily, selectedDow],
+  );
   const sorted = useMemo(() => {
     const base = displayedActions;
     // quando vê hoje, ordena por concluído + horário; quando vê outro dia, só por horário
@@ -444,69 +478,59 @@ function DailyTab() {
       </div>
       {!isViewingToday && (
         <p className="text-xs text-muted-foreground">
-          {t("goals.routineOf")} <span className="text-gold font-semibold">{weekdayNames[selectedDow]}</span> — {displayedActions.length} {displayedActions.length === 1 ? "ação" : "ações"}
+          {t("goals.routineOf")}{" "}
+          <span className="text-gold font-semibold">{weekdayNames[selectedDow]}</span> —{" "}
+          {displayedActions.length} {displayedActions.length === 1 ? "ação" : "ações"}
         </p>
       )}
 
-      <GlassCard className="space-y-2">
-        {sorted.length === 0 && (
-          <p className="text-sm text-muted-foreground">
-            {isViewingToday ? t("goals.noneToday") : t("goals.noActionsDay")}
-          </p>
-        )}
-        {sorted.map((a) => {
-          const done = isViewingToday && doneIds.has(a.id);
-          const linked = goalsMacro.find((g) => g.id === a.linkedGoalId);
-          return (
-            <div
-              key={a.id}
-              className={`group flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 transition ${done ? "opacity-50" : ""}`}
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div
+          role="group"
+          aria-label={t("goals.viewMode")}
+          className="flex rounded-lg border border-border p-1 gap-1"
+        >
+          {(["list", "focus"] as const).map((mode) => (
+            <button
+              key={mode}
+              type="button"
+              aria-pressed={view === mode}
+              onClick={() => changeView(mode)}
+              className={`rounded-md px-3 py-2 text-sm ${view === mode ? "bg-gold text-[#0A0F1E] font-semibold" : "hover:bg-muted"}`}
             >
-              {isViewingToday ? (
-                <button
-                  onClick={() => toggleCompletion(a.id, today)}
-                  className={`w-6 h-6 rounded-md border-2 flex items-center justify-center transition shrink-0 ${done ? "bg-emerald-bgt border-emerald-bgt" : "border-border hover:border-gold"}`}
-                >
-                  {done && <Check size={14} className="text-black" />}
-                </button>
-              ) : (
-                <div className="w-6 h-6 rounded-md border border-border bg-muted/50 shrink-0" title={t("goals.viewRoutine")} />
-              )}
-              <div className="flex-1 min-w-0">
-                <div className={`text-sm ${done ? "line-through" : ""}`}>{a.name}</div>
-                {a.description && (
-                  <div className="text-xs text-muted-foreground/80 mt-0.5 line-clamp-2">{a.description}</div>
-                )}
-                <div className="text-xs text-muted-foreground flex items-center gap-2 flex-wrap mt-1">
-                  <span className={`px-1.5 py-0.5 rounded ${AREA_COLORS[a.area]} text-[10px]`}>
-                    {areaT(t, a.area)}
-                  </span>
-                  {a.suggestedTime && <span>⏰ {a.suggestedTime}</span>}
-                  {linked && <span className="italic">→ {linked.name}</span>}
-                </div>
-              </div>
-              <div className="flex gap-1 opacity-0 group-hover:opacity-100 md:opacity-0 transition">
-                <button
-                  onClick={() => setEditing(a)}
-                  className="p-1.5 rounded hover:bg-muted/80 text-muted-foreground"
-                >
-                  <Pencil size={14} />
-                </button>
-                <ConfirmButton
-                  onConfirm={() => removeGoalDaily(a.id)}
-                  className="p-1.5 rounded hover:bg-muted/80 text-coral"
-                >
-                  <Trash2 size={14} />
-                </ConfirmButton>
-              </div>
-            </div>
-          );
-        })}
-      </GlassCard>
+              {t(mode === "list" ? "goals.listView" : "goals.focusView")}
+            </button>
+          ))}
+        </div>
+        <span className="text-xs text-muted-foreground">
+          {t(isViewingToday ? "goals.progressToday" : "goals.routinePreview")}
+        </span>
+      </div>
+      {view === "focus" ? (
+        <DailyFocusCalendar
+          actions={displayedActions}
+          doneIds={doneIds}
+          isToday={isViewingToday}
+          now={now}
+          onToggle={(id) => toggleCompletion(id, today)}
+          onEdit={setEditing}
+          onRemove={removeGoalDaily}
+        />
+      ) : (
+        <DailyActionsList
+          actions={sorted}
+          doneIds={doneIds}
+          isToday={isViewingToday}
+          onToggle={(id) => toggleCompletion(id, today)}
+          onEdit={setEditing}
+          onRemove={removeGoalDaily}
+        />
+      )}
 
       <Heatmap />
 
       <DailyFormModal
+        key={editing?.id ?? (creating ? "creating" : "closed")}
         open={creating || !!editing}
         initial={editing ?? emptyDaily()}
         title={editing ? t("goals.editarAcao") : t("goals.novaAcao")}
@@ -542,8 +566,11 @@ function DailyFormModal({
   macros: GoalMacro[];
 }) {
   const t = useT();
-  const [f, setF] = useState(initial);
-  useMemo(() => setF(initial), [initial]);
+  const [f, setF] = useState(() => ({
+    ...initial,
+    durationMinutes: initial.durationMinutes ?? DEFAULT_DURATION,
+  }));
+  const interval = dailyInterval(f);
 
   const weekdays = [
     t("goals.weekday.sun"),
@@ -566,6 +593,10 @@ function DailyFormModal({
           }
           if (f.daysOfWeek.length === 0) {
             toast.error(t("goals.toastDiaSemana"));
+            return;
+          }
+          if (!validateSchedule(f.suggestedTime, f.durationMinutes)) {
+            toast.error(t("goals.invalidSchedule"));
             return;
           }
           onSave(f);
@@ -604,6 +635,30 @@ function DailyFormModal({
             />
           </Field>
         </div>
+        <Field label={t("goals.duration")}>
+          <input
+            className={inpCls}
+            type="number"
+            aria-label={t("goals.duration")}
+            min={5}
+            max={1440}
+            step={5}
+            required
+            value={Number.isFinite(f.durationMinutes) ? f.durationMinutes : ""}
+            onChange={(e) => setF({ ...f, durationMinutes: e.target.valueAsNumber })}
+          />
+        </Field>
+        {interval && (
+          <p className="text-xs text-muted-foreground">
+            {t("goals.endsAt", { time: minutesToTime(interval.end) })}
+          </p>
+        )}
+        {interval?.needsReview && (
+          <p role="alert" className="text-sm text-coral">
+            {t("goals.reviewDuration")}
+          </p>
+        )}
+        <p className="text-xs text-muted-foreground">{t("goals.recurringEdit")}</p>
         <Field label={t("goals.labelVincularMeta")}>
           <select
             className={inpCls}
