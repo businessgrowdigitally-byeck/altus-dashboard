@@ -9,7 +9,7 @@ node --experimental-strip-types --test tests/daily-schedule.test.ts
 The browser smoke test uses Playwright and Chromium supplied by the cloud development environment. Start the app in another terminal, then run:
 
 ```sh
-npm run dev -- --config vite.cloud.local.ts --host 0.0.0.0 --port 3000
+npm run dev -- --host 0.0.0.0 --port 3000
 node tests/daily-focus.browser.cjs
 ```
 
