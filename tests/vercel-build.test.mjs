@@ -49,7 +49,7 @@ test("MCP on Vercel retains authentication enforcement", async () => {
   assert.match(response.headers.get("www-authenticate"), /Bearer/);
 });
 
-test("Vercel Node artifact preserves the disabled AI feature", async () => {
+test("Vercel Node artifact protects the AI chat endpoint", async () => {
   const response = await app.fetch(
     new Request("http://localhost/api/chat", {
       method: "POST",
@@ -58,6 +58,5 @@ test("Vercel Node artifact preserves the disabled AI feature", async () => {
     }),
     {},
   );
-  assert.equal(response.status, 403);
-  assert.match((await response.json()).error, /não está ativo/);
+  assert.equal(response.status, 401);
 });

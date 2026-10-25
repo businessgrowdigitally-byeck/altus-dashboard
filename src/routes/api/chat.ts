@@ -28,8 +28,9 @@ export const Route = createFileRoute("/api/chat")({
           return jsonResponse({ error: "Sessão inválida ou expirada. Faça login novamente." }, 401);
         }
 
-        if (!process.env.LOVABLE_API_KEY) {
-          return jsonResponse({ error: "LOVABLE_API_KEY não configurada no ambiente." }, 500);
+        const geminiKey = process.env.GEMINI_API_KEY;
+        if (!geminiKey) {
+          return jsonResponse({ error: "GEMINI_API_KEY não configurada no ambiente." }, 500);
         }
 
         // Lê e valida o corpo como texto para impor limite de tamanho antes do parse.
@@ -84,14 +85,14 @@ export const Route = createFileRoute("/api/chat")({
         const lang = reqLang === "en" ? "English" : reqLang === "es" ? "español" : "português do Brasil";
         const systemPrompt = `Você é o assistente executivo pessoal do usuário no ALTUS (Become your best version), um sistema operacional pessoal que trata a vida do usuário como uma empresa multinacional. Responda SEMPRE em ${lang}, de forma direta, analítica e prática — como um CEO conversando com seu chefe de gabinete. Use dados, números e percentuais. Você tem acesso a TODOS os dados do usuário (finanças, corpo, biblioteca, estudos, metas, rotina diária):\n\n${contextText}\n\nFaça análises cruzadas entre módulos. Quando relevante, sugira ações concretas.`;
 
-        const upstream = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        const upstream = await fetch("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", {
           method: "POST",
           headers: {
-            Authorization: `Bearer ${process.env.LOVABLE_API_KEY}`,
+            Authorization: `Bearer ${geminiKey}`,
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            model: "google/gemini-3-flash-preview",
+            model: "gemini-2.5-flash",
             messages: [{ role: "system", content: systemPrompt }, ...messages],
             stream: true,
           }),
