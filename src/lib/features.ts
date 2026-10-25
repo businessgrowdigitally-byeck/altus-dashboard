@@ -6,4 +6,4 @@
  * futuramente como add-on/assinatura separada. Todo o código do agente
  * permanece no projeto; basta trocar para `true` para reativar.
  */
-export const AI_AGENT_ENABLED = false;
+export const AI_AGENT_ENABLED = true;
