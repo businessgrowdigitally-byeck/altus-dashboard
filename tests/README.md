@@ -27,3 +27,20 @@ node --test tests/vercel-build.test.mjs
 ```
 
 The checks import the generated Vercel Node function and verify HTML rendering, OAuth resource metadata, MCP authentication and the disabled chat endpoint. They require no real user session and do not change database records. The MCP SDK's optional Cloudflare binding stays external only for Vercel builds; its caught import failure lets the SDK use its existing Node environment behavior.
+
+## Mentor ALTUS chat
+
+The history window sent to `/api/chat` is unit-tested without a build:
+
+```sh
+node --experimental-strip-types --test tests/chat-history.test.ts
+```
+
+The authenticated endpoint path runs against the Vercel build with Supabase and Gemini stubbed through `fetch` (no real account, model call or database write):
+
+```sh
+NITRO_PRESET=vercel bun run build
+node --test tests/chat-endpoint.test.mjs
+```
+
+Run `npx tsc --noEmit` as well: the Vite build does not type-check, so a missing import only shows up at runtime.

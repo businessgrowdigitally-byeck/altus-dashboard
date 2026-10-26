@@ -4,8 +4,9 @@ import { useStore } from "@/lib/store";
 import { PageHeader } from "@/components/primitives";
 import { Bot, Send, Sparkles } from "lucide-react";
 import { AI_AGENT_ENABLED } from "@/lib/features";
-import { daysAgoISO, todayISO } from "@/lib/format";
-import { useT } from "@/lib/i18n";
+import { todayISO } from "@/lib/format";
+import { useI18n } from "@/lib/i18n";
+import { buildChatHistory } from "@/lib/ai/history";
 import { useAuth } from "@/lib/auth";
 
 export const Route = createFileRoute("/agente")({
@@ -31,15 +32,8 @@ function Agente() {
     pushChat,
     updateLastAssistant,
     clearChat,
-    transactions,
-    weights,
-    books,
-    studies,
-    goalsMacro,
-    goalsDaily,
-    completions,
   } = useStore();
-  const t = useT();
+  const { lang, t } = useI18n();
   const { session } = useAuth();
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -49,67 +43,6 @@ function Agente() {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [chat]);
 
-  const buildContext = () => {
-    const month = todayISO().slice(0, 7);
-    const monthTx = transactions.filter((t) => t.date.startsWith(month));
-    const income = monthTx.filter((t) => t.type === "entrada").reduce((a, b) => a + b.value, 0);
-    const expense = monthTx.filter((t) => t.type === "saida").reduce((a, b) => a + b.value, 0);
-    const byCat: Record<string, number> = {};
-    monthTx
-      .filter((t) => t.type === "saida")
-      .forEach((t) => (byCat[t.category] = (byCat[t.category] || 0) + t.value));
-
-    const hoursByArea: Record<string, number> = {};
-    studies.forEach((s) => (hoursByArea[s.area] = (hoursByArea[s.area] || 0) + s.duration / 60));
-
-    const days = new Set(studies.map((s) => s.date));
-    let streak = 0;
-    for (let i = 0; i < 365; i++) {
-      const d = daysAgoISO(i);
-      if (days.has(d)) streak++;
-      else if (i > 0) break;
-    }
-
-    return {
-      financas_mes_atual: {
-        entradas: income,
-        saidas: expense,
-        saldo: income - expense,
-        por_categoria: byCat,
-      },
-      peso_historico: weights
-        .slice(0, 10)
-        .map((w) => ({ data: w.date, peso: w.weight, notas: w.notes })),
-      livros: {
-        total: books.length,
-        nota_media: books.length ? books.reduce((a, b) => a + b.rating, 0) / books.length : 0,
-        recentes: books
-          .slice(0, 5)
-          .map((b) => ({ titulo: b.title, autor: b.author, nota: b.rating })),
-      },
-      estudos: {
-        horas_por_area: hoursByArea,
-        streak_dias: streak,
-        topicos_recentes: studies
-          .slice(0, 5)
-          .map((s) => ({ data: s.date, topico: s.topic, area: s.area })),
-      },
-      metas_macro: goalsMacro.map((g) => ({
-        nome: g.name,
-        area: g.area,
-        atual: g.currentValue,
-        alvo: g.targetValue,
-        unidade: g.unit,
-        deadline: g.deadline,
-        pct: g.targetValue ? Math.round((g.currentValue / g.targetValue) * 100) : 0,
-      })),
-      rotina_diaria: {
-        acoes: goalsDaily.map((a) => ({ nome: a.name, area: a.area, dias: a.daysOfWeek })),
-        completions_ultimos_7_dias: completions.filter((c) => c.date >= daysAgoISO(6)).length,
-      },
-    };
-  };
-
   const send = async (text?: string) => {
     const message = text ?? input;
     if (!message.trim() || loading) return;
@@ -118,17 +51,10 @@ function Agente() {
     setInput("");
     setLoading(true);
 
-    const history = [...chat, { role: "user" as const, content: message }];
+    // Só a janela recente e válida (sem erros nem respostas vazias) vai ao servidor.
+    const history = buildChatHistory([...chat, { role: "user", content: message }]);
 
     try {
-      const lang = (() => {
-        try {
-          const raw = localStorage.getItem("altus-lang");
-          if (!raw) return "pt";
-          const p = JSON.parse(raw);
-          return p?.state?.lang ?? p?.lang ?? "pt";
-        } catch { return "pt"; }
-      })();
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: {
@@ -136,12 +62,12 @@ function Agente() {
           // A rota só aceita chamadas autenticadas: prova nossa identidade com o token da sessão.
           ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
         },
-        body: JSON.stringify({ messages: history, context: buildContext(), lang }),
+        body: JSON.stringify({ messages: history, lang, today: todayISO() }),
       });
 
       if (!res.ok || !res.body) {
         const errData = await res.json().catch(() => ({ error: "Erro desconhecido" }));
-        pushChat({ role: "assistant", content: `Erro: ${errData.error || res.statusText}` });
+        pushChat({ role: "assistant", content: `Erro: ${errData.error || res.statusText}`, error: true });
         setLoading(false);
         return;
       }
@@ -182,7 +108,7 @@ function Agente() {
         }
       }
     } catch (err: unknown) {
-      pushChat({ role: "assistant", content: `Erro: ${(err as Error).message}` });
+      pushChat({ role: "assistant", content: `Erro: ${(err as Error).message}`, error: true });
     } finally {
       setLoading(false);
     }
@@ -230,7 +156,7 @@ function Agente() {
             disabled={loading}
             className="text-xs px-3 py-1.5 rounded-full bg-muted/50 hover:bg-muted/80 border border-border transition"
           >
-            {p}
+            {t(p)}
           </button>
         ))}
       </div>

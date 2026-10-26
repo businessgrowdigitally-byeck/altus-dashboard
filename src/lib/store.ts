@@ -54,7 +54,12 @@ export type StudyEntry = {
   status: "progresso" | "concluido";
 };
 
-export type ChatMsg = { role: "user" | "assistant"; content: string };
+export type ChatMsg = {
+  role: "user" | "assistant";
+  content: string;
+  /** Mensagem de erro local: exibida no chat, mas nunca reenviada ao modelo. */
+  error?: boolean;
+};
 
 export type Profile = {
   name: string;
