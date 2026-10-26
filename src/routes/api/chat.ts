@@ -65,25 +65,27 @@ export const Route = createFileRoute("/api/chat")({
           );
         }
 
-        // context: objeto serializável com teto de tamanho (opcional).
-        let contextText = "";
-        if (body.context !== undefined && body.context !== null) {
-          if (typeof body.context !== "object" || Array.isArray(body.context)) {
-            return jsonResponse({ error: "Payload inválido: 'context' deve ser um objeto." }, 400);
-          }
-          try {
-            contextText = JSON.stringify(body.context);
-          } catch {
-            return jsonResponse({ error: "Payload inválido: 'context' não é serializável." }, 400);
-          }
-          if (contextText.length > MAX_CONTEXT_CHARS) {
-            return jsonResponse({ error: "Contexto grande demais para esta consulta." }, 400);
-          }
+        // Contexto: lido NO SERVIDOR com o token do usuário (RLS garante que só
+        // a própria linha é visível). `body.context` do navegador é ignorado.
+        const userClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+          auth: { persistSession: false, autoRefreshToken: false },
+          global: { headers: { Authorization: `Bearer ${token}` } },
+        });
+        const { data: row, error: rowError } = await userClient
+          .from("user_data")
+          .select("data")
+          .eq("user_id", userData.user.id)
+          .maybeSingle();
+        if (rowError) {
+          return jsonResponse({ error: "Não foi possível ler seus dados agora. Tente novamente." }, 500);
         }
+        const today = typeof body.today === "string" && /^\d{4}-\d{2}-\d{2}$/.test(body.today)
+          ? body.today
+          : new Date().toISOString().slice(0, 10);
+        let contextText = JSON.stringify(buildMentorContext(row?.data ?? {}, today));
+        if (contextText.length > MAX_CONTEXT_CHARS) contextText = contextText.slice(0, MAX_CONTEXT_CHARS);
 
-        const reqLang = typeof body.lang === "string" ? body.lang : "";
-        const lang = reqLang === "en" ? "English" : reqLang === "es" ? "español" : "português do Brasil";
-        const systemPrompt = `Você é o assistente executivo pessoal do usuário no ALTUS (Become your best version), um sistema operacional pessoal que trata a vida do usuário como uma empresa multinacional. Responda SEMPRE em ${lang}, de forma direta, analítica e prática — como um CEO conversando com seu chefe de gabinete. Use dados, números e percentuais. Você tem acesso a TODOS os dados do usuário (finanças, corpo, biblioteca, estudos, metas, rotina diária):\n\n${contextText}\n\nFaça análises cruzadas entre módulos. Quando relevante, sugira ações concretas.`;
+        const systemPrompt = buildMentorSystemPrompt(normalizeLang(body.lang), contextText);
 
         const upstream = await fetch("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", {
           method: "POST",
