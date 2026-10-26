@@ -70,7 +70,7 @@ function cleanStages(v: unknown): PlanStage[] {
       const s = obj(raw);
       const title = str(s.title, 200);
       if (!title) return null;
-      return {
+      const stage: PlanStage = {
         id: str(s.id, 80) || rid(),
         title,
         status: cleanStatus(s.status),
@@ -95,6 +95,7 @@ function cleanStages(v: unknown): PlanStage[] {
           })
           .filter((x): x is PlanAction => x !== null),
       };
+      return stage;
     })
     .filter((x): x is PlanStage => x !== null);
 }
