@@ -3,7 +3,7 @@ import { supabase } from "@/lib/supabase";
 import { AI_AGENT_ENABLED } from "@/lib/features";
 
 const MAX_MESSAGES = 24;
-const MAX_MESSAGE_CHARS = 4000;
+const MAX_MESSAGE_CHARS = 12_000;
 const MAX_CONTEXT_CHARS = 256_000;
 const MAX_BODY_BYTES = 1_024 * 1_024; // 1 MiB de texto cru
 
