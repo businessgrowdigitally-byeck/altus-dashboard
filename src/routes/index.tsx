@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Fragment, useEffect, useMemo, useState } from "react";
 import { useStore } from "@/lib/store";
 import { brl, daysAgoISO, fmtDate, fmtDateLong, greeting, kg, todayISO } from "@/lib/format";
+import { balanceUntil, dailyBalanceSeries, monthTotals } from "@/lib/finance";
 import { GlassCard, KpiCard, PageHeader, Section } from "@/components/primitives";
 import { GoalsSection } from "@/components/GoalsSection";
 import { KaizenTodayCard } from "@/components/KaizenTodayCard";
@@ -91,10 +92,10 @@ function Dashboard() {
   const today = todayISO();
   const todayDow = now.getDay();
 
-  const monthTx = transactions.filter((t) => t.date.startsWith(monthKey));
-  const income = monthTx.filter((t) => t.type === "entrada").reduce((a, b) => a + b.value, 0);
-  const expense = monthTx.filter((t) => t.type === "saida").reduce((a, b) => a + b.value, 0);
-  const balance = income - expense;
+  // Saldo acumulado (saldo inicial + histórico até hoje): não zera na virada do mês.
+  const { income, expense, net: monthNet } = monthTotals(transactions, monthKey);
+  const opening = profile.openingBalance ?? 0;
+  const balance = balanceUntil(transactions, opening, today);
 
   const sortedWeights = [...weights].sort((a, b) => a.date.localeCompare(b.date));
   const lastW = sortedWeights[sortedWeights.length - 1];
@@ -123,17 +124,15 @@ function Dashboard() {
     todayActions.length > 0 ? Math.round((todayDone / todayActions.length) * 100) : 78;
 
   // 30-day financial trend
-  const finTrend = useMemo(() => {
-    const arr: { date: string; saldo: number }[] = [];
-    let running = 0;
-    for (let i = 29; i >= 0; i--) {
-      const d = daysAgoISO(i);
-      const dayTx = transactions.filter((t) => t.date === d);
-      running += dayTx.reduce((a, t) => a + (t.type === "entrada" ? t.value : -t.value), 0);
-      arr.push({ date: d.slice(5), saldo: running });
-    }
-    return arr;
-  }, [transactions]);
+  const finTrend = useMemo(
+    () =>
+      dailyBalanceSeries(
+        transactions,
+        opening,
+        Array.from({ length: 30 }, (_, i) => daysAgoISO(29 - i)),
+      ).map((d) => ({ date: d.date.slice(5), saldo: d.balance })),
+    [transactions, opening],
+  );
 
   const weightTrend = useMemo(() => {
     const cutoff = daysAgoISO(60);
@@ -277,7 +276,7 @@ function Dashboard() {
           value={brl(balance)}
           icon="💰"
           tone={balance >= 0 ? "positive" : "negative"}
-          delta={`${brl(income)} − ${brl(expense)}`}
+          delta={`${t("kpiSaldoMonth", { value: brl(monthNet) })} (${brl(income)} − ${brl(expense)})`}
         />
       ),
     },

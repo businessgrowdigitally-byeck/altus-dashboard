@@ -184,4 +184,14 @@ export const configuracoes = {
   "config.importErrorInvalid": { pt: "Isso não é um JSON válido. Cole o conteúdo completo do arquivo exportado.", en: "This is not valid JSON. Paste the full exported file contents.", es: "No es un JSON válido. Pega el contenido completo del archivo exportado." },
   "config.importErrorFormat": { pt: "O arquivo não tem o formato esperado.", en: "The file does not have the expected format.", es: "El archivo no tiene el formato esperado." },
   "config.importErrorEmpty": { pt: "Nenhum dado reconhecido no arquivo.", en: "No recognizable data in the file.", es: "No se reconoció ningún dato en el archivo." },
+  "config.openingBalance": {
+    pt: "Saldo inicial (dinheiro que você já tinha)",
+    en: "Opening balance (money you already had)",
+    es: "Saldo inicial (dinero que ya tenías)",
+  },
+  "config.openingBalanceHint": {
+    pt: "Somado aos lançamentos para formar o saldo acumulado em Finanças e no Dashboard.",
+    en: "Added to your transactions to form the accumulated balance in Finances and on the Dashboard.",
+    es: "Se suma a los movimientos para formar el saldo acumulado en Finanzas y en el Panel.",
+  },
 } as const;

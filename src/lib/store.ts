@@ -13,6 +13,15 @@ import {
   type PlanProposal,
 } from "./ai/plan";
 import type { ChatPlanState } from "./ai/proposal";
+import {
+  balanceUntil,
+  dueRecurring,
+  normalizeBudgets,
+  normalizeRecurring,
+  type CategoryBudgets,
+  type RecurringTransaction,
+} from "./finance";
+export type { CategoryBudgets, RecurringTransaction } from "./finance";
 export type { AltusPlan, AltusGeneralPlan, AltusFilterDecision } from "./ai/plan";
 
 export type Transaction = {
@@ -22,6 +31,8 @@ export type Transaction = {
   description: string;
   category: string;
   date: string; // ISO yyyy-mm-dd
+  /** Gerado automaticamente por um lançamento recorrente. */
+  recurringId?: string;
 };
 
 export type WeightEntry = {
@@ -80,6 +91,11 @@ export type Profile = {
   maxExpenses: number;
   /** Altura em metros. 0 = não informada — o IMC fica oculto até ser preenchida. */
   height: number;
+  /**
+   * Dinheiro que já existia antes do primeiro lançamento. Somado ao histórico
+   * forma o saldo acumulado. Ausente em perfis antigos = 0.
+   */
+  openingBalance?: number;
 };
 
 export type Settings = {
@@ -210,6 +226,18 @@ type State = {
   renameCustomItem: (scope: TaxonomyScope, oldId: string, newId: string) => boolean;
   removeCustomItem: (scope: TaxonomyScope, id: string) => void;
   recomputeLinkedGoals: () => void;
+  /** Limite mensal de gastos por categoria. */
+  categoryBudgets: CategoryBudgets;
+  /** Define (ou remove, com null/0) o limite mensal de uma categoria. */
+  setCategoryBudget: (category: string, limit: number | null) => void;
+  /** Regras de lançamentos que se repetem todo mês (salário, aluguel...). */
+  recurringTransactions: RecurringTransaction[];
+  addRecurring: (r: Omit<RecurringTransaction, "id" | "lastPostedMonth">) => void;
+  updateRecurring: (id: string, patch: Partial<Omit<RecurringTransaction, "id">>) => void;
+  /** Remove a regra; os lançamentos já feitos por ela continuam no histórico. */
+  removeRecurring: (id: string) => void;
+  /** Lança os recorrentes vencidos até `today`. Idempotente; devolve quantos lançou. */
+  postDueRecurring: (today: string) => number;
   pushChat: (m: ChatMsg) => void;
   /** Registra na mensagem do chat que a proposta foi salva ou descartada. */
   setChatPlan: (index: number, plan: ChatPlanState) => void;
@@ -306,6 +334,8 @@ const initial = {
   altusPlans: [] as AltusPlan[],
   altusGeneralPlan: null as AltusGeneralPlan | null,
   altusFilter: [] as AltusFilterDecision[],
+  categoryBudgets: {} as CategoryBudgets,
+  recurringTransactions: [] as RecurringTransaction[],
 };
 
 /** Campos que são sincronizados com a nuvem (tudo menos as funções do store). */
@@ -313,6 +343,7 @@ export const SYNC_KEYS = [
   "version", "profile", "settings", "primaryAreas", "transactions", "weights", "workouts",
   "books", "studies", "chat", "goalsMacro", "goalsDaily", "completions", "kaizen", "customTaxonomy", "altusPlans",
   "altusGeneralPlan", "altusFilter",
+  "categoryBudgets", "recurringTransactions",
 ] as const;
 
 /** Estado de uma conta recém-criada: sem nenhum dado de exemplo. */
@@ -332,6 +363,8 @@ export const emptyState = {
   altusPlans: [] as AltusPlan[],
   altusGeneralPlan: null as AltusGeneralPlan | null,
   altusFilter: [] as AltusFilterDecision[],
+  categoryBudgets: {} as CategoryBudgets,
+  recurringTransactions: [] as RecurringTransaction[],
   // Conta nova não tem altura: o card de IMC só aparece depois que a pessoa informa.
   profile: { ...initial.profile, name: "", height: 0 },
 };
@@ -350,9 +383,8 @@ function recomputeGoals(s: State): GoalMacro[] {
       const y = new Date().getFullYear();
       current = s.books.filter((b) => b.finishedAt.startsWith(String(y))).length;
     } else if (g.linkedModule === "finance_saved") {
-      const income = s.transactions.filter((t) => t.type === "entrada").reduce((a, b) => a + b.value, 0);
-      const exp = s.transactions.filter((t) => t.type === "saida").reduce((a, b) => a + b.value, 0);
-      current = income - exp;
+      // Mesmo número do "Saldo acumulado" de Finanças: saldo inicial + histórico até hoje.
+      current = balanceUntil(s.transactions, s.profile.openingBalance ?? 0, todayISO());
     } else if (g.linkedModule === "study_hours") {
       current = +(s.studies.reduce((a, x) => a + x.duration, 0) / 60).toFixed(1);
     }
@@ -392,6 +424,36 @@ export const useStore = create<State>()(
       addKaizen: (k) => set((s) => ({ kaizen: [{ ...k, id: uid(), createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }, ...s.kaizen] })),
       updateKaizen: (id, patch) => set((s) => ({ kaizen: s.kaizen.map((x) => x.id === id ? { ...x, ...patch, updatedAt: new Date().toISOString() } : x) })),
       removeKaizen: (id) => set((s) => ({ kaizen: s.kaizen.filter((x) => x.id !== id) })),
+      setCategoryBudget: (category, limit) =>
+        set((s) => {
+          const next = { ...s.categoryBudgets };
+          if (limit && limit > 0) next[category] = limit;
+          else delete next[category];
+          return { categoryBudgets: next };
+        }),
+      addRecurring: (r) =>
+        set((s) => ({ recurringTransactions: [...s.recurringTransactions, { ...r, id: uid() }] })),
+      updateRecurring: (id, patch) =>
+        set((s) => ({
+          recurringTransactions: s.recurringTransactions.map((r) =>
+            r.id === id ? { ...r, ...patch } : r,
+          ),
+        })),
+      removeRecurring: (id) =>
+        set((s) => ({ recurringTransactions: s.recurringTransactions.filter((r) => r.id !== id) })),
+      postDueRecurring: (today) => {
+        const s = get();
+        const { transactions, rules } = dueRecurring(
+          s.recurringTransactions ?? [],
+          s.transactions,
+          today,
+        );
+        const rulesChanged = rules.some((r, i) => r !== s.recurringTransactions[i]);
+        if (transactions.length === 0 && !rulesChanged) return 0;
+        set({ transactions: [...transactions, ...s.transactions], recurringTransactions: rules });
+        if (transactions.length) get().recomputeLinkedGoals();
+        return transactions.length;
+      },
       saveAltusProposal: (proposal, link) => {
         const s = get();
         const result = applyAltusProposal(
@@ -505,7 +567,11 @@ export const useStore = create<State>()(
           return { chat };
         }),
       clearChat: () => set({ chat: [] }),
-      setProfile: (p) => set((s) => ({ profile: { ...s.profile, ...p } })),
+      setProfile: (p) => {
+        set((s) => ({ profile: { ...s.profile, ...p } }));
+        // A meta "economizado" usa o saldo acumulado, que inclui o saldo inicial.
+        if ("openingBalance" in p) get().recomputeLinkedGoals();
+      },
       setSettings: (sx) => set((s) => ({ settings: { ...s.settings, ...sx } })),
       setPrimaryAreas: (areas) =>
         set({ primaryAreas: [...new Set(areas.filter((a) => (ALL_AREA_KEYS as string[]).includes(a)))] }),
@@ -552,7 +618,13 @@ export const useStore = create<State>()(
         if (!encontrou) return "Nenhum dado reconhecido no arquivo.";
 
         // Backups antigos: valida e converte o planejamento para o formato atual.
-        set({ ...emptyState, ...patch, ...normalizeAltusState(patch, todayISO()) });
+        set({
+          ...emptyState,
+          ...patch,
+          ...normalizeAltusState(patch, todayISO()),
+          categoryBudgets: normalizeBudgets(patch.categoryBudgets),
+          recurringTransactions: normalizeRecurring(patch.recurringTransactions),
+        });
         get().recomputeLinkedGoals();
         return null;
       },

@@ -169,6 +169,23 @@ function Config() {
               onChange={(e) => setProfile({ maxExpenses: +e.target.value })}
             />
           </Field>
+          <Field label={t("config.openingBalance")}>
+            <input
+              className="inp"
+              type="number"
+              step="0.01"
+              inputMode="decimal"
+              data-opening-balance
+              value={profile.openingBalance ?? ""}
+              placeholder="0"
+              onChange={(e) =>
+                setProfile({
+                  openingBalance: e.target.value === "" ? undefined : +e.target.value,
+                })
+              }
+            />
+            <p className="text-xs text-muted-foreground mt-1">{t("config.openingBalanceHint")}</p>
+          </Field>
         </GlassCard>
       </Section>
 

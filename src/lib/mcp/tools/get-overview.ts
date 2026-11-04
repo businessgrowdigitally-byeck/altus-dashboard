@@ -1,5 +1,5 @@
 import { defineTool } from "@lovable.dev/mcp-js";
-import { loadData } from "../data";
+import { loadData, todayISO } from "../data";
 
 export default defineTool({
   name: "get_overview",
@@ -17,9 +17,21 @@ export default defineTool({
     const weights = [...(d.weights ?? [])].sort((a, b) => b.date.localeCompare(a.date));
     const studies = d.studies ?? [];
 
+    // Saldo acumulado: saldo inicial + todo o histórico até hoje (não zera no mês).
+    const today = todayISO();
+    const acumulado = (d.transactions ?? []).reduce(
+      (a, t) => (t.date <= today ? a + (t.type === "entrada" ? t.value : -t.value) : a),
+      d.profile?.openingBalance ?? 0,
+    );
     const overview = {
       mes: month,
-      financas: { entradas, saidas, saldo: entradas - saidas, lancamentos: tx.length },
+      financas: {
+        entradas,
+        saidas,
+        resultado_do_mes: entradas - saidas,
+        saldo_acumulado: acumulado,
+        lancamentos: tx.length,
+      },
       peso_atual: weights[0]?.weight ?? null,
       peso_meta: d.profile?.goalWeight ?? null,
       livros_lidos: (d.books ?? []).length,
