@@ -1,6 +1,8 @@
 import { create } from "zustand";
 import { supabase } from "./supabase";
 import { useStore, emptyState, SYNC_KEYS } from "./store";
+import { normalizeAltusState } from "./ai/plan";
+import { todayISO } from "./format";
 
 /**
  * Sincronização dos dados do usuário com o Supabase.
@@ -72,7 +74,9 @@ function sanitizeSnapshot(value: unknown): object {
     }
     if (v !== null && typeof v === "object" && !Array.isArray(v)) out[key] = v;
   }
-  return out;
+  // Planejamento ALTUS: valida em profundidade e converte o formato antigo
+  // (P.G. dentro de cada plano, ideias estacionadas) sem perder conteúdo.
+  return { ...out, ...normalizeAltusState(out, todayISO()) };
 }
 
 async function push(userId: string) {

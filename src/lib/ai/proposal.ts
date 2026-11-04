@@ -1,51 +1,84 @@
 /**
  * Fluxo de confirmação das propostas ```altus-plan``` no chat.
  *
- * A prévia roda `applyPlanProposal` sem gravar nada, então o cartão mostra
+ * A prévia roda `applyAltusProposal` sem gravar nada, então o cartão mostra
  * exatamente o que será salvo (já sanitizado), e não o JSON cru do modelo.
  */
 
 // Extensão explícita para os testes rodarem direto no Node (--experimental-strip-types).
-import { applyPlanProposal, parsePlanProposal, type AltusPlan, type PlanProposal } from "./plan.ts";
+import {
+  applyAltusProposal,
+  needsMacroLink,
+  parsePlanProposal,
+  type AltusApplyResult,
+  type AltusState,
+  type MacroLink,
+  type PlanProposal,
+} from "./plan.ts";
 
 export type ChatPlanState = {
   status: "saved" | "discarded";
   planId?: string;
+  /** Versão do plano (P.E.) salva por esta proposta. */
   version?: number;
+  /** Versão do P.G. salva por esta proposta. */
+  generalVersion?: number;
+  /** Quantas decisões do Filtro ALTUS foram registradas. */
+  decisions?: number;
 };
 
 type ChatLike = { role: "user" | "assistant"; content: string; plan?: ChatPlanState };
 
 export type ProposalPreview = {
-  plan: AltusPlan;
-  /** Versão atual quando a proposta revisa um plano existente; null = plano novo. */
+  result: AltusApplyResult;
+  /** Versão atual do plano revisado; null = plano novo (ou proposta sem plano). */
   fromVersion: number | null;
+  /** Versão atual do P.G.; null = P.G. novo (ou proposta sem P.G.). */
+  generalFromVersion: number | null;
+  /** O plano precisa que o usuário escolha ou crie a Meta Macro. */
+  needsLink: boolean;
   linkedMacroName: string | null;
   changeSummary: string;
   newEntries: number;
 };
 
-export function previewPlanProposal(
+/** Sugestão inicial de vínculo: meta existente com o mesmo nome, senão criar. */
+export function defaultMacroLink(
   proposal: PlanProposal,
-  plans: AltusPlan[],
+  goalsMacro: { id: string; name: string }[],
+): MacroLink {
+  const name = String(proposal.macroGoalName ?? "")
+    .trim()
+    .toLowerCase();
+  const match = goalsMacro.find((g) => g.name.trim().toLowerCase() === name);
+  return match ? { kind: "existing", goalId: match.id } : { kind: "create" };
+}
+
+export function previewAltusProposal(
+  proposal: PlanProposal,
+  state: AltusState,
   goalsMacro: { id: string; name: string }[],
   today: string,
+  link: MacroLink | null,
 ): ProposalPreview {
-  const { plan } = applyPlanProposal(
-    plans,
-    proposal,
-    today,
-    goalsMacro.map((g) => g.id),
-  );
-  const existing = plans.find((p) => p.id === plan.id);
-  const count = (k: "decisions" | "results" | "reviews" | "parkedIdeas") =>
-    plan[k].length - (existing?.[k].length ?? 0);
+  const ids = goalsMacro.map((g) => g.id);
+  const needsLink = needsMacroLink(proposal, state.altusPlans, ids);
+  const result = applyAltusProposal(state, goalsMacro, proposal, today, needsLink ? link : null);
+  const { plan, generalPlan } = result;
+  const existing = plan ? state.altusPlans.find((p) => p.id === plan.id) : undefined;
+  const count = (k: "decisions" | "results" | "reviews") =>
+    plan ? plan[k].length - (existing?.[k].length ?? 0) : 0;
   return {
-    plan,
+    result,
     fromVersion: existing ? existing.version : null,
-    linkedMacroName: goalsMacro.find((g) => g.id === plan.macroGoalId)?.name ?? null,
-    changeSummary: plan.history.at(-1)?.summary ?? "",
-    newEntries: count("decisions") + count("results") + count("reviews") + count("parkedIdeas"),
+    generalFromVersion:
+      generalPlan && state.altusGeneralPlan ? state.altusGeneralPlan.version : null,
+    needsLink,
+    linkedMacroName: result.createdGoal
+      ? result.createdGoal.name
+      : (goalsMacro.find((g) => g.id === plan?.macroGoalId)?.name ?? null),
+    changeSummary: plan?.history.at(-1)?.summary ?? generalPlan?.history.at(-1)?.summary ?? "",
+    newEntries: count("decisions") + count("results") + count("reviews"),
   };
 }
 
@@ -54,7 +87,7 @@ export type ProposalView =
   | { kind: "invalid" }
   | { kind: "pending"; proposal: PlanProposal }
   | { kind: "superseded" }
-  | { kind: "saved"; version?: number }
+  | { kind: "saved"; saved: ChatPlanState }
   | { kind: "discarded" };
 
 /**
@@ -71,7 +104,7 @@ export function proposalViews(chat: ChatLike[], streaming: boolean): ProposalVie
   return chat.map((m, i) => {
     if (m.role !== "assistant") return { kind: "none" };
     const inProgress = streaming && i === chat.length - 1;
-    if (m.plan?.status === "saved") return { kind: "saved", version: m.plan.version };
+    if (m.plan?.status === "saved") return { kind: "saved", saved: m.plan };
     if (m.plan?.status === "discarded") return { kind: "discarded" };
     const proposal = parsed[i];
     if (!proposal) {
