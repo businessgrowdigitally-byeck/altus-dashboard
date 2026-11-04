@@ -4,6 +4,9 @@
  * Nada aqui é inventado: campos ausentes viram listas vazias.
  */
 
+// Extensão explícita para os testes rodarem direto no Node (--experimental-strip-types).
+import { normalizeAltusState } from "./plan.ts";
+
 type Row = Record<string, unknown>;
 const list = (v: unknown): Row[] => (Array.isArray(v) ? (v.filter((x) => x && typeof x === "object") as Row[]) : []);
 const s = (v: unknown, max = 300): string => (typeof v === "string" ? v.slice(0, max) : "");
@@ -63,7 +66,16 @@ export function buildMentorContext(data: unknown, today: string) {
   const daily = list(d.goalsDaily);
   const completions = list(d.completions);
   const comp30 = completions.filter((c) => s(c.date) >= since30);
-  const plans = list(d.altusPlans);
+  // Mesma normalização do app: dados antigos (P.G. dentro do plano, ideias
+  // estacionadas) aparecem já no formato atual.
+  const altus = normalizeAltusState(
+    { altusPlans: d.altusPlans, altusGeneralPlan: d.altusGeneralPlan, altusFilter: d.altusFilter },
+    today,
+  );
+  const goals = list(d.goalsMacro);
+  const goalName = (id: string | null) => (id ? s(goals.find((g) => g.id === id)?.name, 150) || null : null);
+  const goalRef = (id: string) => ({ id, nome: goalName(id) ?? "(meta não encontrada)" });
+  const general = altus.altusGeneralPlan;
 
   return {
     data_de_hoje: today,
@@ -74,8 +86,9 @@ export function buildMentorContext(data: unknown, today: string) {
       meta_renda_mensal: n(profile.incomeTarget) || null,
       teto_despesas_mensal: n(profile.maxExpenses) || null,
     },
-    metas_macro: list(d.goalsMacro).slice(0, 20).map((g) => ({
+    metas_macro: goals.slice(0, 20).map((g) => ({
       id: s(g.id, 80),
+      planId_vinculado: altus.altusPlans.find((p) => p.macroGoalId === g.id)?.id ?? null,
       nome: s(g.name, 150),
       area: s(g.area, 40),
       tipo: s(g.type, 20),
@@ -118,23 +131,62 @@ export function buildMentorContext(data: unknown, today: string) {
       recentes: list(d.books).sort(byDateDesc).slice(0, 8).map((b) => ({ titulo: s(b.title, 120), autor: s(b.author, 80), nota: n(b.rating), concluido_em: s(b.finishedAt), notas: s(b.notes, 250) || undefined, aplicacoes: s(b.applications, 250) || undefined })),
     },
     kaizen: list(d.kaizen).sort(byDateDesc).slice(0, 10).map((k) => ({ data: s(k.date), melhorei_hoje: s(k.improvedToday, 250), melhorar_amanha: s(k.improveTomorrow, 250), notas: s(k.notes, 200) || undefined })),
-    planejamentos_altus: plans.slice(0, 10).map((p) => ({
-      planId: s(p.id, 80),
-      meta_macro: s(p.macroGoalName, 150),
-      macroGoalId: s(p.macroGoalId, 80) || null,
-      versao: n(p.version),
-      indicador: s(p.indicator, 200),
-      prazo: s(p.deadline, 40),
-      planejamento_geral: s(p.generalPlanning, 600),
-      estrategia: s(p.strategy, 600),
-      etapa_ativa: s(p.activeStageId, 80) || null,
-      etapas: list(p.stages).slice(0, 12),
-      metas_micro: list(p.microGoals).slice(0, 20),
-      decisoes_recentes: list(p.decisions).slice(-5),
-      resultados_recentes: list(p.results).slice(-5),
-      revisoes_recentes: list(p.reviews).slice(-3),
-      ideias_estacionadas: list(p.parkedIdeas).slice(-5),
-      proxima_revisao: s(p.nextReview, 10),
+    planejamento_geral: general
+      ? {
+          versao: general.version,
+          visao_geral: general.summary.slice(0, 1500),
+          foco_principal: general.focusGoalIds.map(goalRef),
+          em_manutencao: general.maintenanceGoalIds.map(goalRef),
+          recursos_capacidade: general.capacity.slice(0, 600),
+          restricoes_dependencias: general.constraints.slice(0, 600),
+          atualizado_em: general.updatedAt.slice(0, 10),
+        }
+      : null,
+    planejamentos_altus: altus.altusPlans.slice(0, 10).map((p) => {
+      const linked = goalName(p.macroGoalId);
+      return {
+        planId: p.id,
+        macroGoalId: linked ? p.macroGoalId : null,
+        meta_macro: linked ?? p.macroGoalName.slice(0, 150),
+        vinculo_meta_macro: linked ? "ok" : "SEM VÍNCULO — na próxima proposta, vincule a uma meta de metas_macro",
+        versao: p.version,
+        indicador: p.indicator.slice(0, 200),
+        prazo: p.deadline,
+        estrategia: p.strategy.slice(0, 600),
+        etapa_ativa: p.activeStageId,
+        etapas: p.stages.slice(0, 12).map((st) => ({
+          id: st.id,
+          titulo: st.title,
+          status: st.status,
+          criterio: st.doneCriteria,
+          acoes: st.actions.slice(0, 10).map((a) => ({
+            id: a.id,
+            titulo: a.title,
+            feita: a.done,
+            subacoes: a.subactions.slice(0, 6).map((sb) => ({ id: sb.id, titulo: sb.title, feita: sb.done })),
+          })),
+        })),
+        metas_micro: p.microGoals.slice(0, 20).map((m) => ({
+          id: m.id,
+          titulo: m.title,
+          etapa: m.stageId,
+          status: m.status,
+          estimativa_min: m.estimateMinutes,
+        })),
+        decisoes_recentes: p.decisions.slice(-5),
+        resultados_recentes: p.results.slice(-5),
+        revisoes_recentes: p.reviews.slice(-3),
+        proxima_revisao: p.nextReview || null,
+        revisao_vencida: Boolean(p.nextReview && p.nextReview <= today),
+      };
+    }),
+    filtro_altus: altus.altusFilter.slice(0, 15).map((f) => ({
+      data: f.date,
+      ideia: f.idea.slice(0, 250),
+      veredito: f.verdict,
+      motivo: f.rationale.slice(0, 250) || undefined,
+      proxima_acao: f.nextAction.slice(0, 200) || undefined,
+      meta_macro: goalName(f.macroGoalId),
     })),
   };
 }

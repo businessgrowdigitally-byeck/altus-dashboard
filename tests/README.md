@@ -60,3 +60,13 @@ node tests/agente-plan.browser.cjs
 ```
 
 It fakes the session and intercepts Supabase and `/api/chat` in the browser; no real account, model call or database write. `SCREENSHOT_DIR` saves a screenshot of the card.
+
+## Mentor ALTUS model (F2)
+
+The single General Plan, mandatory Macro Goal link, ALTUS Filter decisions, the conversion of plans saved in the previous format and the Mentor context are unit-tested:
+
+```sh
+node --experimental-strip-types --test tests/altus-model.test.ts
+```
+
+`tests/agente-plan.browser.cjs` also starts from a plan in the previous format and checks that it is migrated (not duplicated) when the app saves.

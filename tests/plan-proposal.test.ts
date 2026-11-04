@@ -6,7 +6,7 @@ import {
   stripPlanBlocks,
   type AltusPlan,
 } from "../src/lib/ai/plan.ts";
-import { previewPlanProposal, proposalViews } from "../src/lib/ai/proposal.ts";
+import { defaultMacroLink, previewAltusProposal, proposalViews } from "../src/lib/ai/proposal.ts";
 
 const TODAY = "2026-11-04";
 const block = (obj: unknown) => "```altus-plan\n" + JSON.stringify(obj) + "\n```";
@@ -17,7 +17,6 @@ const proposal = {
   macroGoalName: "Chegar a 75kg",
   indicator: "Peso semanal",
   deadline: "2027-03-01",
-  generalPlanning: "Foco em saúde; finanças em manutenção.",
   strategy: "Déficit calórico moderado + treino 4x/semana.",
   activeStageId: "s1",
   stages: [
@@ -89,32 +88,44 @@ describe("applyPlanProposal", () => {
   });
 });
 
-describe("previewPlanProposal", () => {
+describe("previewAltusProposal", () => {
   const goals = [{ id: "g1", name: "Chegar a 75kg" }];
+  const empty = { altusPlans: [] as AltusPlan[], altusGeneralPlan: null, altusFilter: [] };
 
   it("describes a new plan without saving anything", () => {
-    const plans: AltusPlan[] = [];
-    const p = previewPlanProposal(proposal, plans, goals, TODAY);
+    const p = previewAltusProposal(proposal, empty, goals, TODAY, null);
     assert.equal(p.fromVersion, null);
-    assert.equal(p.plan.version, 1);
+    assert.equal(p.needsLink, false);
+    assert.equal(p.result.plan?.version, 1);
     assert.equal(p.linkedMacroName, "Chegar a 75kg");
     assert.equal(p.changeSummary, "Plano inicial");
     assert.equal(p.newEntries, 1);
-    assert.equal(plans.length, 0);
+    assert.equal(empty.altusPlans.length, 0);
   });
 
   it("describes a revision of an existing plan", () => {
     const { plans, plan } = applyPlanProposal([], proposal, TODAY, ["g1"]);
-    const p = previewPlanProposal(
+    const state = { ...empty, altusPlans: plans };
+    const p = previewAltusProposal(
       { planId: plan.id, results: [{ text: "-1kg" }], reviews: [{ text: "Semana 1" }] },
-      plans,
+      state,
       goals,
       TODAY,
+      null,
     );
     assert.equal(p.fromVersion, 1);
-    assert.equal(p.plan.version, 2);
+    assert.equal(p.result.plan?.version, 2);
     assert.equal(p.newEntries, 2);
     assert.equal(plans[0].version, 1, "the stored plan is untouched");
+  });
+
+  it("asks for a Macro Goal link when the proposal has no valid id", () => {
+    const { macroGoalId: _id, ...unlinked } = proposal;
+    const p = previewAltusProposal(unlinked, empty, goals, TODAY, { kind: "create" });
+    assert.equal(p.needsLink, true);
+    assert.equal(p.result.createdGoal?.name, "Chegar a 75kg");
+    assert.deepEqual(defaultMacroLink(unlinked, goals), { kind: "existing", goalId: "g1" });
+    assert.deepEqual(defaultMacroLink({ macroGoalName: "Outra" }, goals), { kind: "create" });
   });
 });
 
@@ -143,7 +154,7 @@ describe("proposalViews", () => {
       a(reply("v2", proposal), { status: "discarded" }),
     ];
     assert.deepEqual(proposalViews(chat, false), [
-      { kind: "saved", version: 3 },
+      { kind: "saved", saved: { status: "saved", planId: "p", version: 3 } },
       { kind: "discarded" },
     ]);
   });
