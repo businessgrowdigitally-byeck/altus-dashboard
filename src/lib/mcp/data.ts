@@ -8,7 +8,7 @@ import { supabaseForUser } from "./supabase";
  */
 
 export type AltusData = {
-  profile?: { name?: string; goalWeight?: number; incomeTarget?: number; maxExpenses?: number; height?: number };
+  profile?: { name?: string; goalWeight?: number; incomeTarget?: number; maxExpenses?: number; height?: number; openingBalance?: number };
   transactions?: { id: string; type: "entrada" | "saida"; value: number; description: string; category: string; date: string }[];
   weights?: { id: string; weight: number; date: string; notes?: string }[];
   workouts?: { id: string; date: string; type: string; duration: number; notes?: string }[];

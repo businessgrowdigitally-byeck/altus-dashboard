@@ -6,6 +6,7 @@
 
 // Extensão explícita para os testes rodarem direto no Node (--experimental-strip-types).
 import { normalizeAltusState } from "./plan.ts";
+import { balanceUntil, normalizeBudgets, normalizeRecurring, type FinTx } from "../finance.ts";
 
 type Row = Record<string, unknown>;
 const list = (v: unknown): Row[] => (Array.isArray(v) ? (v.filter((x) => x && typeof x === "object") as Row[]) : []);
@@ -42,8 +43,20 @@ export function buildMentorContext(data: unknown, today: string) {
     const saidas = mt.filter((t) => t.type === "saida").reduce((a, t) => a + n(t.value), 0);
     const cat: Record<string, number> = {};
     mt.filter((t) => t.type === "saida").forEach((t) => (cat[s(t.category, 60)] = (cat[s(t.category, 60)] || 0) + n(t.value)));
-    return { mes: m, entradas, saidas, saldo: entradas - saidas, saidas_por_categoria: cat, lancamentos: mt.length };
+    return { mes: m, entradas, saidas, resultado_do_mes: entradas - saidas, saidas_por_categoria: cat, lancamentos: mt.length };
   });
+  const finTx: FinTx[] = tx
+    .filter((t) => (t.type === "entrada" || t.type === "saida") && n(t.value) > 0 && s(t.date, 10))
+    .map((t) => ({
+      id: s(t.id, 80),
+      type: t.type as FinTx["type"],
+      value: n(t.value),
+      date: s(t.date, 10),
+      category: s(t.category, 60),
+      description: s(t.description, 100),
+    }));
+  const openingRaw = (d.profile as Row | undefined)?.openingBalance;
+  const opening = typeof openingRaw === "number" && Number.isFinite(openingRaw) ? openingRaw : null;
 
   // Corpo.
   const weights = list(d.weights).sort(byDateDesc);
@@ -113,7 +126,23 @@ export function buildMentorContext(data: unknown, today: string) {
       }),
       conclusoes_totais_30d: comp30.length,
     },
-    financas: { ultimos_3_meses: meses, lancamentos_recentes: tx.sort(byDateDesc).slice(0, 15).map((t) => ({ data: s(t.date), tipo: s(t.type), valor: n(t.value), categoria: s(t.category, 60), descricao: s(t.description, 100) })) },
+    financas: {
+      // Saldo acumulado = saldo inicial + todo o histórico; não zera na virada do mês.
+      saldo_acumulado_hoje: balanceUntil(finTx, opening ?? 0, today),
+      saldo_inicial: opening,
+      saldo_inicial_informado: opening !== null,
+      orcamento_mensal_por_categoria: normalizeBudgets(d.categoryBudgets),
+      recorrentes: normalizeRecurring(d.recurringTransactions)
+        .slice(0, 20)
+        .map((r) => ({
+          tipo: r.type,
+          valor: r.value,
+          descricao: r.description,
+          categoria: r.category,
+          dia: r.dayOfMonth,
+          ativo: r.active,
+        })),
+      ultimos_3_meses: meses, lancamentos_recentes: tx.sort(byDateDesc).slice(0, 15).map((t) => ({ data: s(t.date), tipo: s(t.type), valor: n(t.value), categoria: s(t.category, 60), descricao: s(t.description, 100) })) },
     corpo: {
       pesos_recentes: weights.slice(0, 12).map((w) => ({ data: s(w.date), kg: n(w.weight), notas: s(w.notes, 120) || undefined })),
       treinos_30d: w30.length,

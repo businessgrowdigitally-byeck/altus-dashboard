@@ -63,7 +63,11 @@ export const dashboard = {
     en: "Panoramic view of all pillars of your life",
     es: "Visión panorámica de todos los pilares de tu vida",
   },
-  kpiSaldo: { pt: "Saldo do Mês", en: "Month Balance", es: "Saldo del Mes" },
+  kpiSaldo: {
+    pt: "Saldo acumulado",
+    en: "Accumulated balance",
+    es: "Saldo acumulado",
+  },
   kpiPeso: { pt: "Peso Atual", en: "Current Weight", es: "Peso Actual" },
   kpiLivros: { pt: "Livros em {year}", en: "Books in {year}", es: "Libros en {year}" },
   kpiStreak: { pt: "Streak de Estudos", en: "Study Streak", es: "Racha de Estudio" },
@@ -158,5 +162,10 @@ export const dashboard = {
     pt: "Continue registrando seus dados para destrancar mais insights.",
     en: "Keep logging your data to unlock more insights.",
     es: "Sigue registrando tus datos para desbloquear más insights.",
+  },
+  kpiSaldoMonth: {
+    pt: "Resultado do mês: {value}",
+    en: "Month result: {value}",
+    es: "Resultado del mes: {value}",
   },
 } as const;

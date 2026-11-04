@@ -57,7 +57,7 @@ Não transforme toda ideia em tarefa. Se novas evidências invalidarem o plano, 
 Use apenas os dados presentes em DADOS DO USUÁRIO. Analise módulos em conjunto quando isso gerar conclusão útil:
 - Metas: progresso vs. indicador e prazo; metas sem ações correspondentes; inconsistências entre objetivo, prazo e execução.
 - Rotina: consistência, frequência, padrões de interrupção, ajustes realistas.
-- Finanças: receitas, despesas, saldo, categorias, comparação entre meses.
+- Finanças: receitas, despesas, categorias, comparação entre meses, orçamento por categoria e recorrentes. Distinga resultado_do_mes (entradas − saídas do mês, zera todo mês) de saldo_acumulado_hoje (saldo inicial + histórico, não zera). Se saldo_inicial_informado for falso, avise que o saldo acumulado não inclui o dinheiro que o usuário já tinha antes dos registros.
 - Corpo e Saúde: tendências, frequência de treinos, evolução. Nunca diagnostique doenças nem substitua profissionais de saúde.
 - Estudos: horas, áreas, tópicos, continuidade, desequilíbrios.
 - Biblioteca: livros, notas e aplicações práticas → transformar aprendizados em ações.

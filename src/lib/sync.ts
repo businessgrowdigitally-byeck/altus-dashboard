@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { supabase } from "./supabase";
 import { useStore, emptyState, SYNC_KEYS } from "./store";
 import { normalizeAltusState } from "./ai/plan";
+import { normalizeBudgets, normalizeRecurring } from "./finance";
 import { todayISO } from "./format";
 
 /**
@@ -76,7 +77,12 @@ function sanitizeSnapshot(value: unknown): object {
   }
   // Planejamento ALTUS: valida em profundidade e converte o formato antigo
   // (P.G. dentro de cada plano, ideias estacionadas) sem perder conteúdo.
-  return { ...out, ...normalizeAltusState(out, todayISO()) };
+  return {
+    ...out,
+    ...normalizeAltusState(out, todayISO()),
+    categoryBudgets: normalizeBudgets(out.categoryBudgets),
+    recurringTransactions: normalizeRecurring(out.recurringTransactions),
+  };
 }
 
 async function push(userId: string) {
@@ -146,6 +152,8 @@ export async function startSync(userId: string) {
   ready = true;
   useSyncStatus.getState().set("saved");
   unsubscribeStore = useStore.subscribe(scheduleSave);
+  // Depois de assinar o salvamento, para os lançamentos gerados irem para a nuvem.
+  useStore.getState().postDueRecurring(todayISO());
 }
 
 /** Para a sincronização. Por padrão também apaga os dados do navegador (logout). */

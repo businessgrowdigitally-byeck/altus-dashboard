@@ -70,3 +70,17 @@ node --experimental-strip-types --test tests/altus-model.test.ts
 ```
 
 `tests/agente-plan.browser.cjs` also starts from a plan in the previous format and checks that it is migrated (not duplicated) when the app saves.
+
+## Finances (F3)
+
+Accumulated balance vs. month result, opening balance, monthly series, budgets, search, recurring transactions (idempotent posting) and the Mentor's finance context are unit-tested:
+
+```sh
+node --experimental-strip-types --test tests/finance.test.ts
+```
+
+The browser smoke test (dev server running as above) starts in a new month with last month's history and checks that the accumulated balance does not reset, the opening balance, the localized month picker, income target and spending cap, a category budget, search, a recurring entry posted once (also after reload) and no horizontal scroll at 390 px:
+
+```sh
+node tests/financas.browser.cjs
+```
