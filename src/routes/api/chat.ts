@@ -93,18 +93,29 @@ export const Route = createFileRoute("/api/chat")({
 
         const systemPrompt = buildMentorSystemPrompt(normalizeLang(body.lang), contextText);
 
-        const upstream = await fetch("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${geminiKey}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            model: "gemini-2.5-flash",
-            messages: [{ role: "system", content: systemPrompt }, ...messages],
-            stream: true,
-          }),
-        });
+        let upstream: Response;
+        try {
+          upstream = await fetch("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${geminiKey}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              model: "gemini-2.5-flash",
+              messages: [{ role: "system", content: systemPrompt }, ...messages],
+              stream: true,
+            }),
+          });
+        } catch (err) {
+          // Falha de rede antes de qualquer resposta: sem isso o erro vira a
+          // página HTML genérica e o chat só consegue mostrar "Erro desconhecido".
+          console.error("[api/chat] falha ao chamar o Gemini", err);
+          return jsonResponse(
+            { error: "Não foi possível conectar ao serviço de IA. Tente novamente." },
+            502,
+          );
+        }
 
         if (!upstream.ok || !upstream.body) {
           if (upstream.status === 429) {

@@ -9,6 +9,8 @@ import { test } from "node:test";
 
 const USER_ID = "00000000-0000-4000-8000-000000000001";
 const calls = [];
+/** "ok" streams a reply; "down" makes the Gemini call throw, as a network failure would. */
+let geminiMode = "ok";
 
 const json = (body, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
@@ -62,6 +64,7 @@ globalThis.fetch = async (input, init) => {
     });
   }
   if (url.hostname === "generativelanguage.googleapis.com") {
+    if (geminiMode === "down") throw new TypeError("fetch failed");
     const sse = 'data: {"choices":[{"delta":{"content":"Olá"}}]}\n\n' + "data: [DONE]\n\n";
     return new Response(sse, { headers: { "content-type": "text/event-stream" } });
   }
@@ -129,4 +132,17 @@ test("authenticated chat reads context on the server and streams the reply", asy
   assert.deepEqual(payload.messages.slice(1), [
     { role: "user", content: "Como estão minhas metas?" },
   ]);
+});
+
+test("a network failure calling Gemini returns a JSON error, not the HTML error page", async () => {
+  geminiMode = "down";
+  try {
+    const response = await post({ messages: [{ role: "user", content: "oi" }] });
+    assert.equal(response.status, 502);
+    assert.match(response.headers.get("content-type"), /application\/json/);
+    const body = await response.json();
+    assert.match(body.error, /conectar ao serviço de IA/);
+  } finally {
+    geminiMode = "ok";
+  }
 });

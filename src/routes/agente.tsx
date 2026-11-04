@@ -66,7 +66,10 @@ function Agente() {
       });
 
       if (!res.ok || !res.body) {
-        const errData = await res.json().catch(() => ({ error: "Erro desconhecido" }));
+        // Respostas fora do formato JSON (ex.: página de erro do servidor) mostram o status HTTP.
+        const errData = await res
+          .json()
+          .catch(() => ({ error: `Erro desconhecido (HTTP ${res.status})` }));
         pushChat({ role: "assistant", content: `Erro: ${errData.error || res.statusText}`, error: true });
         setLoading(false);
         return;
