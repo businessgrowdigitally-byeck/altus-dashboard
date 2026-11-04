@@ -122,15 +122,17 @@ function Agente() {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-6rem)]">
-      <PageHeader title={t("agente.title")} subtitle={t("agente.subtitle")} />
-
-      <div className="text-xs text-muted-foreground bg-gold/10 border border-gold/30 rounded-lg p-3 mb-4 flex items-center gap-2">
-        <Sparkles size={14} className="text-gold" />
-        {t("agente.accessNote")}
-      </div>
-
+    // Celular: a altura da tela menos a barra superior (55px), o respiro do topo
+    // (16px) e a área da barra de navegação (4.5rem), para o campo de digitar
+    // ficar visível sem rolar a página. `dvh` acompanha a barra do navegador.
+    <div className="flex flex-col h-[calc(100dvh-143px-env(safe-area-inset-bottom))] md:h-[calc(100vh-6rem)]">
       <div ref={scrollRef} className="flex-1 overflow-y-auto space-y-4 mb-4 pr-2">
+        {/* Título e aviso rolam com a conversa: no celular, sobra espaço para as mensagens. */}
+        <PageHeader title={t("agente.title")} subtitle={t("agente.subtitle")} />
+        <div className="text-xs text-muted-foreground bg-gold/10 border border-gold/30 rounded-lg p-3 flex items-center gap-2">
+          <Sparkles size={14} className="text-gold shrink-0" />
+          {t("agente.accessNote")}
+        </div>
         {chat.length === 0 && (
           <div className="text-center text-muted-foreground text-sm py-12">
             <Bot size={32} className="mx-auto text-gold mb-3" />
@@ -142,7 +144,7 @@ function Agente() {
           const text = m.role === "assistant" ? stripPlanBlocks(m.content) : m.content;
           return (
             <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
-              <div className="max-w-[80%]">
+              <div className="max-w-[92%] md:max-w-[80%]">
                 {text && (
                   <div
                     className={`rounded-2xl px-4 py-3 text-sm whitespace-pre-wrap ${
@@ -164,13 +166,14 @@ function Agente() {
         )}
       </div>
 
-      <div className="flex gap-2 flex-wrap mb-3">
+      {/* Celular: uma linha com rolagem lateral, para sobrar espaço para a conversa. */}
+      <div className="flex gap-2 mb-3 overflow-x-auto pb-1 md:flex-wrap md:overflow-visible md:pb-0">
         {QUICK_PROMPTS.map((p) => (
           <button
             key={p}
             onClick={() => send(t(p))}
             disabled={loading}
-            className="text-xs px-3 py-1.5 rounded-full bg-muted/50 hover:bg-muted/80 border border-border transition"
+            className="shrink-0 whitespace-nowrap md:whitespace-normal text-xs px-3 py-1.5 rounded-full bg-muted/50 hover:bg-muted/80 border border-border transition"
           >
             {t(p)}
           </button>
@@ -183,7 +186,7 @@ function Agente() {
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && send()}
           placeholder={t("agente.placeholder")}
-          className="flex-1 bg-secondary border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-gold/50"
+          className="flex-1 min-w-0 bg-secondary border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-gold/50"
         />
         <button
           onClick={() => send()}

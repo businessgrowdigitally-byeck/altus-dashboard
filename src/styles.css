@@ -209,3 +209,17 @@
   .border-purple-altus { border-color: #8B5CF6; }
   .border-l-gold { border-left-color: #F5C842; }
 }
+
+/*
+ * O iPhone dá zoom automático ao tocar num campo com fonte menor que 16px.
+ * No celular, todos os campos usam 16px (o zoom com pinça continua liberado).
+ * Fora de @layer e com !important para vencer utilitários como text-sm e o
+ * estilo local `.inp` de Configurações.
+ */
+@media (max-width: 767px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
