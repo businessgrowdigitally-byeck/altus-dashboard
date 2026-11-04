@@ -1,5 +1,5 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useStore } from "@/lib/store";
 import { PageHeader } from "@/components/primitives";
 import { Bot, Send, Sparkles } from "lucide-react";
@@ -7,6 +7,9 @@ import { AI_AGENT_ENABLED } from "@/lib/features";
 import { todayISO } from "@/lib/format";
 import { useI18n } from "@/lib/i18n";
 import { buildChatHistory } from "@/lib/ai/history";
+import { stripPlanBlocks } from "@/lib/ai/plan";
+import { proposalViews } from "@/lib/ai/proposal";
+import { PlanProposalCard } from "@/components/PlanProposalCard";
 import { useAuth } from "@/lib/auth";
 
 export const Route = createFileRoute("/agente")({
@@ -38,6 +41,7 @@ function Agente() {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const views = useMemo(() => proposalViews(chat, loading), [chat, loading]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -133,17 +137,26 @@ function Agente() {
             {t("agente.emptyState")}
           </div>
         )}
-        {chat.map((m, i) => (
-          <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
-            <div
-              className={`max-w-[80%] rounded-2xl px-4 py-3 text-sm whitespace-pre-wrap ${
-                m.role === "user" ? "bg-secondary border border-gold/40" : "glass"
-              }`}
-            >
-              {m.content}
+        {chat.map((m, i) => {
+          // O bloco técnico ```altus-plan``` vira o cartão de confirmação abaixo.
+          const text = m.role === "assistant" ? stripPlanBlocks(m.content) : m.content;
+          return (
+            <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
+              <div className="max-w-[80%]">
+                {text && (
+                  <div
+                    className={`rounded-2xl px-4 py-3 text-sm whitespace-pre-wrap ${
+                      m.role === "user" ? "bg-secondary border border-gold/40" : "glass"
+                    }`}
+                  >
+                    {text}
+                  </div>
+                )}
+                <PlanProposalCard index={i} view={views[i]} />
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
         {loading && (
           <div className="flex justify-start">
             <div className="glass rounded-2xl px-4 py-3 text-sm">{t("agente.thinking")}</div>

@@ -44,3 +44,19 @@ node --test tests/chat-endpoint.test.mjs
 ```
 
 Run `npx tsc --noEmit` as well: the Vite build does not type-check, so a missing import only shows up at runtime.
+
+## Mentor ALTUS planning proposals (F1)
+
+Proposal parsing, versioning, preview and per-message state are unit-tested:
+
+```sh
+node --experimental-strip-types --test tests/plan-proposal.test.ts
+```
+
+The browser smoke test covers the confirmation card end to end (hidden `altus-plan` block, nothing saved before confirming, save and sync, decision kept after reload, discard). With the dev server running as above:
+
+```sh
+node tests/agente-plan.browser.cjs
+```
+
+It fakes the session and intercepts Supabase and `/api/chat` in the browser; no real account, model call or database write. `SCREENSHOT_DIR` saves a screenshot of the card.
