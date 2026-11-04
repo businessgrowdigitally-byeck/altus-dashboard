@@ -170,12 +170,11 @@ const assert = require("node:assert/strict");
     assert(snapshot.completions.some((c) => c.actionId === "study"));
     await page.reload({ waitUntil: "networkidle" });
     await page.getByRole("button", { name: "Rotina Diária", exact: true }).click();
-    assert.equal(
-      await page
-        .getByRole("button", { name: "Blocos de foco", exact: true })
-        .getAttribute("aria-pressed"),
-      "true",
-    );
+    // The saved view is restored in an effect after mount: wait for it instead of
+    // reading aria-pressed immediately (that raced and failed intermittently).
+    await page
+      .getByRole("button", { name: "Blocos de foco", exact: true, pressed: true })
+      .waitFor();
     await page.locator('[data-focus-block="study"]').waitFor();
     assert.equal(
       await page.locator('[data-focus-block="study"]').evaluate((el) => el.style.height),
