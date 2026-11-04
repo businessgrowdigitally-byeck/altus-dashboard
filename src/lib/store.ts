@@ -3,6 +3,7 @@ import { persist } from "zustand/middleware";
 import { daysAgoISO, todayISO } from "./format";
 import { ALL_AREA_KEYS, type AreaKey } from "./areas";
 import { applyPlanProposal, type AltusPlan, type PlanProposal } from "./ai/plan";
+import type { ChatPlanState } from "./ai/proposal";
 export type { AltusPlan } from "./ai/plan";
 
 export type Transaction = {
@@ -59,6 +60,8 @@ export type ChatMsg = {
   content: string;
   /** Mensagem de erro local: exibida no chat, mas nunca reenviada ao modelo. */
   error?: boolean;
+  /** Decisão do usuário sobre a proposta ```altus-plan``` desta resposta. */
+  plan?: ChatPlanState;
 };
 
 export type Profile = {
@@ -192,6 +195,8 @@ type State = {
   removeCustomItem: (scope: TaxonomyScope, id: string) => void;
   recomputeLinkedGoals: () => void;
   pushChat: (m: ChatMsg) => void;
+  /** Registra na mensagem do chat que a proposta foi salva ou descartada. */
+  setChatPlan: (index: number, plan: ChatPlanState) => void;
   updateLastAssistant: (content: string) => void;
   clearChat: () => void;
   setProfile: (p: Partial<Profile>) => void;
@@ -450,6 +455,10 @@ export const useStore = create<State>()(
       }),
       recomputeLinkedGoals: () => set((s) => ({ goalsMacro: recomputeGoals(s) })),
       pushChat: (m) => set((s) => ({ chat: [...s.chat, m] })),
+      setChatPlan: (index, plan) =>
+        set((s) => ({
+          chat: s.chat.map((m, i) => (i === index && m.role === "assistant" ? { ...m, plan } : m)),
+        })),
       updateLastAssistant: (content) =>
         set((s) => {
           const chat = [...s.chat];
