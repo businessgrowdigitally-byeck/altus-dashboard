@@ -1,9 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@supabase/supabase-js";
+import { supabase, SUPABASE_URL, SUPABASE_ANON_KEY } from "@/lib/supabase";
 import { AI_AGENT_ENABLED } from "@/lib/features";
+import { buildMentorContext } from "@/lib/ai/context";
+import { buildMentorSystemPrompt, normalizeLang } from "@/lib/ai/system-prompt";
+import {
+  MAX_CHAT_MESSAGES as MAX_MESSAGES,
+  MAX_CHAT_MESSAGE_CHARS as MAX_MESSAGE_CHARS,
+} from "@/lib/ai/history";
 
-const MAX_MESSAGES = 24;
-const MAX_MESSAGE_CHARS = 12_000;
 const MAX_CONTEXT_CHARS = 256_000;
 const MAX_BODY_BYTES = 1_024 * 1_024; // 1 MiB de texto cru
 
@@ -52,8 +57,9 @@ export const Route = createFileRoute("/api/chat")({
 
         const body = parsed as {
           messages?: unknown;
-          context?: unknown;
           lang?: unknown;
+          /** Data local do usuário (AAAA-MM-DD); só define o "hoje" do contexto. */
+          today?: unknown;
         };
 
         // messages: array finito de {role, content} com limites de tamanho.
@@ -87,18 +93,29 @@ export const Route = createFileRoute("/api/chat")({
 
         const systemPrompt = buildMentorSystemPrompt(normalizeLang(body.lang), contextText);
 
-        const upstream = await fetch("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${geminiKey}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            model: "gemini-2.5-flash",
-            messages: [{ role: "system", content: systemPrompt }, ...messages],
-            stream: true,
-          }),
-        });
+        let upstream: Response;
+        try {
+          upstream = await fetch("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${geminiKey}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              model: "gemini-2.5-flash",
+              messages: [{ role: "system", content: systemPrompt }, ...messages],
+              stream: true,
+            }),
+          });
+        } catch (err) {
+          // Falha de rede antes de qualquer resposta: sem isso o erro vira a
+          // página HTML genérica e o chat só consegue mostrar "Erro desconhecido".
+          console.error("[api/chat] falha ao chamar o Gemini", err);
+          return jsonResponse(
+            { error: "Não foi possível conectar ao serviço de IA. Tente novamente." },
+            502,
+          );
+        }
 
         if (!upstream.ok || !upstream.body) {
           if (upstream.status === 429) {
