@@ -84,3 +84,13 @@ The browser smoke test (dev server running as above) starts in a new month with 
 ```sh
 node tests/financas.browser.cjs
 ```
+
+## Mobile (F4)
+
+With the dev server running as above, checks two phone sizes (390×844 and 375×667) on every screen: no horizontal scroll, no input/select/textarea under 16px (iOS zooms in on focus below that), the Mentor fits the screen with the input above the bottom navigation and no "+" button over it, edit/delete actions visible on touch screens, and the quick-add modal fits. It also checks that desktop keeps the hover-reveal for row actions:
+
+```sh
+node tests/mobile.browser.cjs
+```
+
+Chromium's mobile emulation cannot reproduce Safari's auto-zoom itself; the test checks the computed font size that triggers it.

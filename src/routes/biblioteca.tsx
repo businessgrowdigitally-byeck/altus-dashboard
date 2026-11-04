@@ -264,7 +264,7 @@ function Biblioteca() {
                   }}
                 >
                   {b.title[0]}
-                  <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition bg-black/60 backdrop-blur-sm p-1 rounded-md">
+                  <div className="absolute top-2 right-2 flex items-center gap-1 md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100 transition bg-black/60 backdrop-blur-sm p-1 rounded-md">
                     <button
                       onClick={(e) => {
                         e.stopPropagation();

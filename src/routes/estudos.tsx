@@ -344,7 +344,7 @@ function Estudos() {
                                       <span className="text-xs px-2 py-0.5 rounded-full bg-gold/20 text-gold">{t("estudos.statusProgresso")}</span>
                                     )}
                                   </div>
-                                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition shrink-0">
+                                  <div className="flex items-center gap-1 md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100 transition shrink-0">
                                     <button onClick={() => setEditingStudy(s)} title={t("estudos.editarBtn")} className="p-1 rounded hover:bg-muted/80 text-muted-foreground hover:text-foreground">
                                       <Pencil size={13} />
                                     </button>

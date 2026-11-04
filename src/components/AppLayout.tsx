@@ -70,6 +70,7 @@ const [moreOpen, setMoreOpen] = useState(false);
   const profileName = useStore((s) => s.profile.name);
   const primaryAreas = useStore((s) => s.primaryAreas);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const isChat = pathname === "/agente";
   const { user, signOut } = useAuth();
   const name =
     profileName ||
@@ -250,11 +251,17 @@ const [moreOpen, setMoreOpen] = useState(false);
           </div>
         </aside>
 
-        <main className="flex-1 min-w-0 p-4 md:p-8 max-w-[1400px] mx-auto w-full pb-28 md:pb-8">
+        <main
+          className={cn(
+            "flex-1 min-w-0 p-4 md:p-8 max-w-[1400px] mx-auto w-full md:pb-8",
+            // O chat ocupa a altura da tela e não tem o botão "+": basta liberar a barra de navegação.
+            isChat ? "pb-[calc(4.5rem+env(safe-area-inset-bottom))]" : "pb-28",
+          )}
+        >
           {children}
         </main>
       </div>
-      <QuickAddFab />
+      {!isChat && <QuickAddFab />}
       {!moreOpen && (
         <BottomNav
           primaryAreas={primaryAreas}

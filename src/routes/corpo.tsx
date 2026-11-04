@@ -325,7 +325,7 @@ function Corpo() {
                       {w.notes || "—"}
                     </td>
                     <td className="text-right py-1">
-                      <div className="inline-flex items-center gap-1 opacity-0 group-hover:opacity-100 transition">
+                      <div className="inline-flex items-center gap-1 md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100 transition">
                         <button
                           onClick={() => setEditingWeight(w)}
                           title={t("common.edit")}

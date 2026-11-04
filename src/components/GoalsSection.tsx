@@ -114,7 +114,7 @@ function MacroTab() {
                     {areaT(t, g.area)}
                   </span>
                 </div>
-                <div className="flex gap-1 opacity-0 group-hover:opacity-100 md:opacity-0 transition">
+                <div className="flex gap-1 md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100 transition">
                   <button
                     onClick={() => setEditing(g)}
                     className="p-1.5 rounded hover:bg-muted/80 text-muted-foreground"
