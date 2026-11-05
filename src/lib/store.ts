@@ -195,6 +195,12 @@ type State = {
   saveAltusProposal: (proposal: PlanProposal, link: MacroLink | null) => AltusApplyResult;
   toggleMicroGoal: (planId: string, microId: string) => void;
   removeAltusPlan: (id: string) => void;
+  /**
+   * Vincula um plano (ex.: antigo, sem vínculo) a uma Meta Macro do app.
+   * Recusa (false) meta inexistente ou já vinculada a outro plano — um P.E. por meta.
+   */
+  linkPlanToGoal: (planId: string, goalId: string) => boolean;
+  removeFilterDecision: (id: string) => void;
 
   addTransaction: (t: Omit<Transaction, "id">) => void;
   updateTransaction: (id: string, patch: Partial<Omit<Transaction, "id">>) => void;
@@ -481,6 +487,27 @@ export const useStore = create<State>()(
         }),
       })),
       removeAltusPlan: (id) => set((s) => ({ altusPlans: (s.altusPlans ?? []).filter((p) => p.id !== id) })),
+      linkPlanToGoal: (planId, goalId) => {
+        const s = get();
+        const goal = s.goalsMacro.find((g) => g.id === goalId);
+        const taken = s.altusPlans.some((p) => p.id !== planId && p.macroGoalId === goalId);
+        if (!goal || taken || !s.altusPlans.some((p) => p.id === planId)) return false;
+        set({
+          altusPlans: s.altusPlans.map((p) =>
+            p.id === planId
+              ? {
+                  ...p,
+                  macroGoalId: goal.id,
+                  macroGoalName: goal.name,
+                  updatedAt: new Date().toISOString(),
+                }
+              : p,
+          ),
+        });
+        return true;
+      },
+      removeFilterDecision: (id) =>
+        set((s) => ({ altusFilter: (s.altusFilter ?? []).filter((d) => d.id !== id) })),
       upsertKaizenByDate: (date, data) => set((s) => {
         const existing = s.kaizen.find((k) => k.date === date);
         if (existing) {

@@ -36,7 +36,16 @@ const FIXED_NAV = [
   { to: "/configuracoes", i18nKey: "nav.configuracoes", icon: Settings, emoji: "⚙️" },
 ] as const;
 
-type RoutePath = "/" | "/financas" | "/corpo" | "/biblioteca" | "/estudos" | "/kaizen" | "/agente" | "/configuracoes";
+type RoutePath =
+  | "/"
+  | "/financas"
+  | "/corpo"
+  | "/biblioteca"
+  | "/estudos"
+  | "/kaizen"
+  | "/agente"
+  | "/planejamento"
+  | "/configuracoes";
 
 /** Mostra se as alterações já foram para a nuvem. */
 function SyncBadge() {

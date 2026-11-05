@@ -17,6 +17,9 @@ export const Route = createFileRoute("/agente")({
   beforeLoad: () => {
     if (!AI_AGENT_ENABLED) throw redirect({ to: "/" });
   },
+  // `?q=` pré-preenche o campo (ex.: atalho de revisão na tela de Planejamento). Nunca envia sozinho.
+  validateSearch: (search: Record<string, unknown>): { q?: string } =>
+    typeof search.q === "string" && search.q.trim() ? { q: search.q.slice(0, 500) } : {},
   component: Agente,
 });
 
@@ -38,7 +41,11 @@ function Agente() {
   } = useStore();
   const { lang, t } = useI18n();
   const { session } = useAuth();
-  const [input, setInput] = useState("");
+  const { q } = Route.useSearch();
+  const [input, setInput] = useState(q ?? "");
+  useEffect(() => {
+    if (q) setInput(q);
+  }, [q]);
   const [loading, setLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const views = useMemo(() => proposalViews(chat, loading), [chat, loading]);

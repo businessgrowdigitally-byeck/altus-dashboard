@@ -14,6 +14,7 @@ const ROUTES = [
   "/estudos",
   "/kaizen",
   "/agente",
+  "/planejamento",
   "/configuracoes",
 ];
 const VIEWPORTS = [
@@ -98,6 +99,64 @@ const snapshot = {
       area: "Corpo & Saúde",
       suggestedTime: "07:00",
       daysOfWeek: [0, 1, 2, 3, 4, 5, 6],
+    },
+  ],
+  altusGeneralPlan: {
+    summary: "Uma visão geral comprida ".repeat(10),
+    focusGoalIds: ["g1"],
+    maintenanceGoalIds: [],
+    capacity: "1h por dia",
+    constraints: "Nenhuma",
+    version: 1,
+    history: [{ version: 1, date: d(5), summary: "P.G. inicial" }],
+    createdAt: "2026-10-01T10:00:00.000Z",
+    updatedAt: "2026-10-01T10:00:00.000Z",
+  },
+  altusPlans: [
+    {
+      id: "p1",
+      macroGoalId: null,
+      macroGoalName: "Um planejamento antigo com nome comprido sem vínculo",
+      indicator: "Indicador",
+      deadline: "2027-01-01",
+      strategy: "Estratégia ".repeat(20),
+      activeStageId: "s1",
+      stages: [
+        {
+          id: "s1",
+          title: "Etapa com um título bem comprido para testar",
+          status: "ativa",
+          actions: [],
+        },
+      ],
+      microGoals: [
+        {
+          id: "m1",
+          title: "Uma Meta Micro com descrição comprida",
+          status: "pendente",
+          estimateMinutes: 30,
+        },
+      ],
+      decisions: [],
+      results: [],
+      reviews: [],
+      nextReview: d(1),
+      version: 1,
+      history: [],
+      createdAt: "2026-10-01T10:00:00.000Z",
+      updatedAt: "2026-10-01T10:00:00.000Z",
+    },
+  ],
+  altusFilter: [
+    {
+      id: "f1",
+      date: d(1),
+      idea: "Uma ideia com texto comprido para testar a quebra",
+      verdict: "testar",
+      rationale: "Motivo",
+      nextAction: "Ação",
+      macroGoalId: "g1",
+      planId: null,
     },
   ],
   chat: [
@@ -316,7 +375,7 @@ const measure = (page) =>
     await page.close();
 
     console.log(
-      "PASS: 2 phone sizes × 8 screens without horizontal scroll or zoom-triggering fields; Mentor fits the screen with the input above the nav and no + button; edit/delete visible on touch; quick-add modal fits; desktop hover-reveal kept; no page errors.",
+      "PASS: 2 phone sizes × 9 screens without horizontal scroll or zoom-triggering fields; Mentor fits the screen with the input above the nav and no + button; edit/delete visible on touch; quick-add modal fits; desktop hover-reveal kept; no page errors.",
     );
   } finally {
     await browser.close();

@@ -18,6 +18,7 @@ import { Route as EstudosRouteImport } from './routes/estudos'
 import { Route as FinancasRouteImport } from './routes/financas'
 import { Route as KaizenRouteImport } from './routes/kaizen'
 import { Route as McpRouteImport } from './routes/mcp'
+import { Route as PlanejamentoRouteImport } from './routes/planejamento'
 import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
@@ -67,6 +68,11 @@ const McpRoute = McpRouteImport.update({
   path: '/mcp',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PlanejamentoRoute = PlanejamentoRouteImport.update({
+  id: '/planejamento',
+  path: '/planejamento',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const Char91DotwellKnownChar93OauthProtectedResourceRoute =
   Char91DotwellKnownChar93OauthProtectedResourceRouteImport.update({
     id: '/.well-known/oauth-protected-resource',
@@ -94,6 +100,7 @@ export interface FileRoutesByFullPath {
   '/financas': typeof FinancasRoute
   '/kaizen': typeof KaizenRoute
   '/mcp': typeof McpRoute
+  '/planejamento': typeof PlanejamentoRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/api/chat': typeof ApiChatRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
@@ -108,6 +115,7 @@ export interface FileRoutesByTo {
   '/financas': typeof FinancasRoute
   '/kaizen': typeof KaizenRoute
   '/mcp': typeof McpRoute
+  '/planejamento': typeof PlanejamentoRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/api/chat': typeof ApiChatRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
@@ -123,6 +131,7 @@ export interface FileRoutesById {
   '/financas': typeof FinancasRoute
   '/kaizen': typeof KaizenRoute
   '/mcp': typeof McpRoute
+  '/planejamento': typeof PlanejamentoRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/api/chat': typeof ApiChatRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
@@ -139,6 +148,7 @@ export interface FileRouteTypes {
     | '/financas'
     | '/kaizen'
     | '/mcp'
+    | '/planejamento'
     | '/.well-known/oauth-protected-resource'
     | '/api/chat'
     | '/.lovable/oauth/consent'
@@ -153,6 +163,7 @@ export interface FileRouteTypes {
     | '/financas'
     | '/kaizen'
     | '/mcp'
+    | '/planejamento'
     | '/.well-known/oauth-protected-resource'
     | '/api/chat'
     | '/.lovable/oauth/consent'
@@ -167,6 +178,7 @@ export interface FileRouteTypes {
     | '/financas'
     | '/kaizen'
     | '/mcp'
+    | '/planejamento'
     | '/.well-known/oauth-protected-resource'
     | '/api/chat'
     | '/.lovable/oauth/consent'
@@ -182,6 +194,7 @@ export interface RootRouteChildren {
   FinancasRoute: typeof FinancasRoute
   KaizenRoute: typeof KaizenRoute
   McpRoute: typeof McpRoute
+  PlanejamentoRoute: typeof PlanejamentoRoute
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   ApiChatRoute: typeof ApiChatRoute
   DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
@@ -252,6 +265,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof McpRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/planejamento': {
+      id: '/planejamento'
+      path: '/planejamento'
+      fullPath: '/planejamento'
+      preLoaderRoute: typeof PlanejamentoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/.well-known/oauth-protected-resource': {
       id: '/.well-known/oauth-protected-resource'
       path: '/.well-known/oauth-protected-resource'
@@ -286,6 +306,7 @@ const rootRouteChildren: RootRouteChildren = {
   FinancasRoute: FinancasRoute,
   KaizenRoute: KaizenRoute,
   McpRoute: McpRoute,
+  PlanejamentoRoute: PlanejamentoRoute,
   Char91DotwellKnownChar93OauthProtectedResourceRoute:
     Char91DotwellKnownChar93OauthProtectedResourceRoute,
   ApiChatRoute: ApiChatRoute,
