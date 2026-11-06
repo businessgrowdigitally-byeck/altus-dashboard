@@ -1,5 +1,6 @@
 const { chromium } = require("playwright");
 const assert = require("node:assert/strict");
+const { fakeSupabase } = require("./fake-supabase.cjs");
 
 // Mentor ALTUS smoke test: proposal → confirmation card → save → sync → reload.
 // Covers the Macro Goal link (create), the single General Plan, ALTUS Filter
@@ -112,29 +113,15 @@ const sse = (text) =>
     };
     let writes = 0;
     let chatCalls = 0;
-    await page.route("https://oskwtnluunvdlbjptday.supabase.co/**", async (route) => {
-      const req = route.request();
-      if (req.url().includes("/rest/v1/user_data")) {
-        if (req.method() === "GET")
-          return route.fulfill({
-            status: 200,
-            contentType: "application/json",
-            body: JSON.stringify({ data: snapshot }),
-          });
-        if (req.method() === "POST") {
-          snapshot = req.postDataJSON().data;
-          writes++;
-          return route.fulfill({ status: 201, body: "" });
-        }
-      }
-      if (req.url().includes("/auth/v1/user"))
-        return route.fulfill({
-          status: 200,
-          contentType: "application/json",
-          body: JSON.stringify(user),
-        });
-      return route.fulfill({ status: 200, contentType: "application/json", body: "{}" });
+    const cloud = fakeSupabase(page, {
+      user,
+      get: () => snapshot,
+      set: (data, opts) => {
+        snapshot = data;
+        if (!opts?.remote) writes++;
+      },
     });
+    await cloud.ready;
     await page.route("**/api/chat", async (route) => {
       chatCalls++;
       const body = route.request().postDataJSON();

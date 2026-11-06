@@ -4,6 +4,7 @@ import { useStore, emptyState, SYNC_KEYS } from "./store";
 import { normalizeAltusState } from "./ai/plan";
 import { normalizeBudgets, normalizeRecurring } from "./finance";
 import { todayISO } from "./format";
+import { mergeSnapshots, same } from "./merge";
 
 /**
  * Sincronização dos dados do usuário com o Supabase.
@@ -16,6 +17,11 @@ import { todayISO } from "./format";
  *  1. login  -> `startSync` baixa a linha da nuvem e preenche o store
  *  2. uso    -> qualquer alteração agenda um envio (debounce de 1,2s)
  *  3. logout -> `stopSync` para o envio e limpa o store local
+ *
+ * Vários aparelhos (e o MCP) gravam a mesma linha. Para ninguém apagar o que
+ * o outro salvou, cada envio só grava se a nuvem ainda estiver na versão que
+ * este aparelho conhece (`updated_at`). Se outro gravou antes, baixamos a
+ * versão nova, combinamos (base × local × nuvem, ver merge.ts) e enviamos de novo.
  */
 
 export type SyncStatus = "idle" | "loading" | "saving" | "saved" | "error";
@@ -40,6 +46,13 @@ let saveTimer: ReturnType<typeof setTimeout> | null = null;
 let activeUserId: string | null = null;
 /** Trava o envio até a carga inicial terminar, para não sobrescrever a nuvem com estado vazio. */
 let ready = false;
+/** Versão da nuvem que este aparelho conhece (`updated_at` da linha). */
+let cloudVersion: string | null = null;
+/** Último estado sincronizado: a "base" da combinação de três vias. */
+let base: Snapshot = {};
+/** Envios em fila, um de cada vez. */
+let chain: Promise<void> = Promise.resolve();
+const MAX_CONFLICT_RETRIES = 3;
 
 type Snapshot = Record<string, unknown>;
 
@@ -85,20 +98,97 @@ function sanitizeSnapshot(value: unknown): object {
   };
 }
 
-async function push(userId: string) {
+/** Aplica no store um estado combinado, preservando o que mudou localmente nesse meio-tempo. */
+function applyMerged(sentLocal: Snapshot, merged: Snapshot) {
+  const current = snapshot();
+  // O usuário pode ter mexido enquanto o envio estava na rede: `sentLocal` é a base disso.
+  const next = same(current, sentLocal) ? merged : mergeSnapshots(sentLocal, current, merged);
+  useStore.setState(sanitizeSnapshot(next));
+  useStore.getState().recomputeLinkedGoals();
+}
+
+async function fetchCloud(userId: string) {
+  return supabase.from(TABLE).select("data, updated_at").eq("user_id", userId).maybeSingle();
+}
+
+async function pushNow(userId: string) {
   const { set } = useSyncStatus.getState();
   set("saving");
-  const snap = snapshot();
-  const snapJson = JSON.stringify(snap);
-  if (new TextEncoder().encode(snapJson).length > MAX_SNAPSHOT_BYTES) {
+  let local = snapshot();
+  if (new TextEncoder().encode(JSON.stringify(local)).length > MAX_SNAPSHOT_BYTES) {
     set("error", "Dados grandes demais para salvar. Remova registros antigos e tente novamente.");
     return;
   }
-  const { error } = await supabase
-    .from(TABLE)
-    .upsert({ user_id: userId, data: snap, updated_at: new Date().toISOString() });
-  if (error) set("error", error.message);
-  else set("saved");
+  // Nada mudou desde a última sincronização (ex.: estado recém-combinado): não regrava.
+  if (cloudVersion && same(local, base)) return set("saved");
+  for (let attempt = 0; attempt <= MAX_CONFLICT_RETRIES; attempt++) {
+    if (activeUserId !== userId) return;
+    if (cloudVersion) {
+      // Grava só se ninguém gravou desde a versão que conhecemos.
+      const { data, error } = await supabase
+        .from(TABLE)
+        .update({ data: local })
+        .eq("user_id", userId)
+        .eq("updated_at", cloudVersion)
+        .select("updated_at");
+      if (error) return set("error", error.message);
+      if (data && data.length === 1) {
+        cloudVersion = data[0].updated_at as string;
+        base = local;
+        return set("saved");
+      }
+    }
+    // Conflito (ou versão desconhecida): baixa a nuvem e combina.
+    const { data: row, error: fetchError } = await fetchCloud(userId);
+    if (fetchError) return set("error", fetchError.message);
+    if (!row) {
+      const { data, error } = await supabase
+        .from(TABLE)
+        .insert({ user_id: userId, data: local })
+        .select("updated_at");
+      if (error) return set("error", error.message);
+      cloudVersion = (data?.[0]?.updated_at as string) ?? null;
+      base = local;
+      return set("saved");
+    }
+    const remote = sanitizeSnapshot(row.data) as Snapshot;
+    const merged = mergeSnapshots(base, local, remote);
+    applyMerged(local, merged);
+    cloudVersion = row.updated_at as string;
+    base = remote;
+    local = snapshot();
+    if (same(local, remote)) return set("saved");
+  }
+  set("error", "Outro aparelho está salvando ao mesmo tempo. Tente de novo em instantes.");
+}
+
+function push(userId: string): Promise<void> {
+  chain = chain
+    .then(() => pushNow(userId))
+    .catch((e: unknown) => {
+      useSyncStatus.getState().set("error", e instanceof Error ? e.message : String(e));
+    });
+  return chain;
+}
+
+/**
+ * Traz o que outro aparelho salvou (ex.: ao voltar para o app). Combina com o
+ * que houver de local e, se sobrar mudança deste aparelho, envia em seguida.
+ */
+export async function refreshFromCloud() {
+  if (!ready || !activeUserId) return;
+  const userId = activeUserId;
+  await chain;
+  const { data: row, error } = await fetchCloud(userId);
+  if (error || !row || activeUserId !== userId) return;
+  if (row.updated_at === cloudVersion) return;
+  const remote = sanitizeSnapshot(row.data) as Snapshot;
+  const local = snapshot();
+  const merged = mergeSnapshots(base, local, remote);
+  cloudVersion = row.updated_at as string;
+  base = remote;
+  applyMerged(local, merged);
+  if (!same(snapshot(), remote)) scheduleSave();
 }
 
 function scheduleSave() {
@@ -120,11 +210,7 @@ export async function startSync(userId: string) {
   ready = false;
   useSyncStatus.getState().set("loading");
 
-  const { data, error } = await supabase
-    .from(TABLE)
-    .select("data")
-    .eq("user_id", userId)
-    .maybeSingle();
+  const { data, error } = await fetchCloud(userId);
 
   if (error) {
     activeUserId = null;
@@ -135,19 +221,27 @@ export async function startSync(userId: string) {
   if (data?.data && Object.keys(data.data).length > 0) {
     // Conta existente: a nuvem é a fonte da verdade (com filtro de chaves).
     useStore.setState({ ...emptyState, ...sanitizeSnapshot(data.data) });
+    cloudVersion = (data.updated_at as string) ?? null;
+  } else if (data) {
+    // Linha existe mas vazia: começa limpa; o primeiro envio a preenche.
+    useStore.setState({ ...emptyState });
+    cloudVersion = (data.updated_at as string) ?? null;
   } else {
     // Conta nova: começa limpa e cria a linha na nuvem.
     useStore.setState({ ...emptyState });
-    const { error: insertError } = await supabase
+    const { data: created, error: insertError } = await supabase
       .from(TABLE)
-      .insert({ user_id: userId, data: snapshot() });
+      .insert({ user_id: userId, data: snapshot() })
+      .select("updated_at");
     if (insertError) {
       useSyncStatus.getState().set("error", insertError.message);
       return;
     }
+    cloudVersion = (created?.[0]?.updated_at as string) ?? null;
   }
 
   useStore.getState().recomputeLinkedGoals();
+  base = snapshot();
 
   ready = true;
   useSyncStatus.getState().set("saved");
@@ -166,8 +260,15 @@ export function stopSync({ clearLocal = true }: { clearLocal?: boolean } = {}) {
   unsubscribeStore = null;
   activeUserId = null;
   ready = false;
+  cloudVersion = null;
+  base = {};
   useSyncStatus.getState().set("idle");
   if (clearLocal) useStore.setState({ ...emptyState });
+}
+
+/** A carga inicial terminou? (Erros depois disso são de envio, não de carga.) */
+export function isSyncReady() {
+  return ready;
 }
 
 /** Força um envio imediato, ignorando o debounce. */

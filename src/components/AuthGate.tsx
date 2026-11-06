@@ -2,7 +2,14 @@ import { useEffect, type ReactNode } from "react";
 import { Loader2 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { AuthScreen } from "./AuthScreen";
-import { startSync, stopSync, useSyncStatus, flushSync } from "@/lib/sync";
+import {
+  startSync,
+  stopSync,
+  useSyncStatus,
+  flushSync,
+  isSyncReady,
+  refreshFromCloud,
+} from "@/lib/sync";
 import { useT } from "@/lib/i18n";
 
 /**
@@ -33,7 +40,16 @@ export function AuthGate({ children }: { children: ReactNode }) {
     if (!userId) return;
     const handler = () => void flushSync();
     window.addEventListener("pagehide", handler);
-    return () => window.removeEventListener("pagehide", handler);
+    // Ao voltar para o app, traz o que outro aparelho salvou (e combina com o local).
+    const onVisible = () => {
+      if (document.visibilityState === "visible") void refreshFromCloud();
+      else void flushSync();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      window.removeEventListener("pagehide", handler);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
   }, [userId]);
 
   if (loading) return <Splash label={t("sync.loading")} />;
@@ -42,7 +58,9 @@ export function AuthGate({ children }: { children: ReactNode }) {
 
   if (status === "loading" || status === "idle") return <Splash label={t("sync.loading")} />;
 
-  if (status === "error" && syncError) {
+  // Só a falha na CARGA inicial troca a tela. Erro ao salvar aparece no indicador
+  // de sincronização; recarregar aqui baixaria a nuvem por cima do que não foi salvo.
+  if (status === "error" && syncError && !isSyncReady()) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background px-4">
         <div className="max-w-md text-center">
