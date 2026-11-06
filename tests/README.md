@@ -182,3 +182,25 @@ node tests/goat-home.browser.cjs
 ```
 
 `tests/fake-supabase.cjs` marks the morning card as already seen and answers the summary request with "unavailable" by default, so the other browser tests behave the same at any hour; pass `morning: true` / `briefing: "text"` to turn them on.
+
+## Morning reminder (push notifications)
+
+The notification text (no AI: yesterday's Kaizen, today's actions through the day plan, nothing sent when there is nothing to remind), the delivery logic (removing 404/410 subscriptions) and device detection (iPhone outside the Home Screen) are unit-tested:
+
+```sh
+node --experimental-strip-types --test tests/push.test.ts
+```
+
+After `NITRO_PRESET=vercel bun run build`, `tests/push-endpoint.test.mjs` runs `/api/push/send` and `/api/push/test` in the built function with the real `web-push` library: a fake phone with real P-256 keys subscribes to a local HTTPS server standing in for the push service, and the test decrypts what arrives (aes128gcm) and checks the VAPID header, the text, the secret check and the expired-subscription cleanup. Supabase is stubbed via `fetch`.
+
+```sh
+node --test tests/push-endpoint.test.mjs
+```
+
+The browser test needs the dev server started with any VAPID public key (the browser push APIs are simulated, since test Chromium cannot reach FCM):
+
+```sh
+VITE_VAPID_PUBLIC_KEY=$(npx web-push generate-vapid-keys --json | node -pe 'JSON.parse(require("fs").readFileSync(0)).publicKey') \
+  npm run dev -- --host 127.0.0.1 --port 3000
+node tests/push-settings.browser.cjs
+```
