@@ -135,14 +135,19 @@ function Dashboard() {
     });
   };
   const [goalsTab, setGoalsTab] = useState<{ tab: "macro" | "daily"; nonce: number }>();
-  const goToCreateAction = () => {
-    setGoalsTab({ tab: "daily", nonce: Date.now() });
+  const goToGoals = (tab: "macro" | "daily") => {
+    setGoalsTab({ tab, nonce: Date.now() });
     requestAnimationFrame(() =>
       document
         .getElementById(GOALS_SECTION_ID)
         ?.scrollIntoView({ behavior: "smooth", block: "start" }),
     );
   };
+  const goToCreateAction = () => goToGoals("daily");
+  const goToToday = () =>
+    document
+      .getElementById("sistema-diario")
+      ?.scrollIntoView({ behavior: "smooth", block: "start" });
 
   // 30-day financial trend
   const finTrend = useMemo(
@@ -443,30 +448,47 @@ function Dashboard() {
           </div>
         </div>
 
+        {/* Vocabulário único: Metas (goalsMacro) e Ações (goalsDaily). */}
         <div className="grid grid-cols-3 gap-2 md:gap-3 mt-3 pt-3 border-t border-border text-xs">
-          <div className="flex items-center justify-between p-2 rounded-xl bg-muted/50">
-            <div className="flex items-center gap-1.5 text-muted-foreground">
-              <Target size={14} className="text-purple-500" />
-              <span>{t("pillarMetas")}</span>
-            </div>
-            <span className="font-bold text-foreground">{goalsMacro.length} →</span>
-          </div>
-          <div className="flex items-center justify-between p-2 rounded-xl bg-muted/50">
-            <div className="flex items-center gap-1.5 text-muted-foreground">
-              <CheckSquare size={14} className="text-purple-500" />
-              <span>{t("pillarTarefas")}</span>
-            </div>
-            <span className="font-bold text-foreground">{todayActions.length} →</span>
-          </div>
-          <div className="flex items-center justify-between p-2 rounded-xl bg-muted/50">
-            <div className="flex items-center gap-1.5 text-muted-foreground">
-              <Sparkles size={14} className="text-purple-500" />
-              <span>{t("pillarHabitos")}</span>
-            </div>
-            <span className="font-bold text-foreground">
-              {todayDone}/{todayActions.length} →
-            </span>
-          </div>
+          {(
+            [
+              {
+                key: "goals",
+                icon: Target,
+                label: t("homeCountGoals"),
+                value: String(goalsMacro.length),
+                onClick: () => goToGoals("macro"),
+              },
+              {
+                key: "actions",
+                icon: CheckSquare,
+                label: t("homeCountActions"),
+                value: String(todayActions.length),
+                onClick: goToToday,
+              },
+              {
+                key: "done",
+                icon: Sparkles,
+                label: t("homeCountDone"),
+                value: `${todayDone}/${todayActions.length}`,
+                onClick: goToToday,
+              },
+            ] as const
+          ).map(({ key, icon: Icon, label, value, onClick }) => (
+            <button
+              key={key}
+              type="button"
+              data-counter={key}
+              onClick={onClick}
+              className="min-w-0 flex flex-col items-start gap-0.5 sm:flex-row sm:items-center sm:justify-between p-2 rounded-xl bg-muted/50 text-left hover:bg-muted/80 transition-colors"
+            >
+              <span className="flex items-center gap-1.5 text-muted-foreground min-w-0">
+                <Icon size={14} className="text-purple-500 shrink-0" />
+                <span className="leading-tight">{label}</span>
+              </span>
+              <span className="font-bold text-foreground">{value} →</span>
+            </button>
+          ))}
         </div>
       </div>
 

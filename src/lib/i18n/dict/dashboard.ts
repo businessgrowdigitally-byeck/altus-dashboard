@@ -48,9 +48,9 @@ export const dashboard = {
     es: "Tus acciones prioritarias para cumplir hoy",
   },
   actionsDone: {
-    pt: "{done} de {total} concluídos",
-    en: "{done} of {total} completed",
-    es: "{done} de {total} completados",
+    pt: "{done} de {total} feitas",
+    en: "{done} of {total} done",
+    es: "{done} de {total} hechas",
   },
   emptyToday: {
     pt: "Nenhuma ação agendada para hoje.",
@@ -79,6 +79,9 @@ export const dashboard = {
     en: "Consecutive scheduled days done",
     es: "Días programados seguidos cumplidos",
   },
+  homeCountGoals: { pt: "Metas", en: "Goals", es: "Metas" },
+  homeCountActions: { pt: "Ações de hoje", en: "Today's actions", es: "Acciones de hoy" },
+  homeCountDone: { pt: "Feitas", en: "Done", es: "Hechas" },
   emptyTodayCta: { pt: "Criar uma ação", en: "Create an action", es: "Crear una acción" },
   reportTitle: { pt: "Relatório Executivo", en: "Executive Report", es: "Informe Ejecutivo" },
   reportSubtitle: {
