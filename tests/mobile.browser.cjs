@@ -281,7 +281,9 @@ const measure = (page) =>
 
       // Editar/excluir visíveis sem mouse (antes só apareciam com hover).
       await page.goto(base + "/", { waitUntil: "networkidle" });
+      // Dentro da seção de metas (o nome também aparece no "Foco da semana" da Home).
       const goalActions = await page
+        .locator("#metas-e-acoes")
         .getByText("Economizar R$20.000 para a reserva de emergência")
         .first()
         .evaluate((el) => {

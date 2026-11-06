@@ -1,11 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Fragment, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useStore } from "@/lib/store";
 import { brl, daysAgoISO, fmtDate, fmtDateLong, greeting, kg, todayISO } from "@/lib/format";
 import { balanceUntil, dailyBalanceSeries, monthTotals } from "@/lib/finance";
-import { GlassCard, KpiCard, PageHeader, Section } from "@/components/primitives";
-import { GoalsSection } from "@/components/GoalsSection";
-import { KaizenTodayCard } from "@/components/KaizenTodayCard";
+import { actionStreak, weekProgress } from "@/lib/daily-stats";
+import { toast } from "sonner";
+import { GlassCard, Section } from "@/components/primitives";
+import { GoalsSection, GOALS_SECTION_ID } from "@/components/GoalsSection";
 import { PrimaryAreaPicker } from "@/components/PrimaryAreaPicker";
 import { Modal, btnGold } from "@/components/Modal";
 import {
@@ -15,15 +16,15 @@ import {
   Sparkles,
   Target,
   CheckSquare,
-  Calendar,
-  TrendingUp,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { useSyncStatus } from "@/lib/sync";
 import { useT } from "@/lib/i18n";
 import { OnboardingModal } from "@/components/OnboardingModal";
 import { AREA_DEFS, type AreaKey } from "@/lib/areas";
-import { cn } from "@/lib/utils";
+import { AI_AGENT_ENABLED } from "@/lib/features";
 import {
   LineChart,
   Line,
@@ -80,6 +81,7 @@ function Dashboard() {
     toggleCompletion,
     setProfile,
     setPrimaryAreas,
+    altusGeneralPlan,
   } = useStore();
   const t = useT();
 
@@ -120,8 +122,41 @@ function Dashboard() {
   const todayActions = goalsDaily.filter((a) => a.daysOfWeek.includes(todayDow));
   const doneIds = new Set(completions.filter((c) => c.date === today).map((c) => c.actionId));
   const todayDone = todayActions.filter((a) => doneIds.has(a.id)).length;
+  // Sem ações hoje não há progresso a mostrar: 0 e estado vazio, nunca um número inventado.
   const weeklyProgress =
-    todayActions.length > 0 ? Math.round((todayDone / todayActions.length) * 100) : 78;
+    todayActions.length > 0 ? Math.round((todayDone / todayActions.length) * 100) : 0;
+  // Marca/desmarca pelo checkbox; ao marcar, o toast permite desfazer por 4 s.
+  const toggleAction = (id: string, name: string, wasDone: boolean) => {
+    toggleCompletion(id, today);
+    if (wasDone) return;
+    toast.success(t("homeMarked", { name }), {
+      duration: 4000,
+      action: {
+        label: t("homeUndo"),
+        onClick: () => {
+          // Só desfaz se ainda estiver marcada (o usuário pode ter desmarcado antes).
+          const still = useStore
+            .getState()
+            .completions.some((c) => c.actionId === id && c.date === today);
+          if (still) toggleCompletion(id, today);
+        },
+      },
+    });
+  };
+  const [goalsTab, setGoalsTab] = useState<{ tab: "macro" | "daily"; nonce: number }>();
+  const goToGoals = (tab: "macro" | "daily") => {
+    setGoalsTab({ tab, nonce: Date.now() });
+    requestAnimationFrame(() =>
+      document
+        .getElementById(GOALS_SECTION_ID)
+        ?.scrollIntoView({ behavior: "smooth", block: "start" }),
+    );
+  };
+  const goToCreateAction = () => goToGoals("daily");
+  const goToToday = () =>
+    document
+      .getElementById("sistema-diario")
+      ?.scrollIntoView({ behavior: "smooth", block: "start" });
 
   // 30-day financial trend
   const finTrend = useMemo(
@@ -238,7 +273,8 @@ function Dashboard() {
     }
     if (streak > 0)
       out.push(streak === 1 ? t("streakOne", { n: streak }) : t("streakMany", { n: streak }));
-    while (out.length < 3) out.push(t("insight.fallback"));
+    // Só insights reais; a frase genérica aparece apenas quando não há nenhum.
+    if (out.length === 0) out.push(t("insight.fallback"));
     return out.slice(0, 3);
   }, [transactions, sortedWeights, booksThisYear, streak, yearKey, t]);
 
@@ -246,6 +282,16 @@ function Dashboard() {
   const { status: syncStatus } = useSyncStatus();
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showAreaPicker, setShowAreaPicker] = useState(false);
+  const [showRecent, setShowRecent] = useState(false);
+  const [chartArea, setChartArea] = useState<AreaKey | null>(null);
+  const [insight, setInsight] = useState(0);
+  const insightIdx = insight < insights.length ? insight : 0;
+  // Foco da semana: as metas em foco no P.G.; sem P.G., a frase de sempre.
+  const focusText =
+    (altusGeneralPlan?.focusGoalIds ?? [])
+      .map((id) => goalsMacro.find((g) => g.id === id)?.name)
+      .filter(Boolean)
+      .join(" · ") || t("consistencia");
 
   const userName =
     profile.name ||
@@ -267,76 +313,58 @@ function Dashboard() {
 
   const prioritySet = useMemo(() => new Set(primaryAreas), [primaryAreas]);
 
-  const kpis: { area: AreaKey; node: React.ReactNode }[] = [
+  // Variações exibidas acima de cada gráfico (mesmos dados dos gráficos).
+  const signed = (v: number, fmt: (n: number) => string) =>
+    `${v > 0 ? "+" : v < 0 ? "−" : ""}${fmt(Math.abs(v))}`;
+  const finDelta =
+    finTrend.length > 1 ? finTrend[finTrend.length - 1].saldo - finTrend[0].saldo : 0;
+  const weightPeriodDelta =
+    weightTrend.length > 1 ? weightTrend[weightTrend.length - 1].peso - weightTrend[0].peso : null;
+  const studyHours = +studyWeekly.reduce((a, w) => a + w.horas, 0).toFixed(1);
+
+  const miniCharts: {
+    area: AreaKey;
+    tab: string;
+    title: string;
+    summary: string;
+    node: React.ReactNode;
+  }[] = [
     {
       area: "financas",
+      tab: t("homeTabSaldo"),
+      title: t("chartSaldo"),
+      summary: `${brl(balance)} · ${t("homeDeltaPeriod", { delta: signed(finDelta, brl) })}`,
       node: (
-        <KpiCard
-          label={t("kpiSaldo")}
-          value={brl(balance)}
-          icon="💰"
-          tone={balance >= 0 ? "positive" : "negative"}
-          delta={`${t("kpiSaldoMonth", { value: brl(monthNet) })} (${brl(income)} − ${brl(expense)})`}
-        />
-      ),
-    },
-    {
-      area: "corpo",
-      node: (
-        <KpiCard
-          label={t("kpiPeso")}
-          value={lastW ? kg(lastW.weight) : "—"}
-          icon="⚖️"
-          delta={
-            lastW && prevW
-              ? `${weightDelta >= 0 ? "+" : ""}${weightDelta.toFixed(1)} kg ${t("deltaVsWeek")}`
-              : t("deltaNoData")
-          }
-        />
-      ),
-    },
-    {
-      area: "biblioteca",
-      node: (
-        <KpiCard
-          label={t("kpiLivros", { year: yearKey })}
-          value={booksThisYear}
-          icon="📚"
-          tone="gold"
-        />
-      ),
-    },
-    {
-      area: "estudos",
-      node: <KpiCard label={t("kpiStreak")} value={`${streak} d`} icon="🎯" tone="gold" />,
-    },
-  ];
-
-  const visibleKpis = kpis
-    .filter((k) => prioritySet.has(k.area))
-    .sort((a, b) => kpiOrder(a.area) - kpiOrder(b.area));
-
-  const miniCharts: { area: AreaKey; node: React.ReactNode }[] = [
-    {
-      area: "financas",
-      node: (
-        <MiniChart title={t("chartSaldo")}>
+        <>
           <ResponsiveContainer width="100%" height={180}>
             <LineChart data={finTrend}>
               <CartesianGrid strokeOpacity={0.1} />
               <XAxis dataKey="date" fontSize={10} stroke="#888" />
               <YAxis fontSize={10} stroke="#888" />
               <Tooltip contentStyle={tooltipStyle} formatter={(v: number) => brl(v)} />
-              <Line type="monotone" dataKey="saldo" stroke="#8B5CF6" strokeWidth={2.5} dot={false} />
+              <Line
+                type="monotone"
+                dataKey="saldo"
+                stroke="#8B5CF6"
+                strokeWidth={2.5}
+                dot={false}
+              />
             </LineChart>
           </ResponsiveContainer>
-        </MiniChart>
+        </>
       ),
     },
     {
       area: "corpo",
+      tab: t("homeTabPeso"),
+      title: t("chartPeso"),
+      summary: lastW
+        ? weightPeriodDelta === null
+          ? kg(lastW.weight)
+          : `${kg(lastW.weight)} · ${t("homeDeltaPeriod", { delta: signed(weightPeriodDelta, kg) })}`
+        : t("deltaNoData"),
       node: (
-        <MiniChart title={t("chartPeso")}>
+        <>
           <ResponsiveContainer width="100%" height={180}>
             <LineChart data={weightTrend}>
               <CartesianGrid strokeOpacity={0.1} />
@@ -346,13 +374,16 @@ function Dashboard() {
               <Line type="monotone" dataKey="peso" stroke="#2ECC71" strokeWidth={2.5} dot />
             </LineChart>
           </ResponsiveContainer>
-        </MiniChart>
+        </>
       ),
     },
     {
       area: "biblioteca",
+      tab: t("homeTabLivros"),
+      title: t("chartLivros", { year: yearKey }),
+      summary: t("homeBooksYear", { n: booksThisYear, year: yearKey }),
       node: (
-        <MiniChart title={t("chartLivros", { year: yearKey })}>
+        <>
           <ResponsiveContainer width="100%" height={180}>
             <BarChart data={booksPerMonth}>
               <CartesianGrid strokeOpacity={0.1} />
@@ -362,13 +393,16 @@ function Dashboard() {
               <Bar dataKey="livros" fill="#F5C842" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
-        </MiniChart>
+        </>
       ),
     },
     {
       area: "estudos",
+      tab: t("homeTabEstudos"),
+      title: t("chartEstudo"),
+      summary: t("homeStudyHours", { h: studyHours }),
       node: (
-        <MiniChart title={t("chartEstudo")}>
+        <>
           <ResponsiveContainer width="100%" height={180}>
             <BarChart data={studyWeekly}>
               <CartesianGrid strokeOpacity={0.1} />
@@ -378,7 +412,7 @@ function Dashboard() {
               <Bar dataKey="horas" fill="#A855F7" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
-        </MiniChart>
+        </>
       ),
     },
   ];
@@ -386,6 +420,7 @@ function Dashboard() {
   const visibleCharts = miniCharts
     .filter((k) => prioritySet.has(k.area))
     .sort((a, b) => kpiOrder(a.area) - kpiOrder(b.area));
+  const activeChart = visibleCharts.find((c) => c.area === chartArea) ?? visibleCharts[0];
 
   useEffect(() => {
     if (mounted && syncStatus === "saved" && user) {
@@ -418,249 +453,94 @@ function Dashboard() {
   };
 
   return (
-    <div className="space-y-8">
-      {/* Hero Brand Section (Fiel à foto anexada) */}
-      <div className="relative overflow-hidden rounded-3xl border bg-card/80 backdrop-blur-xl p-6 md:p-10 shadow-2xl">
-        {/* Background Mountain Silhouette & Glow */}
-        <div className="absolute right-0 bottom-0 pointer-events-none opacity-40 md:opacity-70 w-full max-w-lg h-full overflow-hidden flex items-end justify-end">
-          <svg viewBox="0 0 500 300" className="w-full h-auto" fill="none">
-            <path d="M180 300L350 80L480 300H180Z" fill="url(#hero-mtn-1)" />
-            <path d="M50 300L220 140L380 300H50Z" fill="url(#hero-mtn-2)" opacity="0.7" />
-            <circle cx="350" cy="80" r="14" fill="#C084FC" filter="blur(10px)" opacity="0.8" />
-            <defs>
-              <linearGradient
-                id="hero-mtn-1"
-                x1="350"
-                y1="80"
-                x2="350"
-                y2="300"
-                gradientUnits="userSpaceOnUse"
-              >
-                <stop stopColor="#6E38F7" stopOpacity="0.8" />
-                <stop offset="0.6" stopColor="#1E1346" stopOpacity="0.6" />
-                <stop offset="1" stopColor="#07070F" stopOpacity="0.9" />
-              </linearGradient>
-              <linearGradient
-                id="hero-mtn-2"
-                x1="220"
-                y1="140"
-                x2="220"
-                y2="300"
-                gradientUnits="userSpaceOnUse"
-              >
-                <stop stopColor="#4C1D95" stopOpacity="0.6" />
-                <stop offset="1" stopColor="#07070F" stopOpacity="0.9" />
-              </linearGradient>
-            </defs>
-          </svg>
-        </div>
-
-        <div className="relative z-10 max-w-2xl">
-          {/* Logo & Chevron */}
-          <div className="flex items-center gap-3 mb-4">
-            <svg
-              viewBox="0 0 36 36"
-              className="w-9 h-9 drop-shadow-[0_0_12px_rgba(168,85,247,0.8)]"
-              fill="none"
-            >
-              <path d="M18 3L31 29H24.5L18 16L11.5 29H5L18 3Z" fill="url(#hero-brand-grad)" />
-              <defs>
-                <linearGradient
-                  id="hero-brand-grad"
-                  x1="5"
-                  y1="3"
-                  x2="31"
-                  y2="29"
-                  gradientUnits="userSpaceOnUse"
-                >
-                  <stop stopColor="#C084FC" />
-                  <stop offset="0.5" stopColor="#A855F7" />
-                  <stop offset="1" stopColor="#6366F1" />
-                </linearGradient>
-              </defs>
-            </svg>
-            <span className="font-display font-extrabold text-2xl tracking-[0.18em] bg-gradient-to-r from-slate-900 via-purple-900 to-purple-600 dark:from-white dark:via-purple-100 dark:to-purple-300 bg-clip-text text-transparent">
-              ALTUS
-            </span>
-          </div>
-
-          <h1 className="font-display text-2xl md:text-4xl font-extrabold text-foreground tracking-tight">
-            {t("heroTitle")}
-          </h1>
-          <p className="mt-2 text-sm md:text-base text-purple-700/80 dark:text-purple-200/80 leading-relaxed max-w-xl">
-            {t("heroSubtitle")}
-          </p>
-
-          {/* 4 Pillars */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 my-6">
-            <div className="glass rounded-xl p-3 border border-purple-500/20">
-              <div className="flex items-center gap-2 text-purple-400 mb-1">
-                <Target size={16} />
-                <span className="text-xs font-bold text-foreground">{t("pillarMetas")}</span>
-              </div>
-              <p className="text-[11px] text-muted-foreground">{t("pillarMetasSub")}</p>
-            </div>
-            <div className="glass rounded-xl p-3 border border-purple-500/20">
-              <div className="flex items-center gap-2 text-purple-400 mb-1">
-                <CheckSquare size={16} />
-                <span className="text-xs font-bold text-foreground">{t("pillarTarefas")}</span>
-              </div>
-              <p className="text-[11px] text-muted-foreground">{t("pillarTarefasSub")}</p>
-            </div>
-            <div className="glass rounded-xl p-3 border border-purple-500/20">
-              <div className="flex items-center gap-2 text-purple-400 mb-1">
-                <Calendar size={16} />
-                <span className="text-xs font-bold text-foreground">{t("pillarHabitos")}</span>
-              </div>
-              <p className="text-[11px] text-muted-foreground">{t("pillarHabitosSub")}</p>
-            </div>
-            <div className="glass rounded-xl p-3 border border-purple-500/20">
-              <div className="flex items-center gap-2 text-purple-400 mb-1">
-                <TrendingUp size={16} />
-                <span className="text-xs font-bold text-foreground">{t("pillarProgresso")}</span>
-              </div>
-              <p className="text-[11px] text-muted-foreground">{t("pillarProgressoSub")}</p>
-            </div>
-          </div>
-
-          <a
-            href="#sistema-diario"
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-gradient-to-r from-[#6E38F7] to-[#9055FF] text-white font-display font-bold text-sm tracking-wider shadow-lg shadow-purple-600/40 hover:shadow-purple-600/60 hover:scale-105 active:scale-95 transition-all"
-          >
-            <span>{t("ctaElevate")}</span>
-            <ArrowRight size={16} />
-          </a>
-        </div>
+    <div className="space-y-4 md:space-y-6">
+      {/* a) Cabeçalho compacto: o logo já está na barra do app (celular) e na lateral (computador). */}
+      <div className="flex items-center justify-end">
+        <button
+          onClick={() => setShowAreaPicker(true)}
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-purple-500/40 bg-purple-500/10 text-sm font-medium text-purple-700 dark:text-purple-300 hover:bg-purple-500/20 transition-colors"
+        >
+          <Sparkles size={14} />
+          {t("homeAreas")}
+        </button>
       </div>
 
-      {/* Priority Areas Quick Access */}
-      <div>
-        <PageHeader
-          title={t("pz.dashboard.sectionTitle")}
-          subtitle={
-            primaryAreas.length === AREA_DEFS.length
-              ? t("pz.dashboard.allAreas")
-              : t("pz.dashboard.sectionSubtitle")
-          }
-          right={
+      {/* b) Saudação + progresso da semana */}
+      <div className="glass-strong rounded-2xl p-4 md:p-5 border border-purple-500/20 relative overflow-hidden">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h3 className="font-display font-bold text-lg text-foreground truncate">
+              {greeting()}, {userName} ☀️
+            </h3>
+            <p className="text-xs text-muted-foreground capitalize mt-0.5">
+              {mounted ? fmtDateLong(now) : t("loadingDate")}
+            </p>
+          </div>
+          <div className="text-right shrink-0">
+            <span className="text-xs text-muted-foreground">{t("weeklyProgress")}</span>
+            <div className="font-display text-2xl font-black text-purple-700 dark:text-purple-300">
+              {weeklyProgress}%
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-3 space-y-2">
+          <div className="h-3 w-full rounded-full bg-muted overflow-hidden border border-border p-0.5">
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-purple-600 via-purple-400 to-indigo-400 shadow-[0_0_12px_rgba(168,85,247,0.8)] transition-all duration-500"
+              style={{ width: `${Math.min(100, Math.max(0, weeklyProgress))}%` }}
+            />
+          </div>
+        </div>
+
+        {/* Vocabulário único: Metas (goalsMacro) e Ações (goalsDaily). */}
+        <div className="grid grid-cols-3 gap-2 md:gap-3 mt-3 pt-3 border-t border-border text-xs">
+          {(
+            [
+              {
+                key: "goals",
+                icon: Target,
+                label: t("homeCountGoals"),
+                value: String(goalsMacro.length),
+                onClick: () => goToGoals("macro"),
+              },
+              {
+                key: "actions",
+                icon: CheckSquare,
+                label: t("homeCountActions"),
+                value: String(todayActions.length),
+                onClick: goToToday,
+              },
+              {
+                key: "done",
+                icon: Sparkles,
+                label: t("homeCountDone"),
+                value: `${todayDone}/${todayActions.length}`,
+                onClick: goToToday,
+              },
+            ] as const
+          ).map(({ key, icon: Icon, label, value, onClick }) => (
             <button
-              onClick={() => setShowAreaPicker(true)}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-purple-500/40 bg-purple-500/10 text-sm font-medium text-purple-700 dark:text-purple-300 hover:bg-purple-500/20 transition-colors"
+              key={key}
+              type="button"
+              data-counter={key}
+              onClick={onClick}
+              className="min-w-0 flex flex-col items-start gap-0.5 sm:flex-row sm:items-center sm:justify-between p-2 rounded-xl bg-muted/50 text-left hover:bg-muted/80 transition-colors"
             >
-              <Sparkles size={14} />
-              {t("pz.dashboard.manage")}
+              <span className="flex items-center gap-1.5 text-muted-foreground min-w-0">
+                <Icon size={14} className="text-purple-500 shrink-0" />
+                <span className="leading-tight">{label}</span>
+              </span>
+              <span className="font-bold text-foreground">{value} →</span>
             </button>
-          }
-        />
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-          {AREA_DEFS.map((area) => (
-            <Link
-              key={area.key}
-              to={area.to}
-              className={cn(
-                "group glass rounded-xl p-4 border transition-all duration-200",
-                primaryAreas.includes(area.key)
-                  ? "border-purple-500/30 hover:border-purple-500/60 hover:bg-muted/60"
-                  : "border-border opacity-60 hover:opacity-100 hover:border-purple-500/40 hover:bg-muted/60",
-              )}
-            >
-              <div className="flex flex-col gap-2">
-                <span className="text-2xl">{area.emoji}</span>
-                <span className="text-sm font-semibold text-foreground group-hover:text-purple-300 transition-colors">
-                  {t(area.i18nKey)}
-                </span>
-                <span className="text-[11px] text-muted-foreground flex items-center gap-1">
-                  {t("pz.dashboard.viewArea")} <ArrowRight size={12} className="group-hover:translate-x-0.5 transition-transform" />
-                </span>
-              </div>
-            </Link>
           ))}
         </div>
       </div>
 
-      {/* Greeting & Weekly Progress Card Grid */}
-      <div className="grid lg:grid-cols-3 gap-4">
-        {/* Progress Mountain Card */}
-        <div className="lg:col-span-2 glass-strong rounded-2xl p-5 border border-purple-500/20 relative overflow-hidden flex flex-col justify-between">
-          <div className="flex items-start justify-between">
-            <div>
-              <h3 className="font-display font-bold text-lg text-foreground">
-                {greeting()}, {userName} ☀️
-              </h3>
-              <p className="text-xs text-muted-foreground capitalize mt-0.5">
-                {mounted ? fmtDateLong(now) : t("loadingDate")}
-              </p>
-            </div>
-            <div className="text-right">
-              <span className="text-xs text-muted-foreground">{t("weeklyProgress")}</span>
-              <div className="font-display text-2xl font-black text-purple-700 dark:text-purple-300">
-                {weeklyProgress}%
-              </div>
-            </div>
-          </div>
-
-          {/* Progress Bar & Mountain Visual */}
-          <div className="mt-4 space-y-2">
-            <div className="h-3 w-full rounded-full bg-muted overflow-hidden border border-border p-0.5">
-              <div
-                className="h-full rounded-full bg-gradient-to-r from-purple-600 via-purple-400 to-indigo-400 shadow-[0_0_12px_rgba(168,85,247,0.8)] transition-all duration-500"
-                style={{ width: `${Math.min(100, Math.max(5, weeklyProgress))}%` }}
-              />
-            </div>
-          </div>
-
-          {/* Quick Counter Badges */}
-          <div className="grid grid-cols-3 gap-3 mt-4 pt-3 border-t border-border text-xs">
-            <div className="flex items-center justify-between p-2 rounded-xl bg-muted/50">
-              <div className="flex items-center gap-1.5 text-muted-foreground">
-                <Target size={14} className="text-purple-500" />
-                <span>{t("pillarMetas")}</span>
-              </div>
-              <span className="font-bold text-foreground">{goalsMacro.length} →</span>
-              </div>
-              <div className="flex items-center justify-between p-2 rounded-xl bg-muted/50">
-                <div className="flex items-center gap-1.5 text-muted-foreground">
-                  <CheckSquare size={14} className="text-purple-500" />
-                  <span>{t("pillarTarefas")}</span>
-                </div>
-                <span className="font-bold text-foreground">{todayActions.length} →</span>
-              </div>
-              <div className="flex items-center justify-between p-2 rounded-xl bg-muted/50">
-                <div className="flex items-center gap-1.5 text-muted-foreground">
-                  <Sparkles size={14} className="text-purple-500" />
-                  <span>{t("pillarHabitos")}</span>
-                </div>
-                <span className="font-bold text-foreground">
-                {todayDone}/{todayActions.length} →
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Foco da Semana Banner */}
-        <div className="glass-strong rounded-2xl p-5 border border-purple-500/20 flex flex-col justify-between">
-          <div>
-            <div className="flex items-center gap-2 text-purple-400 mb-2">
-              <Brain size={20} />
-              <h4 className="font-display font-bold text-sm tracking-wide uppercase text-foreground">
-                {t("focoDaSemana")}
-              </h4>
-            </div>
-            <p className="text-sm font-semibold text-purple-700 dark:text-purple-200 mt-2">{t("consistencia")}</p>
-            <p className="text-xs text-muted-foreground mt-2 leading-relaxed">{t("quote")}</p>
-          </div>
-
-          <div className="mt-4 pt-3 border-t border-border flex items-center justify-between text-xs text-purple-700 dark:text-purple-300">
-            <span>{t("objetivoCiclo")}</span>
-            <ArrowRight size={14} />
-          </div>
-        </div>
-      </div>
-
-      {/* Seção Hoje (Checklist Interativo Diário) */}
+      {/* c) Hoje (checklist diário) */}
       <div
         id="sistema-diario"
-        className="glass-strong rounded-2xl p-6 border border-purple-500/20 space-y-4"
+        className="glass-strong rounded-2xl p-4 md:p-6 border border-purple-500/20 space-y-3 md:space-y-4"
       >
         <div className="flex items-center justify-between">
           <div>
@@ -676,22 +556,43 @@ function Dashboard() {
 
         <div className="space-y-2.5">
           {todayActions.length === 0 && (
-            <p className="text-sm text-muted-foreground py-4 text-center">{t("emptyToday")}</p>
+            <div data-empty-today className="py-4 text-center space-y-3">
+              <p className="text-sm text-muted-foreground">{t("emptyToday")}</p>
+              <button
+                type="button"
+                onClick={goToCreateAction}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-purple-500/40 bg-purple-500/10 text-sm font-medium text-purple-700 dark:text-purple-300 hover:bg-purple-500/20 transition-colors"
+              >
+                {t("emptyTodayCta")}
+                <ArrowRight size={14} />
+              </button>
+            </div>
           )}
           {todayActions.map((a) => {
             const done = doneIds.has(a.id);
+            const week = weekProgress(a, completions, today);
+            const streakDays = actionStreak(a, completions, today);
+            const weekPct = week.scheduled ? (week.done / week.scheduled) * 100 : 0;
             return (
+              // A linha só mostra; quem marca é o checkbox (evita marcar sem querer ao rolar).
               <div
                 key={a.id}
-                onClick={() => toggleCompletion(a.id, today)}
-                className={`group flex items-center justify-between p-3.5 rounded-xl border transition cursor-pointer select-none ${
+                data-action={a.id}
+                className={`group flex items-center gap-1 py-1.5 pl-1 pr-3.5 rounded-xl border transition ${
                   done
                     ? "bg-purple-950/20 border-purple-500/30 opacity-70"
                     : "bg-muted/50 border-border hover:border-purple-500/40 hover:bg-muted/80"
                 }`}
               >
-                <div className="flex items-center gap-3">
-                  <div
+                <button
+                  type="button"
+                  role="checkbox"
+                  aria-checked={done}
+                  aria-label={t(done ? "homeUncheck" : "homeCheck", { name: a.name })}
+                  onClick={() => toggleAction(a.id, a.name, done)}
+                  className="size-11 shrink-0 flex items-center justify-center rounded-lg"
+                >
+                  <span
                     className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition ${
                       done
                         ? "bg-purple-600 border-purple-500 text-white"
@@ -699,19 +600,46 @@ function Dashboard() {
                     }`}
                   >
                     {done && <Check size={14} className="stroke-[3]" />}
-                  </div>
-                  <div>
+                  </span>
+                </button>
+                <div className="min-w-0 flex-1">
+                  <div className="truncate">
                     <span
                       className={`text-sm font-medium ${done ? "line-through text-muted-foreground" : "text-foreground"}`}
                     >
                       {a.name}
                     </span>
-                    <span className="text-xs text-purple-400/80 ml-2">({a.area})</span>
+                    <span className="text-xs text-purple-400/80 ml-2">
+                      ({t(`goals.area.${a.area}`)})
+                    </span>
+                  </div>
+                  <div
+                    className="mt-1 flex items-center gap-2"
+                    data-week={`${week.done}/${week.scheduled}`}
+                  >
+                    <div className="h-1.5 w-12 sm:w-20 shrink-0 rounded-full bg-muted overflow-hidden">
+                      <div
+                        className="h-full rounded-full bg-gradient-to-r from-purple-600 via-purple-400 to-indigo-400"
+                        style={{ width: `${weekPct}%` }}
+                      />
+                    </div>
+                    <span className="text-[11px] text-muted-foreground whitespace-nowrap">
+                      {t("homeWeekCount", { done: week.done, total: week.scheduled })}
+                    </span>
                   </div>
                 </div>
 
-                <div className="text-xs text-muted-foreground font-mono">
-                  {a.suggestedTime || "Qualquer hora"}
+                <div className="text-right shrink-0">
+                  <div className="text-xs text-muted-foreground font-mono">
+                    {a.suggestedTime || t("homeAnyTime")}
+                  </div>
+                  <div
+                    className="text-[11px] text-purple-700 dark:text-purple-300"
+                    data-streak={streakDays}
+                    title={t("homeStreakTitle")}
+                  >
+                    🔥 {t("homeStreak", { n: streakDays })}
+                  </div>
                 </div>
               </div>
             );
@@ -719,60 +647,156 @@ function Dashboard() {
         </div>
       </div>
 
-      {prioritySet.has("kaizen") && <KaizenTodayCard embedded />}
+      {/* d) Foco da semana, em uma linha: o foco real vem do P.G., quando existe. */}
+      <Link
+        to={AI_AGENT_ENABLED ? "/planejamento" : "/"}
+        data-week-focus
+        className="glass-strong rounded-2xl px-4 py-3 border border-purple-500/20 flex items-center gap-3 hover:border-purple-500/40 transition-colors"
+      >
+        <Brain size={20} className="text-purple-400 shrink-0" />
+        <span className="min-w-0 flex-1">
+          <span className="font-display font-bold text-xs tracking-wide uppercase text-foreground">
+            {t("focoDaSemana")}
+          </span>
+          <span className="block text-sm text-purple-700 dark:text-purple-200 truncate">
+            {focusText}
+          </span>
+        </span>
+        <ArrowRight size={16} className="text-purple-700 dark:text-purple-300 shrink-0" />
+      </Link>
 
-{/* Relatório Executivo - KPIs das áreas prioritárias */}
-      {visibleKpis.length > 0 && (
-        <div>
-          <PageHeader title={t("reportTitle")} subtitle={t("reportSubtitle")} />
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            {visibleKpis.map((k) => (
-              <Fragment key={k.area}>{k.node}</Fragment>
-            ))}
-          </div>
-        </div>
-      )}
-
-{/* Mini-Gráficos das áreas prioritárias */}
-      {visibleCharts.length > 0 && (
-        <div className="grid md:grid-cols-2 gap-4">
-          {visibleCharts.map((k) => (
-            <Fragment key={k.area}>{k.node}</Fragment>
-          ))}
-        </div>
-      )}
-
-      {/* Atividade Recente */}
-      <Section title={t("recentActivity")}>
+      {/* e) Seu progresso: um gráfico por vez, só das áreas prioritárias. */}
+      {activeChart && (
         <GlassCard>
-          {recent.length === 0 && (
-            <p className="text-muted-foreground text-sm">{t("emptyActivity")}</p>
+          <div className="flex items-center justify-between gap-2 mb-3">
+            <h3 className="font-display font-semibold text-foreground">{t("homeProgress")}</h3>
+          </div>
+          {visibleCharts.length > 1 && (
+            <div
+              role="tablist"
+              aria-label={t("homeProgress")}
+              className="flex rounded-xl border border-border overflow-hidden text-sm mb-3"
+            >
+              {visibleCharts.map((c) => (
+                <button
+                  key={c.area}
+                  type="button"
+                  role="tab"
+                  aria-selected={c.area === activeChart.area}
+                  data-chart-tab={c.area}
+                  onClick={() => setChartArea(c.area)}
+                  className={`flex-1 px-2 py-2 ${c.area === activeChart.area ? "bg-gold text-[#0A0F1E] font-semibold" : "hover:bg-muted/50"}`}
+                >
+                  {c.tab}
+                </button>
+              ))}
+            </div>
           )}
-          <ul className="divide-y divide-white/5">
-            {recent.map((r, i) => (
-              <li key={i} className="flex items-center gap-3 py-3">
-                <span className="text-xl">{r.icon}</span>
-                <span className="flex-1 text-sm text-foreground/90">{r.text}</span>
-                <span className="text-xs text-muted-foreground">{fmtDate(r.date)}</span>
-              </li>
-            ))}
-          </ul>
+          <div
+            className="flex items-baseline justify-between gap-2 mb-2"
+            data-chart-active={activeChart.area}
+          >
+            <div className="text-sm font-semibold text-muted-foreground">{activeChart.title}</div>
+            <div className="text-sm font-semibold text-foreground text-right" data-chart-summary>
+              {activeChart.summary}
+            </div>
+          </div>
+          {activeChart.node}
+        </GlassCard>
+      )}
+
+      {/* f) Insights: um cartão, um insight por vez. */}
+      <Section title={t("insightsWeek")} className="mt-0">
+        <GlassCard className="border-l-4 border-l-purple-500">
+          <p className="text-sm leading-relaxed text-foreground/90 min-h-[2.75rem]" data-insight>
+            {insights[insightIdx]}
+          </p>
+          {insights.length > 1 && (
+            <div className="mt-3 flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setInsight((insightIdx - 1 + insights.length) % insights.length)}
+                aria-label={t("homeInsightPrev")}
+                className="size-9 flex items-center justify-center rounded-lg text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+              >
+                <ChevronLeft size={16} />
+              </button>
+              <div className="flex items-center gap-1.5">
+                {insights.map((_, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => setInsight(i)}
+                    aria-label={t("homeInsightGo", { n: i + 1 })}
+                    aria-current={i === insightIdx}
+                    className="p-1"
+                  >
+                    <span
+                      className={`block h-2 rounded-full transition-all ${i === insightIdx ? "w-4 bg-purple-500" : "w-2 bg-muted-foreground/30"}`}
+                    />
+                  </button>
+                ))}
+              </div>
+              <button
+                type="button"
+                onClick={() => setInsight((insightIdx + 1) % insights.length)}
+                aria-label={t("homeInsightNext")}
+                className="size-9 flex items-center justify-center rounded-lg text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+              >
+                <ChevronRight size={16} />
+              </button>
+              <span className="ml-auto text-xs text-muted-foreground" data-insight-count>
+                {t("homeInsightCount", { n: insightIdx + 1, total: insights.length })}
+              </span>
+            </div>
+          )}
         </GlassCard>
       </Section>
 
-      {/* Insights da Semana */}
-      <Section title={t("insightsWeek")}>
-        <div className="grid md:grid-cols-3 gap-4">
-          {insights.map((t, i) => (
-            <GlassCard key={i} className="border-l-4 border-l-purple-500">
-              <p className="text-sm leading-relaxed text-foreground/90">{t}</p>
-            </GlassCard>
-          ))}
-        </div>
-      </Section>
+      {/* g) Atalhos */}
+      <div className="grid grid-cols-2 gap-3 md:gap-4">
+        <Link to="/kaizen" data-shortcut="kaizen" className="block">
+          <GlassCard className="h-full flex items-center gap-3 p-4">
+            <span className="text-2xl">🌱</span>
+            <span className="min-w-0 flex-1 text-sm font-semibold text-foreground">
+              {t("homeKaizenToday")}
+            </span>
+            <ArrowRight size={14} className="text-muted-foreground shrink-0" />
+          </GlassCard>
+        </Link>
+        <button
+          type="button"
+          data-shortcut="recent"
+          onClick={() => setShowRecent(true)}
+          className="block text-left"
+        >
+          <GlassCard className="h-full flex items-center gap-3 p-4">
+            <span className="text-2xl">🕒</span>
+            <span className="min-w-0 flex-1 text-sm font-semibold text-foreground">
+              {t("recentActivity")}
+            </span>
+            <ArrowRight size={14} className="text-muted-foreground shrink-0" />
+          </GlassCard>
+        </button>
+      </div>
 
-      {/* Seção Completa de Metas & Rotina */}
-      <GoalsSection />
+      {/* h) Metas e ações */}
+      <GoalsSection requestedTab={goalsTab} />
+
+      <Modal open={showRecent} onClose={() => setShowRecent(false)} title={t("recentActivity")}>
+        {recent.length === 0 && (
+          <p className="text-muted-foreground text-sm">{t("emptyActivity")}</p>
+        )}
+        <ul className="divide-y divide-white/5">
+          {recent.map((r, i) => (
+            <li key={i} className="flex items-center gap-3 py-3">
+              <span className="text-xl">{r.icon}</span>
+              <span className="flex-1 text-sm text-foreground/90">{r.text}</span>
+              <span className="text-xs text-muted-foreground">{fmtDate(r.date)}</span>
+            </li>
+          ))}
+        </ul>
+      </Modal>
 
       <OnboardingModal
         open={showOnboarding}
@@ -805,12 +829,3 @@ const tooltipStyle = {
   borderRadius: 8,
   fontSize: 12,
 };
-
-function MiniChart({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <GlassCard>
-      <div className="text-sm font-semibold mb-2 text-muted-foreground">{title}</div>
-      {children}
-    </GlassCard>
-  );
-}

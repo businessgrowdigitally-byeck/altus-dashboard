@@ -130,3 +130,17 @@ node --experimental-strip-types --test tests/merge.test.ts tests/mcp-mutate.test
 ```sh
 node tests/sync.browser.cjs
 ```
+
+## Home (reorganized)
+
+Per-action week progress and streak are unit-tested:
+
+```sh
+node --experimental-strip-types --test tests/daily-stats.test.ts
+```
+
+With the dev server running, the browser test checks the acceptance criteria at 390×844 ("Hoje" and 3 actions above the fold, real 0% with no actions, tapping a name does not mark, the 44px checkbox marks with an undo toast, counters, chart tabs, insights, shortcuts, empty state) and the desktop layout:
+
+```sh
+node tests/home.browser.cjs
+```

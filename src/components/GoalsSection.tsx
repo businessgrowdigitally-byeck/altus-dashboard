@@ -22,11 +22,25 @@ function areaT(t: (k: string, v?: Record<string, string | number>) => string, ar
   return t(`goals.area.${area}`);
 }
 
-export function GoalsSection() {
+/** Id da seção, para outras partes da tela rolarem até ela. */
+export const GOALS_SECTION_ID = "metas-e-acoes";
+
+/**
+ * `requestedTab` (opcional) troca a aba de fora — ex.: o estado vazio da Home
+ * abre "ações diárias". `nonce` repete o pedido mesmo se a aba for a mesma.
+ */
+export function GoalsSection({
+  requestedTab,
+}: {
+  requestedTab?: { tab: "macro" | "daily"; nonce: number };
+} = {}) {
   const t = useT();
   const [tab, setTab] = useState<"macro" | "daily">("macro");
+  useEffect(() => {
+    if (requestedTab) setTab(requestedTab.tab);
+  }, [requestedTab]);
   return (
-    <section className="mt-8">
+    <section id={GOALS_SECTION_ID} className="mt-8 scroll-mt-20">
       <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
         <h2 className="font-display text-xl font-semibold">{t("goals.title")}</h2>
         <div className="flex rounded-xl border border-border overflow-hidden text-sm">
