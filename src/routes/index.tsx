@@ -4,7 +4,17 @@ import { useStore } from "@/lib/store";
 import { brl, daysAgoISO, fmtDate, fmtDateLong, greeting, kg, todayISO } from "@/lib/format";
 import { balanceUntil, dailyBalanceSeries, monthTotals } from "@/lib/finance";
 import { actionStreak, weekProgress } from "@/lib/daily-stats";
-import { addDays, dayItems, keepDayDurations, WEEK_PLAN_DAYS } from "@/lib/day-plan";
+import {
+  addDays,
+  dayItems,
+  keepDayDurations,
+  plannedActions,
+  WEEK_PLAN_DAYS,
+} from "@/lib/day-plan";
+import { DailyFocusCalendar } from "@/components/DailyFocusCalendar";
+import { buildInsights } from "@/lib/insights";
+import { MorningCard } from "@/components/MorningCard";
+import { useDailyBriefing } from "@/lib/ai/use-briefing";
 import { toast } from "sonner";
 import { GlassCard, Section } from "@/components/primitives";
 import { GoalsSection, GOALS_SECTION_ID } from "@/components/GoalsSection";
@@ -92,6 +102,10 @@ function Dashboard() {
     toggleDayExtra,
     resetDayPlan,
     keepDayDurationsInRoutine,
+    kaizen,
+    categoryBudgets,
+    altusPlans,
+    removeGoalDaily,
   } = useStore();
   const t = useT();
 
@@ -144,6 +158,28 @@ function Dashboard() {
     return a ? [{ ...p, name: a.name }] : [];
   });
   const [editingOrder, setEditingOrder] = useState(false);
+  // "Hoje" como checklist ou como Blocos de foco (agenda do dia); a escolha fica neste aparelho.
+  const [todayView, setTodayView] = useState<"checklist" | "focus">("checklist");
+  useEffect(() => {
+    try {
+      if (localStorage.getItem("altus-home-today-view") === "focus") setTodayView("focus");
+    } catch {
+      /* Storage may be disabled. */
+    }
+  }, []);
+  const changeTodayView = (v: "checklist" | "focus") => {
+    setTodayView(v);
+    setEditingOrder(false);
+    try {
+      localStorage.setItem("altus-home-today-view", v);
+    } catch {
+      /* Keep the in-memory preference. */
+    }
+  };
+  const focusActions = useMemo(
+    () => plannedActions(goalsDaily, dayPlans ?? {}, today),
+    [goalsDaily, dayPlans, today],
+  );
   const tomorrow = addDays(today, 1);
   const postponeToTomorrow = (id: string, name: string) => {
     const before = useStore.getState().dayPlans;
@@ -278,50 +314,47 @@ function Dashboard() {
     return items.sort((a, b) => b.date.localeCompare(a.date)).slice(0, 5);
   }, [transactions, weights, books, studies, t]);
 
+  // Insights calculados dos mesmos dados que o GOAT lê (rotina, Kaizen, P.E.,
+  // finanças...). Cada um diz sobre o que é e traz os números.
+  const briefing = useDailyBriefing();
   const insights = useMemo(() => {
-    const out: string[] = [];
-    const sumExp = (from: string, to: string) =>
-      transactions
-        .filter((t) => t.type === "saida" && t.date >= from && t.date < to)
-        .reduce((a, b) => a + b.value, 0);
-    // Duas janelas de exatamente 7 dias: a que termina hoje e a anterior a ela.
-    const thisWeek = sumExp(daysAgoISO(6), daysAgoISO(-1));
-    const prevWeek = sumExp(daysAgoISO(13), daysAgoISO(6));
-    if (prevWeek > 0) {
-      const diff = Math.round(((thisWeek - prevWeek) / prevWeek) * 100);
-      if (diff !== 0)
-        out.push(
-          diff > 0
-            ? t("insight.spentMore", { diff })
-            : t("insight.spentLess", { diff: Math.abs(diff) }),
-        );
-    }
-    if (sortedWeights.length >= 2) {
-      const first = sortedWeights[0];
-      const last = sortedWeights[sortedWeights.length - 1];
-      const diff = last.weight - first.weight;
-      if (Math.abs(diff) < 0.3) out.push(t("insight.weightStable"));
-      else
-        out.push(
-          t("insight.weightChange", {
-            dir: diff > 0 ? "ganhou" : "perdeu",
-            kg: Math.abs(diff).toFixed(1),
-          }),
-        );
-    }
-    if (booksThisYear > 0) {
-      out.push(
-        booksThisYear === 1
-          ? t("booksOne", { count: booksThisYear, year: yearKey })
-          : t("booksMany", { count: booksThisYear, year: yearKey }),
-      );
-    }
-    if (streak > 0)
-      out.push(streak === 1 ? t("streakOne", { n: streak }) : t("streakMany", { n: streak }));
+    const computed = buildInsights(
+      {
+        transactions,
+        categoryBudgets,
+        weights,
+        books,
+        studies,
+        goalsDaily,
+        completions,
+        dayPlans,
+        kaizen,
+        altusPlans,
+      },
+      today,
+      { money: brl, kg },
+    ).map((i) => t(i.key, i.vars));
+    // O resumo do GOAT (IA, 1x por dia) vem primeiro quando existe.
+    const out = briefing.text
+      ? [t("insight.goat", { text: briefing.text }), ...computed]
+      : computed;
     // Só insights reais; a frase genérica aparece apenas quando não há nenhum.
-    if (out.length === 0) out.push(t("insight.fallback"));
-    return out.slice(0, 3);
-  }, [transactions, sortedWeights, booksThisYear, streak, yearKey, t]);
+    return out.length ? out : [t("insight.fallback")];
+  }, [
+    transactions,
+    categoryBudgets,
+    weights,
+    books,
+    studies,
+    goalsDaily,
+    completions,
+    dayPlans,
+    kaizen,
+    altusPlans,
+    today,
+    briefing.text,
+    t,
+  ]);
 
   const { user } = useAuth();
   const { status: syncStatus } = useSyncStatus();
@@ -499,6 +532,7 @@ function Dashboard() {
 
   return (
     <div className="space-y-4 md:space-y-6">
+      <MorningCard onStart={goToToday} />
       {/* a) Cabeçalho compacto: o logo já está na barra do app (celular) e na lateral (computador). */}
       <div className="flex items-center justify-end">
         <button
@@ -598,7 +632,27 @@ function Dashboard() {
             <span className="text-xs px-3 py-1 rounded-full bg-purple-500/15 text-purple-700 dark:text-purple-300 border border-purple-500/30">
               {t("actionsDone", { done: todayDone, total: todayTotal })}
             </span>
-            {todayTotal > 1 && (
+            {todayActions.length > 0 && (
+              <div
+                role="group"
+                aria-label={t("homeTodayView")}
+                className="flex rounded-lg border border-border p-0.5 text-[11px]"
+              >
+                {(["checklist", "focus"] as const).map((v) => (
+                  <button
+                    key={v}
+                    type="button"
+                    data-today-view={v}
+                    aria-pressed={todayView === v}
+                    onClick={() => changeTodayView(v)}
+                    className={`rounded-md px-2 py-1 ${todayView === v ? "bg-purple-500/20 font-semibold text-purple-700 dark:text-purple-300" : "text-muted-foreground hover:bg-muted"}`}
+                  >
+                    {t(v === "checklist" ? "homeViewChecklist" : "homeViewFocus")}
+                  </button>
+                ))}
+              </div>
+            )}
+            {todayTotal > 1 && todayView === "checklist" && (
               <button
                 type="button"
                 data-edit-order
@@ -659,182 +713,204 @@ function Dashboard() {
               </button>
             </div>
           )}
-          {items.map((item, idx) => {
-            const reorder = editingOrder && (
-              <div className="flex items-center gap-0.5 shrink-0" data-reorder={item.key}>
-                <button
-                  type="button"
-                  disabled={idx === 0}
-                  onClick={() => moveDayItem(today, itemKeys, item.key, -1)}
-                  aria-label={t("homeMoveUp", {
-                    name: item.kind === "action" ? item.action.name : item.extra.title,
-                  })}
-                  className="size-9 flex items-center justify-center rounded-lg text-muted-foreground hover:bg-muted/60 disabled:opacity-30"
-                >
-                  <ChevronUp size={16} />
-                </button>
-                <button
-                  type="button"
-                  disabled={idx === items.length - 1}
-                  onClick={() => moveDayItem(today, itemKeys, item.key, 1)}
-                  aria-label={t("homeMoveDown", {
-                    name: item.kind === "action" ? item.action.name : item.extra.title,
-                  })}
-                  className="size-9 flex items-center justify-center rounded-lg text-muted-foreground hover:bg-muted/60 disabled:opacity-30"
-                >
-                  <ChevronDown size={16} />
-                </button>
-                {item.kind === "action" && (
+          {todayView === "focus" && mounted && todayActions.length > 0 ? (
+            <div data-today-focus>
+              <DailyFocusCalendar
+                actions={focusActions}
+                doneIds={doneIds}
+                isToday
+                now={now}
+                onToggle={(id) => {
+                  const a = goalsDaily.find((x) => x.id === id);
+                  if (a) toggleAction(id, a.name, doneIds.has(id));
+                }}
+                onEdit={() => goToGoals("daily")}
+                onRemove={removeGoalDaily}
+              />
+              {todayExtras.length > 0 && (
+                <p className="mt-2 text-[11px] text-muted-foreground px-1">
+                  {t("homeFocusExtras", { names: todayExtras.map((e) => e.title).join(", ") })}
+                </p>
+              )}
+            </div>
+          ) : (
+            items.map((item, idx) => {
+              const reorder = editingOrder && (
+                <div className="flex items-center gap-0.5 shrink-0" data-reorder={item.key}>
                   <button
                     type="button"
-                    onClick={() => postponeToTomorrow(item.action.id, item.action.name)}
-                    aria-label={t("homePostponeAria", { name: item.action.name })}
-                    className="h-9 px-2 rounded-lg text-[11px] text-muted-foreground hover:bg-muted/60"
+                    disabled={idx === 0}
+                    onClick={() => moveDayItem(today, itemKeys, item.key, -1)}
+                    aria-label={t("homeMoveUp", {
+                      name: item.kind === "action" ? item.action.name : item.extra.title,
+                    })}
+                    className="size-9 flex items-center justify-center rounded-lg text-muted-foreground hover:bg-muted/60 disabled:opacity-30"
                   >
-                    {t("homePostponeTomorrow")}
+                    <ChevronUp size={16} />
                   </button>
-                )}
-              </div>
-            );
-            if (item.kind === "extra") {
-              const e = item.extra;
+                  <button
+                    type="button"
+                    disabled={idx === items.length - 1}
+                    onClick={() => moveDayItem(today, itemKeys, item.key, 1)}
+                    aria-label={t("homeMoveDown", {
+                      name: item.kind === "action" ? item.action.name : item.extra.title,
+                    })}
+                    className="size-9 flex items-center justify-center rounded-lg text-muted-foreground hover:bg-muted/60 disabled:opacity-30"
+                  >
+                    <ChevronDown size={16} />
+                  </button>
+                  {item.kind === "action" && (
+                    <button
+                      type="button"
+                      onClick={() => postponeToTomorrow(item.action.id, item.action.name)}
+                      aria-label={t("homePostponeAria", { name: item.action.name })}
+                      className="h-9 px-2 rounded-lg text-[11px] text-muted-foreground hover:bg-muted/60"
+                    >
+                      {t("homePostponeTomorrow")}
+                    </button>
+                  )}
+                </div>
+              );
+              if (item.kind === "extra") {
+                const e = item.extra;
+                return (
+                  <div
+                    key={e.id}
+                    data-extra={e.id}
+                    className={`group flex items-center gap-1 py-1.5 pl-1 pr-3.5 rounded-xl border transition ${
+                      e.done
+                        ? "bg-purple-950/20 border-purple-500/30 opacity-70"
+                        : "bg-muted/50 border-dashed border-purple-500/40 hover:bg-muted/80"
+                    }`}
+                  >
+                    <button
+                      type="button"
+                      role="checkbox"
+                      aria-checked={e.done}
+                      aria-label={t(e.done ? "homeUncheck" : "homeCheck", { name: e.title })}
+                      onClick={() => toggleDayExtra(today, e.id)}
+                      className="size-11 shrink-0 flex items-center justify-center rounded-lg"
+                    >
+                      <span
+                        className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition ${
+                          e.done
+                            ? "bg-purple-600 border-purple-500 text-white"
+                            : "border-muted-foreground/30 group-hover:border-purple-400"
+                        }`}
+                      >
+                        {e.done && <Check size={14} className="stroke-[3]" />}
+                      </span>
+                    </button>
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate">
+                        <span
+                          className={`text-sm font-medium ${e.done ? "line-through text-muted-foreground" : "text-foreground"}`}
+                        >
+                          {e.title}
+                        </span>
+                        <span className="text-xs text-purple-400/80 ml-2">({t("homeExtra")})</span>
+                      </div>
+                      {e.note && (
+                        <div className="text-[11px] text-muted-foreground truncate">{e.note}</div>
+                      )}
+                    </div>
+                    {reorder || (
+                      <div className="text-xs text-muted-foreground font-mono shrink-0">
+                        {e.minutes ? t("homeMinutes", { n: e.minutes }) : ""}
+                      </div>
+                    )}
+                  </div>
+                );
+              }
+              const a = item.action;
+              const adjusted = dayPlan?.durations[a.id] !== undefined;
+              const done = doneIds.has(a.id);
+              const week = weekProgress(a, completions, today, dayPlans);
+              const streakDays = actionStreak(a, completions, today, dayPlans);
+              const weekPct = week.scheduled ? (week.done / week.scheduled) * 100 : 0;
               return (
+                // A linha só mostra; quem marca é o checkbox (evita marcar sem querer ao rolar).
                 <div
-                  key={e.id}
-                  data-extra={e.id}
+                  key={a.id}
+                  data-action={a.id}
                   className={`group flex items-center gap-1 py-1.5 pl-1 pr-3.5 rounded-xl border transition ${
-                    e.done
+                    done
                       ? "bg-purple-950/20 border-purple-500/30 opacity-70"
-                      : "bg-muted/50 border-dashed border-purple-500/40 hover:bg-muted/80"
+                      : "bg-muted/50 border-border hover:border-purple-500/40 hover:bg-muted/80"
                   }`}
                 >
                   <button
                     type="button"
                     role="checkbox"
-                    aria-checked={e.done}
-                    aria-label={t(e.done ? "homeUncheck" : "homeCheck", { name: e.title })}
-                    onClick={() => toggleDayExtra(today, e.id)}
+                    aria-checked={done}
+                    aria-label={t(done ? "homeUncheck" : "homeCheck", { name: a.name })}
+                    onClick={() => toggleAction(a.id, a.name, done)}
                     className="size-11 shrink-0 flex items-center justify-center rounded-lg"
                   >
                     <span
                       className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition ${
-                        e.done
+                        done
                           ? "bg-purple-600 border-purple-500 text-white"
                           : "border-muted-foreground/30 group-hover:border-purple-400"
                       }`}
                     >
-                      {e.done && <Check size={14} className="stroke-[3]" />}
+                      {done && <Check size={14} className="stroke-[3]" />}
                     </span>
                   </button>
                   <div className="min-w-0 flex-1">
                     <div className="truncate">
                       <span
-                        className={`text-sm font-medium ${e.done ? "line-through text-muted-foreground" : "text-foreground"}`}
+                        className={`text-sm font-medium ${done ? "line-through text-muted-foreground" : "text-foreground"}`}
                       >
-                        {e.title}
+                        {a.name}
                       </span>
-                      <span className="text-xs text-purple-400/80 ml-2">({t("homeExtra")})</span>
+                      <span className="text-xs text-purple-400/80 ml-2">
+                        ({t(`goals.area.${a.area}`)})
+                      </span>
                     </div>
-                    {e.note && (
-                      <div className="text-[11px] text-muted-foreground truncate">{e.note}</div>
+                    {(item.note || item.from) && (
+                      <div className="text-[11px] text-muted-foreground truncate">
+                        {item.from && t("homeFromDay", { date: fmtDate(item.from) })}
+                        {item.from && item.note && " · "}
+                        {item.note}
+                      </div>
                     )}
+                    <div
+                      className="mt-1 flex items-center gap-2"
+                      data-week={`${week.done}/${week.scheduled}`}
+                    >
+                      <div className="h-1.5 w-12 sm:w-20 shrink-0 rounded-full bg-muted overflow-hidden">
+                        <div
+                          className="h-full rounded-full bg-gradient-to-r from-purple-600 via-purple-400 to-indigo-400"
+                          style={{ width: `${weekPct}%` }}
+                        />
+                      </div>
+                      <span className="text-[11px] text-muted-foreground whitespace-nowrap">
+                        {t("homeWeekCount", { done: week.done, total: week.scheduled })}
+                      </span>
+                    </div>
                   </div>
+
                   {reorder || (
-                    <div className="text-xs text-muted-foreground font-mono shrink-0">
-                      {e.minutes ? t("homeMinutes", { n: e.minutes }) : ""}
+                    <div className="text-right shrink-0">
+                      <div className="text-xs text-muted-foreground font-mono">
+                        {adjusted
+                          ? t("homeMinutes", { n: item.minutes })
+                          : a.suggestedTime || t("homeAnyTime")}
+                      </div>
+                      <div
+                        className="text-[11px] text-purple-700 dark:text-purple-300"
+                        data-streak={streakDays}
+                        title={t("homeStreakTitle")}
+                      >
+                        🔥 {t("homeStreak", { n: streakDays })}
+                      </div>
                     </div>
                   )}
                 </div>
               );
-            }
-            const a = item.action;
-            const adjusted = dayPlan?.durations[a.id] !== undefined;
-            const done = doneIds.has(a.id);
-            const week = weekProgress(a, completions, today, dayPlans);
-            const streakDays = actionStreak(a, completions, today, dayPlans);
-            const weekPct = week.scheduled ? (week.done / week.scheduled) * 100 : 0;
-            return (
-              // A linha só mostra; quem marca é o checkbox (evita marcar sem querer ao rolar).
-              <div
-                key={a.id}
-                data-action={a.id}
-                className={`group flex items-center gap-1 py-1.5 pl-1 pr-3.5 rounded-xl border transition ${
-                  done
-                    ? "bg-purple-950/20 border-purple-500/30 opacity-70"
-                    : "bg-muted/50 border-border hover:border-purple-500/40 hover:bg-muted/80"
-                }`}
-              >
-                <button
-                  type="button"
-                  role="checkbox"
-                  aria-checked={done}
-                  aria-label={t(done ? "homeUncheck" : "homeCheck", { name: a.name })}
-                  onClick={() => toggleAction(a.id, a.name, done)}
-                  className="size-11 shrink-0 flex items-center justify-center rounded-lg"
-                >
-                  <span
-                    className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition ${
-                      done
-                        ? "bg-purple-600 border-purple-500 text-white"
-                        : "border-muted-foreground/30 group-hover:border-purple-400"
-                    }`}
-                  >
-                    {done && <Check size={14} className="stroke-[3]" />}
-                  </span>
-                </button>
-                <div className="min-w-0 flex-1">
-                  <div className="truncate">
-                    <span
-                      className={`text-sm font-medium ${done ? "line-through text-muted-foreground" : "text-foreground"}`}
-                    >
-                      {a.name}
-                    </span>
-                    <span className="text-xs text-purple-400/80 ml-2">
-                      ({t(`goals.area.${a.area}`)})
-                    </span>
-                  </div>
-                  {(item.note || item.from) && (
-                    <div className="text-[11px] text-muted-foreground truncate">
-                      {item.from && t("homeFromDay", { date: fmtDate(item.from) })}
-                      {item.from && item.note && " · "}
-                      {item.note}
-                    </div>
-                  )}
-                  <div
-                    className="mt-1 flex items-center gap-2"
-                    data-week={`${week.done}/${week.scheduled}`}
-                  >
-                    <div className="h-1.5 w-12 sm:w-20 shrink-0 rounded-full bg-muted overflow-hidden">
-                      <div
-                        className="h-full rounded-full bg-gradient-to-r from-purple-600 via-purple-400 to-indigo-400"
-                        style={{ width: `${weekPct}%` }}
-                      />
-                    </div>
-                    <span className="text-[11px] text-muted-foreground whitespace-nowrap">
-                      {t("homeWeekCount", { done: week.done, total: week.scheduled })}
-                    </span>
-                  </div>
-                </div>
-
-                {reorder || (
-                  <div className="text-right shrink-0">
-                    <div className="text-xs text-muted-foreground font-mono">
-                      {adjusted
-                        ? t("homeMinutes", { n: item.minutes })
-                        : a.suggestedTime || t("homeAnyTime")}
-                    </div>
-                    <div
-                      className="text-[11px] text-purple-700 dark:text-purple-300"
-                      data-streak={streakDays}
-                      title={t("homeStreakTitle")}
-                    >
-                      🔥 {t("homeStreak", { n: streakDays })}
-                    </div>
-                  </div>
-                )}
-              </div>
-            );
-          })}
+            })
+          )}
           {postponedToday.length > 0 && (
             <p className="text-[11px] text-muted-foreground px-1" data-postponed>
               {postponedToday

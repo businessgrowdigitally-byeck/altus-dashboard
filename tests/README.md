@@ -164,3 +164,21 @@ Stage 2 (week plan and fixed-routine changes) is unit-tested in the same `tests/
 ```sh
 node tests/week-plan.browser.cjs
 ```
+
+## GOAT on the Home (insights, morning card, notifications)
+
+The weekly insights (computed from the same data GOAT reads: routine with the day plan, yesterday's Kaizen, P.E., spending with amounts, budget, weight, books, studies) and the in-app notifications (GOAT summary, Kaizen reminder, actions arriving today, overdue P.E. review, budget) are unit-tested:
+
+```sh
+node --experimental-strip-types --test tests/insights.test.ts tests/notifications.test.ts
+```
+
+The `briefing` mode of `/api/chat` (GOAT's morning summary, same auth/quota/server-side context as the chat) is covered in `tests/chat-endpoint.test.mjs`.
+
+With the dev server running, the browser test fixes the browser clock at 8:30 and checks the morning card (GOAT summary, yesterday's Kaizen, first action; dismissed once per day and synced), that the summary is generated once and reused, the insights text, the notifications bell and the Home "Hoje" switch to focus blocks:
+
+```sh
+node tests/goat-home.browser.cjs
+```
+
+`tests/fake-supabase.cjs` marks the morning card as already seen and answers the summary request with "unavailable" by default, so the other browser tests behave the same at any hour; pass `morning: true` / `briefing: "text"` to turn them on.

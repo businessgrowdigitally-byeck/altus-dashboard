@@ -119,12 +119,20 @@ export const dashboard = {
     es: "Pospuesta: {name} → {date}",
   },
   homePlanByMentor: {
-    pt: "Ajustado pelo Mentor",
-    en: "Adjusted by the Mentor",
-    es: "Ajustado por el Mentor",
+    pt: "Ajustado pelo GOAT",
+    en: "Adjusted by GOAT",
+    es: "Ajustado por GOAT",
   },
   homePlanByYou: { pt: "Ajustado por você", en: "Adjusted by you", es: "Ajustado por ti" },
   homeResetDay: { pt: "Voltar à rotina", en: "Back to routine", es: "Volver a la rutina" },
+  homeTodayView: { pt: "Ver o dia como", en: "View the day as", es: "Ver el día como" },
+  homeViewChecklist: { pt: "Checklist", en: "Checklist", es: "Checklist" },
+  homeViewFocus: { pt: "Blocos de foco", en: "Focus blocks", es: "Bloques de enfoque" },
+  homeFocusExtras: {
+    pt: "Extras de hoje (sem horário): {names}",
+    en: "Today's extras (no time): {names}",
+    es: "Extras de hoy (sin horario): {names}",
+  },
   homeKeepInRoutine: { pt: "Manter na rotina", en: "Keep in routine", es: "Mantener en la rutina" },
   homeKeepInRoutineHint: {
     pt: "As durações de hoje viram a duração fixa da rotina",
@@ -206,25 +214,146 @@ export const dashboard = {
   namePlaceholder: { pt: "Seu nome", en: "Your name", es: "Tu nombre" },
 
   // Insights
-  "insight.spentMore": {
-    pt: "{diff}% mais que a semana passada.",
-    en: "{diff}% more than last week.",
-    es: "{diff}% más que la semana pasada.",
+  "insight.goat": {
+    pt: "GOAT: {text}",
+    en: "GOAT: {text}",
+    es: "GOAT: {text}",
   },
-  "insight.spentLess": {
-    pt: "{diff}% menos que a semana passada — parabéns!",
-    en: "{diff}% less than last week — congratulations!",
-    es: "{diff}% menos que la semana pasada — ¡felicidades!",
+  morningTitle: {
+    pt: "Bom dia, {name}!",
+    en: "Good morning, {name}!",
+    es: "¡Buenos días, {name}!",
+  },
+  morningFriend: { pt: "você", en: "there", es: "tú" },
+  morningGoat: { pt: "Resumo do GOAT", en: "GOAT's summary", es: "Resumen de GOAT" },
+  morningGoatLoading: {
+    pt: "O GOAT está lendo seus dados para montar o resumo de hoje…",
+    en: "GOAT is reading your data to build today's summary…",
+    es: "GOAT está leyendo tus datos para armar el resumen de hoy…",
+  },
+  morningKaizen: {
+    pt: "Seu 1% de hoje (Kaizen de ontem)",
+    en: "Your 1% for today (yesterday's Kaizen)",
+    es: "Tu 1% de hoy (Kaizen de ayer)",
+  },
+  morningToday: { pt: "Hoje", en: "Today", es: "Hoy" },
+  morningFirst: {
+    pt: "{n} ação(ões) no dia. Comece por: {name}.",
+    en: "{n} action(s) today. Start with: {name}.",
+    es: "{n} acción(es) hoy. Empieza por: {name}.",
+  },
+  morningAllDone: {
+    pt: "As {n} ações de hoje já estão feitas. 🎉",
+    en: "All {n} actions for today are done. 🎉",
+    es: "Las {n} acciones de hoy ya están hechas. 🎉",
+  },
+  morningNoActions: {
+    pt: "Nenhuma ação na rotina de hoje. Que tal criar a primeira?",
+    en: "No actions in today's routine. How about creating the first one?",
+    es: "Ninguna acción en la rutina de hoy. ¿Creamos la primera?",
+  },
+  morningStart: { pt: "Começar o dia", en: "Start the day", es: "Empezar el día" },
+  notifTitle: { pt: "Notificações", en: "Notifications", es: "Notificaciones" },
+  notifOpen: { pt: "Abrir notificações", en: "Open notifications", es: "Abrir notificaciones" },
+  notifOpenUnread: {
+    pt: "Abrir notificações ({n} novas)",
+    en: "Open notifications ({n} new)",
+    es: "Abrir notificaciones ({n} nuevas)",
+  },
+  notifEmpty: {
+    pt: "Nada novo por aqui. Os lembretes do dia aparecem neste sino.",
+    en: "Nothing new here. The day's reminders show up in this bell.",
+    es: "Nada nuevo por aquí. Los recordatorios del día aparecen en esta campana.",
+  },
+  "notif.briefing": {
+    pt: "Resumo do GOAT: {text}",
+    en: "GOAT's summary: {text}",
+    es: "Resumen de GOAT: {text}",
+  },
+  "notif.kaizen": {
+    pt: "Kaizen de ontem — seu 1% de hoje: {text}",
+    en: "Yesterday's Kaizen — your 1% for today: {text}",
+    es: "Kaizen de ayer — tu 1% de hoy: {text}",
+  },
+  "notif.kaizenMissing": {
+    pt: "Você não registrou o Kaizen de ontem. Leva 1 minuto: o que melhorou e o que melhorar 1% hoje?",
+    en: "You didn't log yesterday's Kaizen. It takes a minute: what improved and what to improve 1% today?",
+    es: "No registraste el Kaizen de ayer. Lleva 1 minuto: ¿qué mejoró y qué mejorar 1% hoy?",
+  },
+  "notif.arriving": {
+    pt: "Chega hoje: {name} (adiada de {from}).",
+    en: "Arriving today: {name} (moved from {from}).",
+    es: "Llega hoy: {name} (pospuesta del {from}).",
+  },
+  "notif.review": {
+    pt: "Revisão semanal do P.E. de {macro} está vencida.",
+    en: "The weekly review of the {macro} plan is due.",
+    es: "La revisión semanal del plan de {macro} está vencida.",
+  },
+  "notif.budget": {
+    pt: "Orçamento de {category} estourado neste mês.",
+    en: "{category} budget exceeded this month.",
+    es: "Presupuesto de {category} excedido este mes.",
+  },
+  "insight.kaizen": {
+    pt: "Kaizen de ontem — seu 1% de hoje: {text}",
+    en: "Yesterday's Kaizen — your 1% for today: {text}",
+    es: "Kaizen de ayer — tu 1% de hoy: {text}",
+  },
+  "insight.routineWeek": {
+    pt: "Rotina: {done} de {planned} ações feitas nos últimos 7 dias ({pct}%).",
+    en: "Routine: {done} of {planned} actions done in the last 7 days ({pct}%).",
+    es: "Rutina: {done} de {planned} acciones hechas en los últimos 7 días ({pct}%).",
+  },
+  "insight.bestStreak": {
+    pt: "Sequência: {name} há {n} dias seguidos. Não quebre a corrente!",
+    en: "Streak: {name} for {n} days in a row. Don't break the chain!",
+    es: "Racha: {name} hace {n} días seguidos. ¡No rompas la cadena!",
+  },
+  "insight.lagging": {
+    pt: "Atenção: {name} só {done} de {scheduled} vezes nesta semana. Vale uma versão mínima?",
+    en: "Heads up: {name} only {done} of {scheduled} times this week. Try a minimum version?",
+    es: "Atención: {name} solo {done} de {scheduled} veces esta semana. ¿Una versión mínima?",
+  },
+  "insight.reviewDue": {
+    pt: "P.E. de {macro}: a revisão semanal está vencida. Revise com o GOAT.",
+    en: "{macro} plan: the weekly review is due. Review it with GOAT.",
+    es: "Plan de {macro}: la revisión semanal está vencida. Revísalo con GOAT.",
+  },
+  "insight.nextMicro": {
+    pt: "Próxima Meta Micro de {macro}: {title}.",
+    en: "Next Micro Goal for {macro}: {title}.",
+    es: "Próxima Meta Micro de {macro}: {title}.",
+  },
+  "insight.expensesLess": {
+    pt: "Gastos: {week} nos últimos 7 dias, {diff}% a menos que nos 7 anteriores ({prev}).",
+    en: "Spending: {week} in the last 7 days, {diff}% less than the previous 7 ({prev}).",
+    es: "Gastos: {week} en los últimos 7 días, {diff}% menos que en los 7 anteriores ({prev}).",
+  },
+  "insight.expensesMore": {
+    pt: "Gastos: {week} nos últimos 7 dias, {diff}% a mais que nos 7 anteriores ({prev}).",
+    en: "Spending: {week} in the last 7 days, {diff}% more than the previous 7 ({prev}).",
+    es: "Gastos: {week} en los últimos 7 días, {diff}% más que en los 7 anteriores ({prev}).",
+  },
+  "insight.budgetOver": {
+    pt: "Orçamento: {category} já está em {spent} de {limit} neste mês.",
+    en: "Budget: {category} is at {spent} of {limit} this month.",
+    es: "Presupuesto: {category} ya está en {spent} de {limit} este mes.",
   },
   "insight.weightStable": {
-    pt: "Seu peso está estável nas últimas semanas.",
-    en: "Your weight is stable over the last few weeks.",
-    es: "Tu peso está estable en las últimas semanas.",
+    pt: "Peso: estável desde o primeiro registro.",
+    en: "Weight: stable since your first record.",
+    es: "Peso: estable desde el primer registro.",
   },
-  "insight.weightChange": {
-    pt: "Você {dir} {kg} kg desde o primeiro registro.",
-    en: "You {dir} {kg} kg since your first record.",
-    es: "Has {dir} {kg} kg desde el primer registro.",
+  "insight.weightUp": {
+    pt: "Peso: +{kg} desde o primeiro registro.",
+    en: "Weight: +{kg} since your first record.",
+    es: "Peso: +{kg} desde el primer registro.",
+  },
+  "insight.weightDown": {
+    pt: "Peso: −{kg} desde o primeiro registro.",
+    en: "Weight: −{kg} since your first record.",
+    es: "Peso: −{kg} desde el primer registro.",
   },
   booksOne: {
     pt: "Você leu {count} livro em {year}.",

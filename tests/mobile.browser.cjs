@@ -249,7 +249,7 @@ const measure = (page) =>
       await page.goto(base + "/agente", { waitUntil: "networkidle" });
       const chat = await page.evaluate(() => {
         const box = (el) => el && el.getBoundingClientRect();
-        const input = box(document.querySelector('input[placeholder="Pergunte ao Mentor..."]'));
+        const input = box(document.querySelector('input[placeholder="Pergunte ao GOAT..."]'));
         const nav = box(document.querySelector("nav[aria-label]"));
         return {
           inputTop: input.top,
@@ -270,7 +270,7 @@ const measure = (page) =>
         `${vp.name}: chat page scrolls (${chat.pageH} > ${chat.vh})`,
       );
       assert.equal(chat.fab, false, `${vp.name}: + button covers the chat`);
-      await page.getByPlaceholder("Pergunte ao Mentor...").tap();
+      await page.getByPlaceholder("Pergunte ao GOAT...").tap();
       // Markdown do Mentor formatado: sem ** nem marcadores de lista à mostra.
       const shown = await page.locator("[data-markdown]").first().innerText();
       assert.doesNotMatch(shown, /\*\*|^\s*\*\s|^---$/m, `${vp.name}: raw Markdown visible`);

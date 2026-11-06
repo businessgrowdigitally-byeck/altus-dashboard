@@ -123,6 +123,8 @@ const sse = (text) =>
     });
     await cloud.ready;
     await page.route("**/api/chat", async (route) => {
+      // O resumo da manhã do GOAT segue para o Supabase falso.
+      if (route.request().postDataJSON()?.mode === "briefing") return route.fallback();
       chatCalls++;
       const body = route.request().postDataJSON();
       assert.equal(body.messages.at(-1).role, "user");
@@ -155,13 +157,13 @@ const sse = (text) =>
     assert.equal(await page.getByText("agente.quick1").count(), 0);
 
     // Page texts: Mentor ALTUS, Gemini disclosure, no "Lovable AI".
-    await page.getByRole("heading", { name: "Mentor ALTUS" }).waitFor();
+    await page.getByRole("heading", { name: "GOAT" }).waitFor();
     await page.getByText(/respostas geradas pelo Google Gemini/).waitFor();
     await page.getByText(/Nada é salvo sem a sua confirmação/).waitFor();
     assert.equal(await page.getByText("Lovable AI").count(), 0);
 
     const ask = async (text) => {
-      await page.getByPlaceholder("Pergunte ao Mentor...").fill(text);
+      await page.getByPlaceholder("Pergunte ao GOAT...").fill(text);
       await page.keyboard.press("Enter");
       const card = page.locator('[data-plan-status="pending"]');
       await card.waitFor();

@@ -88,7 +88,10 @@ const sse = (text) =>
     const cloud = fakeSupabase(page, { user, get: () => snapshot, set: (x) => (snapshot = x) });
     await cloud.ready;
     await page.route("**/api/chat", (route) =>
-      route.fulfill({ status: 200, contentType: "text/event-stream", body: sse(reply) }),
+      // O resumo da manhã do GOAT segue para o Supabase falso.
+      route.request().postDataJSON()?.mode === "briefing"
+        ? route.fallback()
+        : route.fulfill({ status: 200, contentType: "text/event-stream", body: sse(reply) }),
     );
     await page.addInitScript(
       ({ user }) =>
@@ -148,7 +151,7 @@ const sse = (text) =>
 
     // 2) Mentor: propõe o plano de hoje; nada muda antes de confirmar.
     await page.goto(base + "/agente", { waitUntil: "networkidle" });
-    await page.getByPlaceholder("Pergunte ao Mentor...").fill("Hoje vou focar na prova de inglês");
+    await page.getByPlaceholder("Pergunte ao GOAT...").fill("Hoje vou focar na prova de inglês");
     await page.keyboard.press("Enter");
     const card = page.locator('[data-plan-status="pending"]');
     await card.waitFor();
@@ -171,7 +174,7 @@ const sse = (text) =>
     await page.waitForTimeout(1500);
     assert.equal(snapshot.dayPlans[today].source, "mentor");
 
-    // 3) A Home segue o plano do Mentor.
+    // 3) A Home segue o plano do GOAT.
     await page.goto(base + "/", { waitUntil: "networkidle" });
     await page
       .locator("[data-day-plan=mentor]")

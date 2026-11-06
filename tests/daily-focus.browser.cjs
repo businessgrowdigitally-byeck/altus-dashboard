@@ -96,7 +96,10 @@ const { fakeSupabase } = require("./fake-supabase.cjs");
       waitUntil: "networkidle",
     });
     await page.getByRole("button", { name: "Rotina Diária", exact: true }).click();
-    await page.getByRole("button", { name: "Blocos de foco", exact: true }).click();
+    await page
+      .locator("#metas-e-acoes")
+      .getByRole("button", { name: "Blocos de foco", exact: true })
+      .click();
     const block = page.locator('[data-focus-block="study"]');
     await block.waitFor();
     assert.equal(await block.evaluate((el) => el.style.height), "90px");
@@ -114,7 +117,10 @@ const { fakeSupabase } = require("./fake-supabase.cjs");
     await block.getByRole("checkbox").click();
     assert.equal(await block.getByRole("checkbox").getAttribute("aria-checked"), "true");
     assert.equal(await block.evaluate((el) => el.style.top), "1080px");
-    await page.getByRole("button", { name: "Lista", exact: true }).click();
+    await page
+      .locator("#metas-e-acoes")
+      .getByRole("button", { name: "Lista", exact: true })
+      .click();
     assert.equal(
       await page
         .getByRole("checkbox", { name: "Concluir ação: Estudar foco", exact: true })
@@ -132,7 +138,10 @@ const { fakeSupabase } = require("./fake-supabase.cjs");
       .getByRole("spinbutton", { name: "Duração (minutos)", exact: true })
       .fill("25");
     await page.getByRole("dialog").getByRole("button", { name: "Salvar", exact: true }).click();
-    await page.getByRole("button", { name: "Blocos de foco", exact: true }).click();
+    await page
+      .locator("#metas-e-acoes")
+      .getByRole("button", { name: "Blocos de foco", exact: true })
+      .click();
     assert.equal(
       await page.locator('[data-focus-block="study"]').evaluate((el) => el.style.height),
       "120px",
@@ -160,6 +169,7 @@ const { fakeSupabase } = require("./fake-supabase.cjs");
     // The saved view is restored in an effect after mount: wait for it instead of
     // reading aria-pressed immediately (that raced and failed intermittently).
     await page
+      .locator("#metas-e-acoes")
       .getByRole("button", { name: "Blocos de foco", exact: true, pressed: true })
       .waitFor();
     await page.locator('[data-focus-block="study"]').waitFor();
