@@ -7,6 +7,8 @@
  * não conta como falta: sai do dia de origem e entra no dia de destino.
  */
 import type { GoalDaily } from "./store";
+// Extensão explícita para os testes rodarem direto no Node (--experimental-strip-types).
+import { validateSchedule } from "./daily-schedule.ts";
 
 export type DayPlanExtra = {
   id: string;
@@ -274,10 +276,11 @@ export function applyDayPlanProposal(
   goalsDaily: GoalDaily[],
   raw: unknown,
   today: string,
+  /** Data do plano (padrão: hoje). O plano da semana usa hoje … hoje+6. */
+  date: string = today,
 ): DayPlanApplyResult {
   const p = obj(raw);
   const ids = new Set(goalsDaily.map((a) => a.id));
-  const date = today;
   const reason = str(p.reason, 300);
   const durations: Record<string, number> = {};
   const notes: Record<string, string> = {};
@@ -344,4 +347,139 @@ export function applyDayPlanProposal(
     })),
     reason,
   };
+}
+
+/** Próxima data (hoje incluído) que cai no dia da semana `dow` (0 = domingo). */
+export function weekdayDate(today: string, dow: number): string {
+  const diff = (dow - parse(today).getDay() + 7) % 7;
+  return addDays(today, diff);
+}
+
+export const WEEK_PLAN_DAYS = 7;
+
+export type WeekPlanApplyResult = { plans: DayPlans; days: DayPlanApplyResult[] };
+
+/**
+ * Plano da semana: vários planos do dia de uma vez (hoje … hoje+6). Datas
+ * fora da janela ou repetidas são ignoradas. A prévia de cada dia já leva em
+ * conta os adiamentos entre os dias da própria proposta.
+ */
+export function applyWeekPlanProposal(
+  plans: DayPlans,
+  goalsDaily: GoalDaily[],
+  rawDays: unknown,
+  today: string,
+  /** Motivo geral do plano da semana, usado nos dias sem motivo próprio. */
+  reason = "",
+): WeekPlanApplyResult {
+  const last = addDays(today, WEEK_PLAN_DAYS - 1);
+  const seen = new Set<string>();
+  const valid = (Array.isArray(rawDays) ? rawDays : [])
+    .map((d) => obj(d))
+    .filter((d) => {
+      const date = str(d.date, 10);
+      if (!DATE_RE.test(date) || date < today || date > last || seen.has(date)) return false;
+      seen.add(date);
+      return true;
+    })
+    .sort((a, b) => str(a.date, 10).localeCompare(str(b.date, 10)));
+  let next = plans;
+  const applied: DayPlanApplyResult[] = [];
+  for (const d of valid) {
+    const r = applyDayPlanProposal(
+      next,
+      goalsDaily,
+      { ...d, reason: str(d.reason, 300) || reason },
+      today,
+      str(d.date, 10),
+    );
+    next = r.plans;
+    applied.push(r);
+  }
+  return {
+    plans: next,
+    days: applied.map((r) => ({ ...r, items: dayItems(goalsDaily, next, r.date) })),
+  };
+}
+
+export type RoutinePatch = Partial<
+  Pick<GoalDaily, "durationMinutes" | "suggestedTime" | "daysOfWeek">
+>;
+export type RoutineChange = { action: GoalDaily; patch: RoutinePatch; reason?: string };
+
+/**
+ * Mudanças na ROTINA FIXA propostas pelo Mentor (ex.: um ajuste que se repete).
+ * Só ações existentes; duração 5–600 min; horário HH:MM (vazio = sem horário);
+ * dias 0–6 sem repetição e ao menos um. Mudanças que não mudam nada são ignoradas.
+ */
+export function cleanRoutineChanges(goalsDaily: GoalDaily[], raw: unknown): RoutineChange[] {
+  const out: RoutineChange[] = [];
+  for (const x of (Array.isArray(raw) ? raw : []).slice(0, 20)) {
+    const e = obj(x);
+    const action = goalsDaily.find((a) => a.id === str(e.actionId, 80));
+    if (!action || out.some((c) => c.action.id === action.id)) continue;
+    const patch: RoutinePatch = {};
+    // A rotina usa passos de 5 min (ver validDuration): arredonda.
+    const n = Number(e.durationMinutes);
+    if ("durationMinutes" in e && Number.isFinite(n) && n >= 1 && n <= 600)
+      patch.durationMinutes = Math.max(5, Math.round(n / 5) * 5);
+    if ("suggestedTime" in e) {
+      const t = str(e.suggestedTime, 5);
+      if (t === "" || /^([01]\d|2[0-3]):[0-5]\d$/.test(t)) patch.suggestedTime = t;
+    }
+    if (Array.isArray(e.daysOfWeek)) {
+      const days = [
+        ...new Set(e.daysOfWeek.map(Number).filter((d) => Number.isInteger(d) && d >= 0 && d <= 6)),
+      ].sort();
+      if (days.length) patch.daysOfWeek = days;
+    }
+    const merged = { ...action, ...patch };
+    if (!validateSchedule(merged.suggestedTime || undefined, merged.durationMinutes ?? 30))
+      continue;
+    const current: RoutinePatch = {
+      durationMinutes: action.durationMinutes ?? 30,
+      suggestedTime: action.suggestedTime ?? "",
+      daysOfWeek: [...action.daysOfWeek].sort(),
+    };
+    const changed = (Object.keys(patch) as (keyof RoutinePatch)[]).some(
+      (k) => JSON.stringify(patch[k]) !== JSON.stringify(current[k]),
+    );
+    if (changed) out.push({ action, patch, reason: str(e.reason, 200) || undefined });
+  }
+  return out;
+}
+
+/**
+ * "Manter na rotina": as durações ajustadas no plano de `date` viram a duração
+ * fixa das ações, e saem do plano (que segue com ordem, notas e extras).
+ */
+export function keepDayDurations(
+  plans: DayPlans,
+  goalsDaily: GoalDaily[],
+  date: string,
+): { plans: DayPlans; changes: RoutineChange[] } {
+  const plan = plans[date];
+  if (!plan) return { plans, changes: [] };
+  const changes = cleanRoutineChanges(
+    goalsDaily,
+    Object.entries(plan.durations).map(([actionId, durationMinutes]) => ({
+      actionId,
+      durationMinutes,
+    })),
+  );
+  return { plans: { ...plans, [date]: { ...plan, durations: {} } }, changes };
+}
+
+/** Aplica mudanças já validadas à rotina (horário vazio = sem horário). */
+export function applyRoutineChanges(
+  goalsDaily: GoalDaily[],
+  changes: RoutineChange[],
+): GoalDaily[] {
+  return goalsDaily.map((a) => {
+    const c = changes.find((x) => x.action.id === a.id);
+    if (!c) return a;
+    const next: GoalDaily = { ...a, ...c.patch };
+    if (c.patch.suggestedTime === "") delete next.suggestedTime;
+    return next;
+  });
 }
