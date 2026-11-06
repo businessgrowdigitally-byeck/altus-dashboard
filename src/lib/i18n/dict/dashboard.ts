@@ -57,6 +57,8 @@ export const dashboard = {
     en: "No actions scheduled for today.",
     es: "Ninguna acción programada para hoy.",
   },
+  homeAreas: { pt: "Áreas", en: "Areas", es: "Áreas" },
+  homeKaizenToday: { pt: "Kaizen de hoje", en: "Today's Kaizen", es: "Kaizen de hoy" },
   emptyTodayCta: { pt: "Criar uma ação", en: "Create an action", es: "Crear una acción" },
   reportTitle: { pt: "Relatório Executivo", en: "Executive Report", es: "Informe Ejecutivo" },
   reportSubtitle: {

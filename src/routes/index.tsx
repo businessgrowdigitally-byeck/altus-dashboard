@@ -3,27 +3,17 @@ import { Fragment, useEffect, useMemo, useState } from "react";
 import { useStore } from "@/lib/store";
 import { brl, daysAgoISO, fmtDate, fmtDateLong, greeting, kg, todayISO } from "@/lib/format";
 import { balanceUntil, dailyBalanceSeries, monthTotals } from "@/lib/finance";
-import { GlassCard, KpiCard, PageHeader, Section } from "@/components/primitives";
+import { GlassCard, Section } from "@/components/primitives";
 import { GoalsSection, GOALS_SECTION_ID } from "@/components/GoalsSection";
-import { KaizenTodayCard } from "@/components/KaizenTodayCard";
 import { PrimaryAreaPicker } from "@/components/PrimaryAreaPicker";
 import { Modal, btnGold } from "@/components/Modal";
-import {
-  Check,
-  ArrowRight,
-  Brain,
-  Sparkles,
-  Target,
-  CheckSquare,
-  Calendar,
-  TrendingUp,
-} from "lucide-react";
+import { Check, ArrowRight, Brain, Sparkles, Target, CheckSquare } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { useSyncStatus } from "@/lib/sync";
 import { useT } from "@/lib/i18n";
 import { OnboardingModal } from "@/components/OnboardingModal";
 import { AREA_DEFS, type AreaKey } from "@/lib/areas";
-import { cn } from "@/lib/utils";
+import { AI_AGENT_ENABLED } from "@/lib/features";
 import {
   LineChart,
   Line,
@@ -80,6 +70,7 @@ function Dashboard() {
     toggleCompletion,
     setProfile,
     setPrimaryAreas,
+    altusGeneralPlan,
   } = useStore();
   const t = useT();
 
@@ -256,6 +247,13 @@ function Dashboard() {
   const { status: syncStatus } = useSyncStatus();
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showAreaPicker, setShowAreaPicker] = useState(false);
+  const [showRecent, setShowRecent] = useState(false);
+  // Foco da semana: as metas em foco no P.G.; sem P.G., a frase de sempre.
+  const focusText =
+    (altusGeneralPlan?.focusGoalIds ?? [])
+      .map((id) => goalsMacro.find((g) => g.id === id)?.name)
+      .filter(Boolean)
+      .join(" · ") || t("consistencia");
 
   const userName =
     profile.name ||
@@ -277,55 +275,6 @@ function Dashboard() {
 
   const prioritySet = useMemo(() => new Set(primaryAreas), [primaryAreas]);
 
-  const kpis: { area: AreaKey; node: React.ReactNode }[] = [
-    {
-      area: "financas",
-      node: (
-        <KpiCard
-          label={t("kpiSaldo")}
-          value={brl(balance)}
-          icon="💰"
-          tone={balance >= 0 ? "positive" : "negative"}
-          delta={`${t("kpiSaldoMonth", { value: brl(monthNet) })} (${brl(income)} − ${brl(expense)})`}
-        />
-      ),
-    },
-    {
-      area: "corpo",
-      node: (
-        <KpiCard
-          label={t("kpiPeso")}
-          value={lastW ? kg(lastW.weight) : "—"}
-          icon="⚖️"
-          delta={
-            lastW && prevW
-              ? `${weightDelta >= 0 ? "+" : ""}${weightDelta.toFixed(1)} kg ${t("deltaVsWeek")}`
-              : t("deltaNoData")
-          }
-        />
-      ),
-    },
-    {
-      area: "biblioteca",
-      node: (
-        <KpiCard
-          label={t("kpiLivros", { year: yearKey })}
-          value={booksThisYear}
-          icon="📚"
-          tone="gold"
-        />
-      ),
-    },
-    {
-      area: "estudos",
-      node: <KpiCard label={t("kpiStreak")} value={`${streak} d`} icon="🎯" tone="gold" />,
-    },
-  ];
-
-  const visibleKpis = kpis
-    .filter((k) => prioritySet.has(k.area))
-    .sort((a, b) => kpiOrder(a.area) - kpiOrder(b.area));
-
   const miniCharts: { area: AreaKey; node: React.ReactNode }[] = [
     {
       area: "financas",
@@ -337,7 +286,13 @@ function Dashboard() {
               <XAxis dataKey="date" fontSize={10} stroke="#888" />
               <YAxis fontSize={10} stroke="#888" />
               <Tooltip contentStyle={tooltipStyle} formatter={(v: number) => brl(v)} />
-              <Line type="monotone" dataKey="saldo" stroke="#8B5CF6" strokeWidth={2.5} dot={false} />
+              <Line
+                type="monotone"
+                dataKey="saldo"
+                stroke="#8B5CF6"
+                strokeWidth={2.5}
+                dot={false}
+              />
             </LineChart>
           </ResponsiveContainer>
         </MiniChart>
@@ -428,249 +383,77 @@ function Dashboard() {
   };
 
   return (
-    <div className="space-y-8">
-      {/* Hero Brand Section (Fiel à foto anexada) */}
-      <div className="relative overflow-hidden rounded-3xl border bg-card/80 backdrop-blur-xl p-6 md:p-10 shadow-2xl">
-        {/* Background Mountain Silhouette & Glow */}
-        <div className="absolute right-0 bottom-0 pointer-events-none opacity-40 md:opacity-70 w-full max-w-lg h-full overflow-hidden flex items-end justify-end">
-          <svg viewBox="0 0 500 300" className="w-full h-auto" fill="none">
-            <path d="M180 300L350 80L480 300H180Z" fill="url(#hero-mtn-1)" />
-            <path d="M50 300L220 140L380 300H50Z" fill="url(#hero-mtn-2)" opacity="0.7" />
-            <circle cx="350" cy="80" r="14" fill="#C084FC" filter="blur(10px)" opacity="0.8" />
-            <defs>
-              <linearGradient
-                id="hero-mtn-1"
-                x1="350"
-                y1="80"
-                x2="350"
-                y2="300"
-                gradientUnits="userSpaceOnUse"
-              >
-                <stop stopColor="#6E38F7" stopOpacity="0.8" />
-                <stop offset="0.6" stopColor="#1E1346" stopOpacity="0.6" />
-                <stop offset="1" stopColor="#07070F" stopOpacity="0.9" />
-              </linearGradient>
-              <linearGradient
-                id="hero-mtn-2"
-                x1="220"
-                y1="140"
-                x2="220"
-                y2="300"
-                gradientUnits="userSpaceOnUse"
-              >
-                <stop stopColor="#4C1D95" stopOpacity="0.6" />
-                <stop offset="1" stopColor="#07070F" stopOpacity="0.9" />
-              </linearGradient>
-            </defs>
-          </svg>
+    <div className="space-y-4 md:space-y-6">
+      {/* a) Cabeçalho compacto: o logo já está na barra do app (celular) e na lateral (computador). */}
+      <div className="flex items-center justify-end">
+        <button
+          onClick={() => setShowAreaPicker(true)}
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-purple-500/40 bg-purple-500/10 text-sm font-medium text-purple-700 dark:text-purple-300 hover:bg-purple-500/20 transition-colors"
+        >
+          <Sparkles size={14} />
+          {t("homeAreas")}
+        </button>
+      </div>
+
+      {/* b) Saudação + progresso da semana */}
+      <div className="glass-strong rounded-2xl p-4 md:p-5 border border-purple-500/20 relative overflow-hidden">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h3 className="font-display font-bold text-lg text-foreground truncate">
+              {greeting()}, {userName} ☀️
+            </h3>
+            <p className="text-xs text-muted-foreground capitalize mt-0.5">
+              {mounted ? fmtDateLong(now) : t("loadingDate")}
+            </p>
+          </div>
+          <div className="text-right shrink-0">
+            <span className="text-xs text-muted-foreground">{t("weeklyProgress")}</span>
+            <div className="font-display text-2xl font-black text-purple-700 dark:text-purple-300">
+              {weeklyProgress}%
+            </div>
+          </div>
         </div>
 
-        <div className="relative z-10 max-w-2xl">
-          {/* Logo & Chevron */}
-          <div className="flex items-center gap-3 mb-4">
-            <svg
-              viewBox="0 0 36 36"
-              className="w-9 h-9 drop-shadow-[0_0_12px_rgba(168,85,247,0.8)]"
-              fill="none"
-            >
-              <path d="M18 3L31 29H24.5L18 16L11.5 29H5L18 3Z" fill="url(#hero-brand-grad)" />
-              <defs>
-                <linearGradient
-                  id="hero-brand-grad"
-                  x1="5"
-                  y1="3"
-                  x2="31"
-                  y2="29"
-                  gradientUnits="userSpaceOnUse"
-                >
-                  <stop stopColor="#C084FC" />
-                  <stop offset="0.5" stopColor="#A855F7" />
-                  <stop offset="1" stopColor="#6366F1" />
-                </linearGradient>
-              </defs>
-            </svg>
-            <span className="font-display font-extrabold text-2xl tracking-[0.18em] bg-gradient-to-r from-slate-900 via-purple-900 to-purple-600 dark:from-white dark:via-purple-100 dark:to-purple-300 bg-clip-text text-transparent">
-              ALTUS
+        <div className="mt-3 space-y-2">
+          <div className="h-3 w-full rounded-full bg-muted overflow-hidden border border-border p-0.5">
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-purple-600 via-purple-400 to-indigo-400 shadow-[0_0_12px_rgba(168,85,247,0.8)] transition-all duration-500"
+              style={{ width: `${Math.min(100, Math.max(0, weeklyProgress))}%` }}
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-3 gap-2 md:gap-3 mt-3 pt-3 border-t border-border text-xs">
+          <div className="flex items-center justify-between p-2 rounded-xl bg-muted/50">
+            <div className="flex items-center gap-1.5 text-muted-foreground">
+              <Target size={14} className="text-purple-500" />
+              <span>{t("pillarMetas")}</span>
+            </div>
+            <span className="font-bold text-foreground">{goalsMacro.length} →</span>
+          </div>
+          <div className="flex items-center justify-between p-2 rounded-xl bg-muted/50">
+            <div className="flex items-center gap-1.5 text-muted-foreground">
+              <CheckSquare size={14} className="text-purple-500" />
+              <span>{t("pillarTarefas")}</span>
+            </div>
+            <span className="font-bold text-foreground">{todayActions.length} →</span>
+          </div>
+          <div className="flex items-center justify-between p-2 rounded-xl bg-muted/50">
+            <div className="flex items-center gap-1.5 text-muted-foreground">
+              <Sparkles size={14} className="text-purple-500" />
+              <span>{t("pillarHabitos")}</span>
+            </div>
+            <span className="font-bold text-foreground">
+              {todayDone}/{todayActions.length} →
             </span>
           </div>
-
-          <h1 className="font-display text-2xl md:text-4xl font-extrabold text-foreground tracking-tight">
-            {t("heroTitle")}
-          </h1>
-          <p className="mt-2 text-sm md:text-base text-purple-700/80 dark:text-purple-200/80 leading-relaxed max-w-xl">
-            {t("heroSubtitle")}
-          </p>
-
-          {/* 4 Pillars */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 my-6">
-            <div className="glass rounded-xl p-3 border border-purple-500/20">
-              <div className="flex items-center gap-2 text-purple-400 mb-1">
-                <Target size={16} />
-                <span className="text-xs font-bold text-foreground">{t("pillarMetas")}</span>
-              </div>
-              <p className="text-[11px] text-muted-foreground">{t("pillarMetasSub")}</p>
-            </div>
-            <div className="glass rounded-xl p-3 border border-purple-500/20">
-              <div className="flex items-center gap-2 text-purple-400 mb-1">
-                <CheckSquare size={16} />
-                <span className="text-xs font-bold text-foreground">{t("pillarTarefas")}</span>
-              </div>
-              <p className="text-[11px] text-muted-foreground">{t("pillarTarefasSub")}</p>
-            </div>
-            <div className="glass rounded-xl p-3 border border-purple-500/20">
-              <div className="flex items-center gap-2 text-purple-400 mb-1">
-                <Calendar size={16} />
-                <span className="text-xs font-bold text-foreground">{t("pillarHabitos")}</span>
-              </div>
-              <p className="text-[11px] text-muted-foreground">{t("pillarHabitosSub")}</p>
-            </div>
-            <div className="glass rounded-xl p-3 border border-purple-500/20">
-              <div className="flex items-center gap-2 text-purple-400 mb-1">
-                <TrendingUp size={16} />
-                <span className="text-xs font-bold text-foreground">{t("pillarProgresso")}</span>
-              </div>
-              <p className="text-[11px] text-muted-foreground">{t("pillarProgressoSub")}</p>
-            </div>
-          </div>
-
-          <a
-            href="#sistema-diario"
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-gradient-to-r from-[#6E38F7] to-[#9055FF] text-white font-display font-bold text-sm tracking-wider shadow-lg shadow-purple-600/40 hover:shadow-purple-600/60 hover:scale-105 active:scale-95 transition-all"
-          >
-            <span>{t("ctaElevate")}</span>
-            <ArrowRight size={16} />
-          </a>
         </div>
       </div>
 
-      {/* Priority Areas Quick Access */}
-      <div>
-        <PageHeader
-          title={t("pz.dashboard.sectionTitle")}
-          subtitle={
-            primaryAreas.length === AREA_DEFS.length
-              ? t("pz.dashboard.allAreas")
-              : t("pz.dashboard.sectionSubtitle")
-          }
-          right={
-            <button
-              onClick={() => setShowAreaPicker(true)}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-purple-500/40 bg-purple-500/10 text-sm font-medium text-purple-700 dark:text-purple-300 hover:bg-purple-500/20 transition-colors"
-            >
-              <Sparkles size={14} />
-              {t("pz.dashboard.manage")}
-            </button>
-          }
-        />
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-          {AREA_DEFS.map((area) => (
-            <Link
-              key={area.key}
-              to={area.to}
-              className={cn(
-                "group glass rounded-xl p-4 border transition-all duration-200",
-                primaryAreas.includes(area.key)
-                  ? "border-purple-500/30 hover:border-purple-500/60 hover:bg-muted/60"
-                  : "border-border opacity-60 hover:opacity-100 hover:border-purple-500/40 hover:bg-muted/60",
-              )}
-            >
-              <div className="flex flex-col gap-2">
-                <span className="text-2xl">{area.emoji}</span>
-                <span className="text-sm font-semibold text-foreground group-hover:text-purple-300 transition-colors">
-                  {t(area.i18nKey)}
-                </span>
-                <span className="text-[11px] text-muted-foreground flex items-center gap-1">
-                  {t("pz.dashboard.viewArea")} <ArrowRight size={12} className="group-hover:translate-x-0.5 transition-transform" />
-                </span>
-              </div>
-            </Link>
-          ))}
-        </div>
-      </div>
-
-      {/* Greeting & Weekly Progress Card Grid */}
-      <div className="grid lg:grid-cols-3 gap-4">
-        {/* Progress Mountain Card */}
-        <div className="lg:col-span-2 glass-strong rounded-2xl p-5 border border-purple-500/20 relative overflow-hidden flex flex-col justify-between">
-          <div className="flex items-start justify-between">
-            <div>
-              <h3 className="font-display font-bold text-lg text-foreground">
-                {greeting()}, {userName} ☀️
-              </h3>
-              <p className="text-xs text-muted-foreground capitalize mt-0.5">
-                {mounted ? fmtDateLong(now) : t("loadingDate")}
-              </p>
-            </div>
-            <div className="text-right">
-              <span className="text-xs text-muted-foreground">{t("weeklyProgress")}</span>
-              <div className="font-display text-2xl font-black text-purple-700 dark:text-purple-300">
-                {weeklyProgress}%
-              </div>
-            </div>
-          </div>
-
-          {/* Progress Bar & Mountain Visual */}
-          <div className="mt-4 space-y-2">
-            <div className="h-3 w-full rounded-full bg-muted overflow-hidden border border-border p-0.5">
-              <div
-                className="h-full rounded-full bg-gradient-to-r from-purple-600 via-purple-400 to-indigo-400 shadow-[0_0_12px_rgba(168,85,247,0.8)] transition-all duration-500"
-                style={{ width: `${Math.min(100, Math.max(0, weeklyProgress))}%` }}
-              />
-            </div>
-          </div>
-
-          {/* Quick Counter Badges */}
-          <div className="grid grid-cols-3 gap-3 mt-4 pt-3 border-t border-border text-xs">
-            <div className="flex items-center justify-between p-2 rounded-xl bg-muted/50">
-              <div className="flex items-center gap-1.5 text-muted-foreground">
-                <Target size={14} className="text-purple-500" />
-                <span>{t("pillarMetas")}</span>
-              </div>
-              <span className="font-bold text-foreground">{goalsMacro.length} →</span>
-              </div>
-              <div className="flex items-center justify-between p-2 rounded-xl bg-muted/50">
-                <div className="flex items-center gap-1.5 text-muted-foreground">
-                  <CheckSquare size={14} className="text-purple-500" />
-                  <span>{t("pillarTarefas")}</span>
-                </div>
-                <span className="font-bold text-foreground">{todayActions.length} →</span>
-              </div>
-              <div className="flex items-center justify-between p-2 rounded-xl bg-muted/50">
-                <div className="flex items-center gap-1.5 text-muted-foreground">
-                  <Sparkles size={14} className="text-purple-500" />
-                  <span>{t("pillarHabitos")}</span>
-                </div>
-                <span className="font-bold text-foreground">
-                {todayDone}/{todayActions.length} →
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Foco da Semana Banner */}
-        <div className="glass-strong rounded-2xl p-5 border border-purple-500/20 flex flex-col justify-between">
-          <div>
-            <div className="flex items-center gap-2 text-purple-400 mb-2">
-              <Brain size={20} />
-              <h4 className="font-display font-bold text-sm tracking-wide uppercase text-foreground">
-                {t("focoDaSemana")}
-              </h4>
-            </div>
-            <p className="text-sm font-semibold text-purple-700 dark:text-purple-200 mt-2">{t("consistencia")}</p>
-            <p className="text-xs text-muted-foreground mt-2 leading-relaxed">{t("quote")}</p>
-          </div>
-
-          <div className="mt-4 pt-3 border-t border-border flex items-center justify-between text-xs text-purple-700 dark:text-purple-300">
-            <span>{t("objetivoCiclo")}</span>
-            <ArrowRight size={14} />
-          </div>
-        </div>
-      </div>
-
-      {/* Seção Hoje (Checklist Interativo Diário) */}
+      {/* c) Hoje (checklist diário) */}
       <div
         id="sistema-diario"
-        className="glass-strong rounded-2xl p-6 border border-purple-500/20 space-y-4"
+        className="glass-strong rounded-2xl p-4 md:p-6 border border-purple-500/20 space-y-3 md:space-y-4"
       >
         <div className="flex items-center justify-between">
           <div>
@@ -739,21 +522,25 @@ function Dashboard() {
         </div>
       </div>
 
-      {prioritySet.has("kaizen") && <KaizenTodayCard embedded />}
+      {/* d) Foco da semana, em uma linha: o foco real vem do P.G., quando existe. */}
+      <Link
+        to={AI_AGENT_ENABLED ? "/planejamento" : "/"}
+        data-week-focus
+        className="glass-strong rounded-2xl px-4 py-3 border border-purple-500/20 flex items-center gap-3 hover:border-purple-500/40 transition-colors"
+      >
+        <Brain size={20} className="text-purple-400 shrink-0" />
+        <span className="min-w-0 flex-1">
+          <span className="font-display font-bold text-xs tracking-wide uppercase text-foreground">
+            {t("focoDaSemana")}
+          </span>
+          <span className="block text-sm text-purple-700 dark:text-purple-200 truncate">
+            {focusText}
+          </span>
+        </span>
+        <ArrowRight size={16} className="text-purple-700 dark:text-purple-300 shrink-0" />
+      </Link>
 
-{/* Relatório Executivo - KPIs das áreas prioritárias */}
-      {visibleKpis.length > 0 && (
-        <div>
-          <PageHeader title={t("reportTitle")} subtitle={t("reportSubtitle")} />
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            {visibleKpis.map((k) => (
-              <Fragment key={k.area}>{k.node}</Fragment>
-            ))}
-          </div>
-        </div>
-      )}
-
-{/* Mini-Gráficos das áreas prioritárias */}
+      {/* e) Seu progresso */}
       {visibleCharts.length > 0 && (
         <div className="grid md:grid-cols-2 gap-4">
           {visibleCharts.map((k) => (
@@ -762,26 +549,8 @@ function Dashboard() {
         </div>
       )}
 
-      {/* Atividade Recente */}
-      <Section title={t("recentActivity")}>
-        <GlassCard>
-          {recent.length === 0 && (
-            <p className="text-muted-foreground text-sm">{t("emptyActivity")}</p>
-          )}
-          <ul className="divide-y divide-white/5">
-            {recent.map((r, i) => (
-              <li key={i} className="flex items-center gap-3 py-3">
-                <span className="text-xl">{r.icon}</span>
-                <span className="flex-1 text-sm text-foreground/90">{r.text}</span>
-                <span className="text-xs text-muted-foreground">{fmtDate(r.date)}</span>
-              </li>
-            ))}
-          </ul>
-        </GlassCard>
-      </Section>
-
-      {/* Insights da Semana */}
-      <Section title={t("insightsWeek")}>
+      {/* f) Insights */}
+      <Section title={t("insightsWeek")} className="mt-0">
         <div className="grid md:grid-cols-3 gap-4">
           {insights.map((t, i) => (
             <GlassCard key={i} className="border-l-4 border-l-purple-500">
@@ -791,8 +560,50 @@ function Dashboard() {
         </div>
       </Section>
 
-      {/* Seção Completa de Metas & Rotina */}
+      {/* g) Atalhos */}
+      <div className="grid grid-cols-2 gap-3 md:gap-4">
+        <Link to="/kaizen" data-shortcut="kaizen" className="block">
+          <GlassCard className="h-full flex items-center gap-3 p-4">
+            <span className="text-2xl">🌱</span>
+            <span className="min-w-0 flex-1 text-sm font-semibold text-foreground">
+              {t("homeKaizenToday")}
+            </span>
+            <ArrowRight size={14} className="text-muted-foreground shrink-0" />
+          </GlassCard>
+        </Link>
+        <button
+          type="button"
+          data-shortcut="recent"
+          onClick={() => setShowRecent(true)}
+          className="block text-left"
+        >
+          <GlassCard className="h-full flex items-center gap-3 p-4">
+            <span className="text-2xl">🕒</span>
+            <span className="min-w-0 flex-1 text-sm font-semibold text-foreground">
+              {t("recentActivity")}
+            </span>
+            <ArrowRight size={14} className="text-muted-foreground shrink-0" />
+          </GlassCard>
+        </button>
+      </div>
+
+      {/* h) Metas e ações */}
       <GoalsSection requestedTab={goalsTab} />
+
+      <Modal open={showRecent} onClose={() => setShowRecent(false)} title={t("recentActivity")}>
+        {recent.length === 0 && (
+          <p className="text-muted-foreground text-sm">{t("emptyActivity")}</p>
+        )}
+        <ul className="divide-y divide-white/5">
+          {recent.map((r, i) => (
+            <li key={i} className="flex items-center gap-3 py-3">
+              <span className="text-xl">{r.icon}</span>
+              <span className="flex-1 text-sm text-foreground/90">{r.text}</span>
+              <span className="text-xs text-muted-foreground">{fmtDate(r.date)}</span>
+            </li>
+          ))}
+        </ul>
+      </Modal>
 
       <OnboardingModal
         open={showOnboarding}
