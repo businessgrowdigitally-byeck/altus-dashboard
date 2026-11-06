@@ -6,6 +6,7 @@ import { Bot, Send, Sparkles } from "lucide-react";
 import { AI_AGENT_ENABLED } from "@/lib/features";
 import { todayISO } from "@/lib/format";
 import { useI18n } from "@/lib/i18n";
+import { readChatStream } from "@/lib/ai/stream";
 import { buildChatHistory } from "@/lib/ai/history";
 import { stripPlanBlocks } from "@/lib/ai/plan";
 import { proposalViews } from "@/lib/ai/proposal";
@@ -88,40 +89,7 @@ function Agente() {
       }
 
       pushChat({ role: "assistant", content: "" });
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = "";
-      let acc = "";
-      let done = false;
-
-      while (!done) {
-        const { done: d, value } = await reader.read();
-        if (d) break;
-        buffer += decoder.decode(value, { stream: true });
-        let idx: number;
-        while ((idx = buffer.indexOf("\n")) !== -1) {
-          let line = buffer.slice(0, idx);
-          buffer = buffer.slice(idx + 1);
-          if (line.endsWith("\r")) line = line.slice(0, -1);
-          if (!line.startsWith("data: ")) continue;
-          const json = line.slice(6).trim();
-          if (json === "[DONE]") {
-            done = true;
-            break;
-          }
-          try {
-            const parsed = JSON.parse(json);
-            const delta = parsed.choices?.[0]?.delta?.content;
-            if (delta) {
-              acc += delta;
-              updateLastAssistant(acc);
-            }
-          } catch {
-            buffer = line + "\n" + buffer;
-            break;
-          }
-        }
-      }
+      await readChatStream(res.body, updateLastAssistant);
     } catch (err: unknown) {
       pushChat({ role: "assistant", content: `Erro: ${(err as Error).message}`, error: true });
     } finally {

@@ -233,12 +233,14 @@ const goal = (id, name) => ({
     await overdue.getByText("Chegar a 75kg", { exact: false }).waitFor();
     let chatCalls = 0;
     await page.route("**/api/chat", (route) => {
+      // O resumo da manhã do GOAT segue para o Supabase falso.
+      if (route.request().postDataJSON()?.mode === "briefing") return route.fallback();
       chatCalls++;
       return route.abort();
     });
-    await overdue.getByRole("link", { name: "Fazer a revisão com o Mentor" }).click();
+    await overdue.getByRole("link", { name: "Fazer a revisão com o GOAT" }).click();
     await page.waitForURL(/\/agente\?q=/);
-    const input = page.getByPlaceholder("Pergunte ao Mentor...");
+    const input = page.getByPlaceholder("Pergunte ao GOAT...");
     await input.waitFor();
     assert.match(await input.inputValue(), /revisão semanal do planejamento: Chegar a 75kg/);
     assert.equal(chatCalls, 0, "prefill does not send");

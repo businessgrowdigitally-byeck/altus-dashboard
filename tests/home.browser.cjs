@@ -237,7 +237,7 @@ async function open(browser, data, viewport, mobile) {
     const picker = page.getByRole("dialog");
     await picker.getByText("Áreas Prioritárias").waitFor();
     // O Mentor ALTUS (e o Planejamento) podem ser prioritários — antes a escolha era descartada.
-    const mentorChip = picker.getByRole("button", { name: /Mentor ALTUS/ });
+    const mentorChip = picker.getByRole("button", { name: /GOAT/ });
     await mentorChip.tap();
     await mentorChip.getByText("✓").waitFor();
     await picker.getByText(/^5 de 7$/).waitFor();

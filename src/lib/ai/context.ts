@@ -325,7 +325,7 @@ function buildDays(rawDaily: Row[], rawCompletions: Row[], rawPlans: unknown, to
     dia_da_semana: weekday(today),
     plano_do_dia: plan
       ? {
-          origem: plan.source === "mentor" ? "Mentor" : "usuário",
+          origem: plan.source === "mentor" ? "GOAT" : "usuário",
           motivo: plan.reason || null,
           adiadas: plan.postponed.map((p) => ({
             id: p.actionId,
@@ -364,7 +364,7 @@ function buildDays(rawDaily: Row[], rawCompletions: Row[], rawPlans: unknown, to
     return {
       data: date,
       dia_da_semana: weekday(date),
-      ajustado: p ? (p.source === "mentor" ? "Mentor" : "usuário") : null,
+      ajustado: p ? (p.source === "mentor" ? "GOAT" : "usuário") : null,
       motivo: p?.reason || null,
       itens: dayItems(daily, plans, date).map((i) =>
         i.kind === "action"

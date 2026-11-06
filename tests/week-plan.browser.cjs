@@ -113,7 +113,10 @@ const clean = (texts) => texts.map((t) => t.replace(/\s+/g, " ").trim());
     const cloud = fakeSupabase(page, { user, get: () => snapshot, set: (x) => (snapshot = x) });
     await cloud.ready;
     await page.route("**/api/chat", (route) =>
-      route.fulfill({ status: 200, contentType: "text/event-stream", body: sse(reply) }),
+      // O resumo da manhã do GOAT segue para o Supabase falso.
+      route.request().postDataJSON()?.mode === "briefing"
+        ? route.fallback()
+        : route.fulfill({ status: 200, contentType: "text/event-stream", body: sse(reply) }),
     );
     await page.addInitScript(
       ({ user }) =>
@@ -135,7 +138,7 @@ const clean = (texts) => texts.map((t) => t.replace(/\s+/g, " ").trim());
 
     // 1) Mentor propõe a semana + mudança na rotina; nada muda antes de confirmar.
     await page.goto(base + "/agente", { waitUntil: "networkidle" });
-    await page.getByPlaceholder("Pergunte ao Mentor...").fill("Tenho prova de inglês em 3 dias");
+    await page.getByPlaceholder("Pergunte ao GOAT...").fill("Tenho prova de inglês em 3 dias");
     await page.keyboard.press("Enter");
     const card = page.locator('[data-plan-status="pending"]');
     await card.waitFor();
@@ -224,7 +227,7 @@ const clean = (texts) => texts.map((t) => t.replace(/\s+/g, " ").trim());
     await goals.getByRole("button", { name: dow(1), exact: true }).tap();
     await goals
       .locator("[data-routine-day-plan]")
-      .getByText(/segue o plano do Mentor/)
+      .getByText(/segue o plano do GOAT/)
       .waitFor();
     await goals.getByText("20:00–21:00").waitFor(); // inglês 60 min amanhã
     assert.equal(await goals.getByText("Ler 30 minutos").count(), 0, "postponed out of tomorrow");

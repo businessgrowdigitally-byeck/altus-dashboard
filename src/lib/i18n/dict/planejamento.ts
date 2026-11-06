@@ -10,14 +10,14 @@ export const planejamento = {
     es: "P.G. → Meta Macro → P.E. → Metas Micro",
   },
   "plan.openMentor": {
-    pt: "Abrir o Mentor",
-    en: "Open the Mentor",
-    es: "Abrir el Mentor",
+    pt: "Abrir o GOAT",
+    en: "Open GOAT",
+    es: "Abrir GOAT",
   },
   "plan.howToEdit": {
-    pt: "Aqui você acompanha e executa. Para criar ou revisar o P.G., um P.E. ou avaliar uma ideia, converse com o Mentor — nada é salvo sem a sua confirmação.",
-    en: "Here you track and execute. To create or revise the G.P. or a S.P., or to evaluate an idea, talk to the Mentor — nothing is saved without your confirmation.",
-    es: "Aquí sigues y ejecutas. Para crear o revisar el P.G., un P.E. o evaluar una idea, habla con el Mentor — nada se guarda sin tu confirmación.",
+    pt: "Aqui você acompanha e executa. Para criar ou revisar o P.G., um P.E. ou avaliar uma ideia, converse com o GOAT — nada é salvo sem a sua confirmação.",
+    en: "Here you track and execute. To create or revise the G.P. or a S.P., or to evaluate an idea, talk to GOAT — nothing is saved without your confirmation.",
+    es: "Aquí sigues y ejecutas. Para crear o revisar el P.G., un P.E. o evaluar una idea, habla con GOAT — nada se guarda sin tu confirmación.",
   },
   "plan.overdue": {
     pt: "Revisão semanal vencida ({n}): {names}.",
@@ -25,9 +25,9 @@ export const planejamento = {
     es: "Revisión semanal vencida ({n}): {names}.",
   },
   "plan.doReview": {
-    pt: "Fazer a revisão com o Mentor",
-    en: "Review with the Mentor",
-    es: "Revisar con el Mentor",
+    pt: "Fazer a revisão com o GOAT",
+    en: "Review with GOAT",
+    es: "Revisar con GOAT",
   },
   "plan.reviewPrompt": {
     pt: "Vamos fazer a revisão semanal do planejamento: {names}",
@@ -35,9 +35,9 @@ export const planejamento = {
     es: "Hagamos la revisión semanal de la planificación: {names}",
   },
   "plan.reviewWithMentor": {
-    pt: "Revisar este planejamento com o Mentor →",
-    en: "Review this plan with the Mentor →",
-    es: "Revisar esta planificación con el Mentor →",
+    pt: "Revisar este planejamento com o GOAT →",
+    en: "Review this plan with GOAT →",
+    es: "Revisar esta planificación con GOAT →",
   },
   "plan.general": {
     pt: "Planejamento Geral (P.G.)",
@@ -50,9 +50,9 @@ export const planejamento = {
     es: "Aún no tienes una Planificación General: la visión global de tus metas, prioridades y capacidad.",
   },
   "plan.generalCta": {
-    pt: "Montar com o Mentor →",
-    en: "Build it with the Mentor →",
-    es: "Armarla con el Mentor →",
+    pt: "Montar com o GOAT →",
+    en: "Build it with GOAT →",
+    es: "Armarla con GOAT →",
   },
   "plan.focus": {
     pt: "Foco principal",
@@ -105,9 +105,9 @@ export const planejamento = {
     es: "Aún no hay P.E. guardados. Cada Meta Macro puede tener uno, con etapas y Metas Micro.",
   },
   "plan.plansCta": {
-    pt: "Criar com o Mentor →",
-    en: "Create with the Mentor →",
-    es: "Crear con el Mentor →",
+    pt: "Criar com o GOAT →",
+    en: "Create with GOAT →",
+    es: "Crear con GOAT →",
   },
   "plan.plansPrompt": {
     pt: "Quero criar o Planejamento Específico de uma das minhas metas",
@@ -140,9 +140,9 @@ export const planejamento = {
     es: "Planificación vinculada a la Meta Macro.",
   },
   "plan.noLinkable": {
-    pt: "Todas as suas Metas Macro já têm um planejamento. Crie a meta em Metas, no Dashboard, ou peça ao Mentor.",
-    en: "All your Macro Goals already have a plan. Create the goal under Goals on the Dashboard, or ask the Mentor.",
-    es: "Todas tus Metas Macro ya tienen una planificación. Crea la meta en Metas, en el Panel, o pídeselo al Mentor.",
+    pt: "Todas as suas Metas Macro já têm um planejamento. Crie a meta em Metas, no Dashboard, ou peça ao GOAT.",
+    en: "All your Macro Goals already have a plan. Create the goal under Goals on the Dashboard, or ask GOAT.",
+    es: "Todas tus Metas Macro ya tienen una planificación. Crea la meta en Metas, en el Panel, o pídeselo a GOAT.",
   },
   "plan.indicator": {
     pt: "Indicador",
@@ -210,14 +210,14 @@ export const planejamento = {
     es: "{done} de {total} concluidas",
   },
   "plan.microEmpty": {
-    pt: "Nenhuma Meta Micro neste plano. Peça ao Mentor as próximas ações da etapa ativa.",
-    en: "No Micro Goals in this plan. Ask the Mentor for the active stage's next actions.",
-    es: "No hay Metas Micro en este plan. Pide al Mentor las próximas acciones de la etapa activa.",
+    pt: "Nenhuma Meta Micro neste plano. Peça ao GOAT as próximas ações da etapa ativa.",
+    en: "No Micro Goals in this plan. Ask GOAT for the active stage's next actions.",
+    es: "No hay Metas Micro en este plan. Pide a GOAT las próximas acciones de la etapa activa.",
   },
   "plan.microVsResults": {
-    pt: "Ações concluídas mostram execução, não resultado. Registre resultados reais na revisão com o Mentor.",
-    en: "Completed actions show execution, not results. Record real results in the review with the Mentor.",
-    es: "Las acciones concluidas muestran ejecución, no resultado. Registra resultados reales en la revisión con el Mentor.",
+    pt: "Ações concluídas mostram execução, não resultado. Registre resultados reais na revisão com o GOAT.",
+    en: "Completed actions show execution, not results. Record real results in the review with GOAT.",
+    es: "Las acciones concluidas muestran ejecución, no resultado. Registra resultados reales en la revisión con GOAT.",
   },
   "plan.results": {
     pt: "Resultados reais",

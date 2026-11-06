@@ -5,7 +5,7 @@ import { GlassCard } from "@/components/primitives";
 import { Modal, ConfirmButton, inpCls, btnGold } from "@/components/Modal";
 import { toast } from "sonner";
 import { brl, fmtDate, toISODate, todayISO } from "@/lib/format";
-import { dayItems, plannedOn, weekdayDate } from "@/lib/day-plan";
+import { plannedActions, plannedOn, weekdayDate } from "@/lib/day-plan";
 import { useT } from "@/lib/i18n";
 
 import { DailyActionsList, DailyFocusCalendar } from "./DailyFocusCalendar";
@@ -423,17 +423,7 @@ function DailyTab() {
   const selectedDate = weekdayDate(today, selectedDow);
   const selectedPlan = dayPlans?.[selectedDate];
   const displayedActions = useMemo(
-    () =>
-      dayItems(goalsDaily, dayPlans ?? {}, selectedDate).flatMap((i) =>
-        i.kind !== "action"
-          ? []
-          : [
-              i.minutes === (i.action.durationMinutes ?? DEFAULT_DURATION)
-                ? i.action
-                : // A grade usa passos de 5 min: arredonda só a exibição.
-                  { ...i.action, durationMinutes: Math.max(5, Math.round(i.minutes / 5) * 5) },
-            ],
-      ),
+    () => plannedActions(goalsDaily, dayPlans ?? {}, selectedDate),
     [goalsDaily, dayPlans, selectedDate],
   );
   // Editar sempre abre a ação da rotina fixa, não a duração ajustada do dia.

@@ -36,6 +36,8 @@ import {
   type DayPlans,
 } from "./day-plan";
 export type { DayPlans, DayPlan } from "./day-plan";
+import { markSeen, normalizeBriefing, normalizeSeen, type DailyBriefing } from "./notifications";
+export type { DailyBriefing } from "./notifications";
 export type { AltusPlan, AltusGeneralPlan, AltusFilterDecision } from "./ai/plan";
 
 export type Transaction = {
@@ -277,6 +279,12 @@ type State = {
   resetDayPlan: (date: string) => void;
   /** "Manter na rotina": as durações ajustadas do dia viram a duração fixa. Retorna quantas mudaram. */
   keepDayDurationsInRoutine: (date: string) => number;
+  /** Resumo da manhã do GOAT (1 por dia, gerado pela IA). */
+  dailyBriefing: DailyBriefing | null;
+  setDailyBriefing: (b: DailyBriefing | null) => void;
+  /** Ids das notificações já lidas (e do cartão de bom dia dispensado). */
+  notificationsSeen: string[];
+  markNotificationsSeen: (ids: string[]) => void;
   pushChat: (m: ChatMsg) => void;
   /** Registra na mensagem do chat que a proposta foi salva ou descartada. */
   setChatPlan: (index: number, plan: ChatPlanState) => void;
@@ -376,6 +384,8 @@ const initial = {
   categoryBudgets: {} as CategoryBudgets,
   recurringTransactions: [] as RecurringTransaction[],
   dayPlans: {} as DayPlans,
+  dailyBriefing: null as DailyBriefing | null,
+  notificationsSeen: [] as string[],
 };
 
 /** Campos que são sincronizados com a nuvem (tudo menos as funções do store). */
@@ -383,7 +393,7 @@ export const SYNC_KEYS = [
   "version", "profile", "settings", "primaryAreas", "transactions", "weights", "workouts",
   "books", "studies", "chat", "goalsMacro", "goalsDaily", "completions", "kaizen", "customTaxonomy", "altusPlans",
   "altusGeneralPlan", "altusFilter",
-  "categoryBudgets", "recurringTransactions", "dayPlans",
+  "categoryBudgets", "recurringTransactions", "dayPlans", "dailyBriefing", "notificationsSeen",
 ] as const;
 
 /** Estado de uma conta recém-criada: sem nenhum dado de exemplo. */
@@ -406,6 +416,8 @@ export const emptyState = {
   categoryBudgets: {} as CategoryBudgets,
   recurringTransactions: [] as RecurringTransaction[],
   dayPlans: {} as DayPlans,
+  dailyBriefing: null as DailyBriefing | null,
+  notificationsSeen: [] as string[],
   // Conta nova não tem altura: o card de IMC só aparece depois que a pessoa informa.
   profile: { ...initial.profile, name: "", height: 0 },
 };
@@ -502,6 +514,9 @@ export const useStore = create<State>()(
       toggleDayExtra: (date, extraId) =>
         set((s) => ({ dayPlans: toggleExtra(s.dayPlans ?? {}, date, extraId) })),
       resetDayPlan: (date) => set((s) => ({ dayPlans: resetDay(s.dayPlans ?? {}, date) })),
+      setDailyBriefing: (b) => set({ dailyBriefing: normalizeBriefing(b) }),
+      markNotificationsSeen: (ids) =>
+        set((s) => ({ notificationsSeen: markSeen(s.notificationsSeen ?? [], ids) })),
       keepDayDurationsInRoutine: (date) => {
         const s = get();
         const k = keepDayDurations(s.dayPlans ?? {}, s.goalsDaily, date);
@@ -735,6 +750,8 @@ export const useStore = create<State>()(
           categoryBudgets: normalizeBudgets(patch.categoryBudgets),
           recurringTransactions: normalizeRecurring(patch.recurringTransactions),
           dayPlans: normalizeDayPlans(patch.dayPlans, todayISO()),
+          dailyBriefing: normalizeBriefing(patch.dailyBriefing),
+          notificationsSeen: normalizeSeen(patch.notificationsSeen),
         });
         get().recomputeLinkedGoals();
         return null;

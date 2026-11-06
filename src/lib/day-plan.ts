@@ -493,3 +493,24 @@ export function applyRoutineChanges(
     return next;
   });
 }
+
+/**
+ * Ações de uma data como a agenda (Blocos de foco) deve mostrar: na ordem do
+ * plano, sem as adiadas, com as trazidas de outro dia e com a duração do dia
+ * (arredondada para passos de 5 min, como a grade usa). Extras ficam de fora.
+ */
+export function plannedActions<A extends GoalDaily>(
+  goalsDaily: A[],
+  plans: DayPlans,
+  date: string,
+): A[] {
+  return dayItems(goalsDaily, plans, date).flatMap((i) =>
+    i.kind !== "action"
+      ? []
+      : [
+          i.minutes === (i.action.durationMinutes ?? 30)
+            ? i.action
+            : { ...i.action, durationMinutes: Math.max(5, Math.round(i.minutes / 5) * 5) },
+        ],
+  );
+}

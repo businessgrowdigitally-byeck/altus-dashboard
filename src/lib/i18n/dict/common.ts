@@ -5,7 +5,7 @@ export const common = {
   "nav.corpo": { pt: "Corpo & Saúde", en: "Body & Health", es: "Cuerpo y Salud" },
   "nav.biblioteca": { pt: "Biblioteca Pessoal", en: "Personal Library", es: "Biblioteca Personal" },
   "nav.estudos": { pt: "Estudos & Conhecimento", en: "Studies & Knowledge", es: "Estudios y Conocimiento" },
-  "nav.agente": { pt: "Mentor ALTUS", en: "ALTUS Mentor", es: "Mentor ALTUS" },
+  "nav.agente": { pt: "GOAT", en: "GOAT", es: "GOAT" },
   "nav.planejamento": { pt: "Planejamento ALTUS", en: "ALTUS Planning", es: "Planificación ALTUS" },
   "nav.kaizen": { pt: "Kaizen Diário", en: "Daily Kaizen", es: "Kaizen Diario" },
   "nav.configuracoes": { pt: "Configurações", en: "Settings", es: "Configuración" },

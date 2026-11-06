@@ -3,7 +3,11 @@ import { createClient } from "@supabase/supabase-js";
 import { supabase, SUPABASE_URL, SUPABASE_ANON_KEY } from "@/lib/supabase";
 import { AI_AGENT_ENABLED } from "@/lib/features";
 import { buildMentorContext } from "@/lib/ai/context";
-import { buildMentorSystemPrompt, normalizeLang } from "@/lib/ai/system-prompt";
+import {
+  buildBriefingSystemPrompt,
+  buildMentorSystemPrompt,
+  normalizeLang,
+} from "@/lib/ai/system-prompt";
 import { quotaDecision, quotaLimits } from "@/lib/ai/quota";
 import {
   MAX_CHAT_MESSAGES as MAX_MESSAGES,
@@ -61,10 +65,16 @@ export const Route = createFileRoute("/api/chat")({
           lang?: unknown;
           /** Data local do usuário (AAAA-MM-DD); só define o "hoje" do contexto. */
           today?: unknown;
+          /** "briefing": resumo da manhã do GOAT (sem histórico); padrão: chat. */
+          mode?: unknown;
         };
+        const briefing = body.mode === "briefing";
 
         // messages: array finito de {role, content} com limites de tamanho.
-        const messages = isValidMessages(body.messages);
+        // O resumo da manhã não tem conversa: o pedido é fixo, montado aqui.
+        const messages = briefing
+          ? [{ role: "user" as const, content: "Escreva o resumo da manhã de hoje." }]
+          : isValidMessages(body.messages);
         if (!messages) {
           return jsonResponse(
             { error: "Payload inválido: 'messages' deve ser um array com até 24 mensagens de texto curtas." },
@@ -110,7 +120,10 @@ export const Route = createFileRoute("/api/chat")({
         let contextText = JSON.stringify(buildMentorContext(row?.data ?? {}, today));
         if (contextText.length > MAX_CONTEXT_CHARS) contextText = contextText.slice(0, MAX_CONTEXT_CHARS);
 
-        const systemPrompt = buildMentorSystemPrompt(normalizeLang(body.lang), contextText);
+        const lang = normalizeLang(body.lang);
+        const systemPrompt = briefing
+          ? buildBriefingSystemPrompt(lang, contextText)
+          : buildMentorSystemPrompt(lang, contextText);
 
         let upstream: Response;
         try {

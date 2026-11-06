@@ -238,9 +238,9 @@ export const goals = {
   "goals.viewRoutine": { pt: "Ver rotina de", en: "View routine for", es: "Ver rutina de" },
   "goals.routineOf": { pt: "Rotina de", en: "Routine for", es: "Rutina de" },
   "goals.dayPlanMentor": {
-    pt: "{date} segue o plano do Mentor",
-    en: "{date} follows the Mentor's plan",
-    es: "{date} sigue el plan del Mentor",
+    pt: "{date} segue o plano do GOAT",
+    en: "{date} follows GOAT's plan",
+    es: "{date} sigue el plan de GOAT",
   },
   "goals.dayPlanYou": {
     pt: "{date} segue o seu ajuste do dia",

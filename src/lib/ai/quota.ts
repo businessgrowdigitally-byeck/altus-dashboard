@@ -55,6 +55,6 @@ export function quotaDecision(data: unknown, error: RpcError): QuotaDecision {
   return {
     kind: "blocked",
     status: 429,
-    message: `Você atingiu o limite${limit ? ` de ${limit} mensagens` : ""} do Mentor por hoje. Ele volta à meia-noite (horário de Brasília).`,
+    message: `Você atingiu o limite${limit ? ` de ${limit} mensagens` : ""} do GOAT por hoje. Ele volta à meia-noite (horário de Brasília).`,
   };
 }
