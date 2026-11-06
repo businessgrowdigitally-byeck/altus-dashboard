@@ -216,6 +216,11 @@ const user = {
     await page.goto(base + "/agente", { waitUntil: "networkidle" });
     await page.getByRole("heading", { name: "GOAT" }).waitFor();
     await page.getByPlaceholder("Pergunte ao GOAT...").waitFor();
+    // O ícone do GOAT é a cabra (imagem carregada), no menu de baixo e na tela vazia.
+    const goats = await page
+      .locator("[data-goat-icon]:visible")
+      .evaluateAll((els) => els.map((e) => e.complete && e.naturalWidth > 0));
+    assert.ok(goats.length >= 2 && goats.every(Boolean), `goat icons loaded: ${goats}`);
 
     assert.deepEqual(errors, []);
     console.log(

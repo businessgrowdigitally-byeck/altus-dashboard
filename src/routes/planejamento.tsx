@@ -1,6 +1,7 @@
 import { createFileRoute, Link, redirect } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { AlertTriangle, Bot, CheckCircle2, ChevronDown, Circle, Link2, Trash2 } from "lucide-react";
+import { GoatIcon } from "@/components/GoatIcon";
+import { AlertTriangle, CheckCircle2, ChevronDown, Circle, Link2, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useStore, type AltusPlan } from "@/lib/store";
 import { AI_AGENT_ENABLED } from "@/lib/features";
@@ -53,7 +54,7 @@ function Planejamento() {
             to="/agente"
             className="inline-flex items-center gap-2 rounded-lg border border-gold/40 px-3 py-2 text-sm text-gold hover:bg-gold/10"
           >
-            <Bot size={16} />
+            <GoatIcon size={20} />
             {t("plan.openMentor")}
           </Link>
         }

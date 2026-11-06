@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Sparkles, Sun } from "lucide-react";
+import { Sun } from "lucide-react";
+import { GoatIcon } from "@/components/GoatIcon";
 import { useStore } from "@/lib/store";
 import { useT } from "@/lib/i18n";
 import { todayISO } from "@/lib/format";
@@ -52,7 +53,7 @@ export function MorningCard({ onStart }: { onStart: () => void }) {
         {AI_AGENT_ENABLED && briefing.state !== "unavailable" && (
           <div className="rounded-xl border border-purple-500/30 bg-purple-500/10 p-3">
             <div className="mb-1 flex items-center gap-1.5 text-xs font-semibold text-purple-700 dark:text-purple-300">
-              <Sparkles size={13} /> {t("morningGoat")}
+              <GoatIcon size={18} /> {t("morningGoat")}
             </div>
             <p data-morning-briefing className="leading-relaxed text-foreground/90">
               {briefing.text ?? t("morningGoatLoading")}

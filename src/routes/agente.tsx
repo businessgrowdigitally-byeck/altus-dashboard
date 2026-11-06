@@ -2,7 +2,8 @@ import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useStore } from "@/lib/store";
 import { PageHeader } from "@/components/primitives";
-import { Bot, Send, Sparkles } from "lucide-react";
+import { Send, Sparkles } from "lucide-react";
+import { GoatIcon } from "@/components/GoatIcon";
 import { AI_AGENT_ENABLED } from "@/lib/features";
 import { todayISO } from "@/lib/format";
 import { useI18n } from "@/lib/i18n";
@@ -111,7 +112,9 @@ function Agente() {
         </div>
         {chat.length === 0 && (
           <div className="text-center text-muted-foreground text-sm py-12">
-            <Bot size={32} className="mx-auto text-gold mb-3" />
+            <div className="mb-3 flex justify-center">
+              <GoatIcon size={72} />
+            </div>
             {t("agente.emptyState")}
           </div>
         )}

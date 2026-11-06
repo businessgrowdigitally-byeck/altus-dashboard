@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { AreaEmoji } from "@/components/GoatIcon";
 import { Modal } from "@/components/Modal";
 import { PrimaryAreaPicker } from "@/components/PrimaryAreaPicker";
 import { useT } from "@/lib/i18n";
@@ -100,7 +101,7 @@ export function OnboardingModal({
                     key={k}
                     className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-500/15 border border-purple-500/30 text-sm text-purple-200"
                   >
-                    <span>{def.emoji}</span> {t(def.i18nKey)}
+                    <AreaEmoji def={def} /> {t(def.i18nKey)}
                   </span>
                 );
               })}
