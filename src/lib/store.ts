@@ -524,9 +524,12 @@ export const useStore = create<State>()(
         // Plano do dia (hoje), da semana (hoje … hoje+6) e mudança na rotina fixa.
         const today = todayISO();
         let plans = s.dayPlans ?? {};
+        const routine = cleanRoutineChanges(s.goalsDaily, proposal.routineChanges);
+        // Os planos são montados sobre a rotina já com as mudanças propostas.
+        const daily = applyRoutineChanges(s.goalsDaily, routine);
         const dayPlan =
           proposal.dayPlan && typeof proposal.dayPlan === "object"
-            ? applyDayPlanProposal(plans, s.goalsDaily, proposal.dayPlan, today)
+            ? applyDayPlanProposal(plans, daily, proposal.dayPlan, today)
             : null;
         if (dayPlan) plans = dayPlan.plans;
         const weekRaw = proposal.weekPlan as { days?: unknown; reason?: unknown } | undefined;
@@ -534,19 +537,18 @@ export const useStore = create<State>()(
           weekRaw && typeof weekRaw === "object"
             ? applyWeekPlanProposal(
                 plans,
-                s.goalsDaily,
+                daily,
                 weekRaw.days,
                 today,
                 typeof weekRaw.reason === "string" ? weekRaw.reason : "",
               )
             : null;
         if (week) plans = week.plans;
-        const routine = cleanRoutineChanges(s.goalsDaily, proposal.routineChanges);
         set({
           ...result.state,
           ...(result.createdGoal ? { goalsMacro: [result.createdGoal, ...s.goalsMacro] } : {}),
           ...(dayPlan || week?.days.length ? { dayPlans: plans } : {}),
-          ...(routine.length ? { goalsDaily: applyRoutineChanges(s.goalsDaily, routine) } : {}),
+          ...(routine.length ? { goalsDaily: daily } : {}),
         });
         return {
           ...result,

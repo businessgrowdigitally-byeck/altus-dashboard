@@ -205,6 +205,21 @@ describe("plano da semana", () => {
     assert.equal(r.plans[D(2)].reason, "prova");
   });
 
+  it("rejects dates that do not exist in the calendar", () => {
+    // 2026-02-28 + 1 = 2026-03-01; "2026-02-30" passaria na comparação de texto.
+    const r = applyWeekPlanProposal(
+      {},
+      routine,
+      [
+        { date: "2026-02-30" },
+        { date: "2026-03-01", postpone: [{ actionId: "leitura", to: "2026-03-32" }] },
+      ],
+      "2026-02-27",
+    );
+    assert.deepEqual(Object.keys(r.plans), ["2026-03-01"]);
+    assert.deepEqual(r.plans["2026-03-01"].postponed, []);
+  });
+
   it("previews postponements between days of the same proposal", () => {
     const r = applyWeekPlanProposal(
       {},
@@ -297,6 +312,27 @@ describe("mudança na rotina fixa", () => {
     assert.deepEqual(k.plans[TODAY].order, ["ingles", "treino"], "order and notes stay");
     assert.equal(k.plans[TODAY].notes.ingles, "só revisão");
     assert.deepEqual(keepDayDurations({}, routine, TODAY).changes, []);
+  });
+
+  it("keepDayDurations keeps in the day the durations the routine rejects", () => {
+    // leitura às 22:00 com 150 min passaria da meia-noite: não vira rotina, fica no dia.
+    const r = applyDayPlanProposal(
+      {},
+      routine,
+      {
+        adjust: [
+          { actionId: "ingles", durationMinutes: 25 },
+          { actionId: "leitura", durationMinutes: 150 },
+        ],
+      },
+      TODAY,
+    );
+    const k = keepDayDurations(r.plans, routine, TODAY);
+    assert.deepEqual(
+      k.changes.map((c) => c.action.id),
+      ["ingles"],
+    );
+    assert.deepEqual(k.plans[TODAY].durations, { leitura: 150 });
   });
 });
 

@@ -43,6 +43,8 @@ const parse = (iso: string) => {
 };
 const toIso = (d: Date) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+/** AAAA-MM-DD de uma data que existe no calendário (rejeita 2026-02-30). */
+const isDate = (v: string) => DATE_RE.test(v) && toIso(parse(v)) === v;
 export const addDays = (day: string, n: number) => {
   const d = parse(day);
   d.setDate(d.getDate() + n);
@@ -216,7 +218,7 @@ function cleanPlan(raw: unknown): DayPlan | null {
         const e = obj(x);
         const actionId = str(e.actionId, 80);
         const to = str(e.to, 10);
-        return actionId && DATE_RE.test(to)
+        return actionId && isDate(to)
           ? { actionId, to, reason: str(e.reason, 200) || undefined }
           : null;
       })
@@ -250,7 +252,7 @@ export function normalizeDayPlans(raw: unknown, today: string): DayPlans {
   const min = addDays(today, -35);
   const max = addDays(today, 14);
   for (const [date, plan] of Object.entries(obj(raw))) {
-    if (!DATE_RE.test(date) || date < min || date > max) continue;
+    if (!isDate(date) || date < min || date > max) continue;
     const clean = cleanPlan(plan);
     if (clean) out[date] = clean;
   }
@@ -297,7 +299,7 @@ export function applyDayPlanProposal(
     const e = obj(x);
     const id = str(e.actionId, 80);
     const to = str(e.to, 10);
-    if (!ids.has(id) || !DATE_RE.test(to) || to <= date || to > addDays(date, 14)) continue;
+    if (!ids.has(id) || !isDate(to) || to <= date || to > addDays(date, 14)) continue;
     postponed.push({ actionId: id, to, reason: str(e.reason, 200) || undefined });
   }
   const extras: DayPlanExtra[] = (Array.isArray(p.extras) ? p.extras : [])
@@ -378,7 +380,7 @@ export function applyWeekPlanProposal(
     .map((d) => obj(d))
     .filter((d) => {
       const date = str(d.date, 10);
-      if (!DATE_RE.test(date) || date < today || date > last || seen.has(date)) return false;
+      if (!isDate(date) || date < today || date > last || seen.has(date)) return false;
       seen.add(date);
       return true;
     })
@@ -467,7 +469,15 @@ export function keepDayDurations(
       durationMinutes,
     })),
   );
-  return { plans: { ...plans, [date]: { ...plan, durations: {} } }, changes };
+  // Só saem do plano as durações que viraram rotina (ou já eram a da rotina);
+  // as que a rotina não aceita (ex.: passariam da meia-noite) continuam no dia.
+  const durations: Record<string, number> = {};
+  for (const [id, min] of Object.entries(plan.durations)) {
+    const action = goalsDaily.find((a) => a.id === id);
+    const kept = changes.some((c) => c.action.id === id);
+    if (!kept && action && min !== (action.durationMinutes ?? 30)) durations[id] = min;
+  }
+  return { plans: { ...plans, [date]: { ...plan, durations } }, changes };
 }
 
 /** Aplica mudanças já validadas à rotina (horário vazio = sem horário). */

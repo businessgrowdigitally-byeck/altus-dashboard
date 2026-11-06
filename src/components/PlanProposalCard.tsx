@@ -7,6 +7,7 @@ import { useI18n } from "@/lib/i18n";
 import { fmtDate, todayISO } from "@/lib/format";
 import {
   applyDayPlanProposal,
+  applyRoutineChanges,
   applyWeekPlanProposal,
   cleanRoutineChanges,
   type DayItem,
@@ -107,13 +108,22 @@ function PendingProposal({ index, proposal }: { index: number; proposal: PlanPro
     [proposal, altusPlans, altusGeneralPlan, altusFilter, goalsMacro, link],
   );
   const { plan, generalPlan, decisions, createdGoal } = preview.result;
+  const routineChanges = useMemo(
+    () => cleanRoutineChanges(goalsDaily, proposal.routineChanges),
+    [proposal, goalsDaily],
+  );
+  // As prévias usam a rotina já com as mudanças propostas, como ao salvar.
+  const proposedDaily = useMemo(
+    () => applyRoutineChanges(goalsDaily, routineChanges),
+    [goalsDaily, routineChanges],
+  );
   // Prévia do plano do dia, exatamente como ficará na Home.
   const dayPreview = useMemo(
     () =>
       proposal.dayPlan && typeof proposal.dayPlan === "object"
-        ? applyDayPlanProposal(dayPlans ?? {}, goalsDaily, proposal.dayPlan, todayISO())
+        ? applyDayPlanProposal(dayPlans ?? {}, proposedDaily, proposal.dayPlan, todayISO())
         : null,
-    [proposal, dayPlans, goalsDaily],
+    [proposal, dayPlans, proposedDaily],
   );
   // Plano da semana: aplicado depois do de hoje, como no store.
   const weekPreview = useMemo(() => {
@@ -121,17 +131,13 @@ function PendingProposal({ index, proposal }: { index: number; proposal: PlanPro
     if (!w || typeof w !== "object") return null;
     const r = applyWeekPlanProposal(
       dayPreview?.plans ?? dayPlans ?? {},
-      goalsDaily,
+      proposedDaily,
       w.days,
       todayISO(),
       typeof w.reason === "string" ? w.reason : "",
     );
     return r.days.length ? r : null;
-  }, [proposal, dayPreview, dayPlans, goalsDaily]);
-  const routineChanges = useMemo(
-    () => cleanRoutineChanges(goalsDaily, proposal.routineChanges),
-    [proposal, goalsDaily],
-  );
+  }, [proposal, dayPreview, dayPlans, proposedDaily]);
   const goalName = (id: string) => goalsMacro.find((g) => g.id === id)?.name ?? id;
 
   const confirm = async () => {

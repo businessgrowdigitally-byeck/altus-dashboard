@@ -152,7 +152,7 @@ const clean = (texts) => texts.map((t) => t.replace(/\s+/g, " ").trim());
     ]);
     assert.deepEqual(
       clean(await days.nth(1).locator("li").allInnerTexts()),
-      ["Treinar · 30 min", "Inglês · 60 min"],
+      ["Treinar · 20 min", "Inglês · 60 min"],
       "reading postponed out of tomorrow",
     );
     await days
@@ -160,7 +160,7 @@ const clean = (texts) => texts.map((t) => t.replace(/\s+/g, " ").trim());
       .getByText(/Ler 30 minutos → .*\(mais estudo\)/)
       .waitFor();
     await days.nth(2).getByText("véspera: revisão").waitFor();
-    await days.nth(2).getByText("Total previsto: 150 min").waitFor();
+    await days.nth(2).getByText("Total previsto: 140 min").waitFor(); // treino já com a rotina proposta (20)
     await days.nth(0).getByText("Prova de inglês daqui a 3 dias").waitFor();
     const routine = card.locator("[data-routine-preview]");
     assert.match(
