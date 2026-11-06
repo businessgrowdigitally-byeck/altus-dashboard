@@ -291,6 +291,11 @@ export function isSyncReady() {
   return ready;
 }
 
+/** Conta cuja sincronização está ativa (null antes do login ou depois do logout). */
+export function syncedUserId() {
+  return ready ? activeUserId : null;
+}
+
 /** Força um envio imediato, ignorando o debounce. */
 export async function flushSync() {
   if (!ready || !activeUserId) return;

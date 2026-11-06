@@ -2,13 +2,13 @@ import { useEffect, useState } from "react";
 import { useStore } from "@/lib/store";
 import { useAuth } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
-import { isSyncReady, useSyncStatus } from "@/lib/sync";
+import { isSyncReady, syncedUserId, useSyncStatus } from "@/lib/sync";
 import { AI_AGENT_ENABLED } from "@/lib/features";
 import { todayISO } from "@/lib/format";
 import { readChatStream } from "@/lib/ai/stream";
 import { BRIEFING_TEXT_MAX } from "@/lib/notifications";
 
-/** Pedidos já feitos nesta aba (um por dia e idioma), para não repetir em cada tela. */
+/** Pedidos já feitos nesta aba (um por conta, dia e idioma), para não repetir em cada tela. */
 const requested = new Set<string>();
 
 export type BriefingState = "ready" | "loading" | "unavailable";
@@ -33,7 +33,9 @@ export function useDailyBriefing(): { text: string | null; state: BriefingState 
   useEffect(() => {
     if (!AI_AGENT_ENABLED || !token || current) return;
     if (!isSyncReady() || syncStatus === "loading") return;
-    const key = `${today}|${lang}`;
+    const userId = syncedUserId();
+    if (!userId) return;
+    const key = `${userId}|${today}|${lang}`;
     if (requested.has(key)) return;
     requested.add(key);
     setLoading(true);
@@ -46,6 +48,8 @@ export function useDailyBriefing(): { text: string | null; state: BriefingState 
         });
         if (!res.ok || !res.body) return;
         const text = (await readChatStream(res.body)).trim().slice(0, BRIEFING_TEXT_MAX);
+        // Saiu ou trocou de conta enquanto o resumo era gerado: descarta (é de outra pessoa).
+        if (syncedUserId() !== userId) return;
         // Outro aparelho pode ter salvo um resumo enquanto este esperava: mantém o dele.
         const now = useStore.getState().dailyBriefing;
         if (text && !(now && now.date === today && now.lang === lang))
