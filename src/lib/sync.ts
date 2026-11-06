@@ -3,6 +3,7 @@ import { supabase } from "./supabase";
 import { useStore, emptyState, SYNC_KEYS } from "./store";
 import { normalizeAltusState } from "./ai/plan";
 import { normalizeBudgets, normalizeRecurring } from "./finance";
+import { normalizeDayPlans } from "./day-plan";
 import { todayISO } from "./format";
 import { mergeSnapshots, same } from "./merge";
 
@@ -100,6 +101,7 @@ function sanitizeSnapshot(value: unknown): object {
     ...normalizeAltusState(out, todayISO()),
     categoryBudgets: normalizeBudgets(out.categoryBudgets),
     recurringTransactions: normalizeRecurring(out.recurringTransactions),
+    dayPlans: normalizeDayPlans(out.dayPlans, todayISO()),
   };
 }
 
