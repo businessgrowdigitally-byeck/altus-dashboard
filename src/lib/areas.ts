@@ -1,14 +1,10 @@
-import {
-  Wallet,
-  HeartPulse,
-  BookOpen,
-  GraduationCap,
-  Sparkles,
-  Bot,
-  ClipboardList,
-} from "lucide-react";
-import type { LucideIcon } from "lucide-react";
+import { Wallet, HeartPulse, BookOpen, GraduationCap, Sparkles, ClipboardList } from "lucide-react";
+import type { ComponentType } from "react";
 import { AI_AGENT_ENABLED } from "@/lib/features";
+import { GoatIcon } from "@/components/GoatIcon";
+
+/** Ícone de uma área: um ícone lucide ou o do GOAT (mesmas props). */
+export type AreaIcon = ComponentType<{ className?: string; size?: number; strokeWidth?: number }>;
 
 /** Módulos reais existentes no app. "dashboard" e "configuracoes" ficam fixos. */
 export type AreaKey =
@@ -24,8 +20,10 @@ export type AreaDef = {
   key: AreaKey;
   to: "/financas" | "/corpo" | "/biblioteca" | "/estudos" | "/kaizen" | "/agente" | "/planejamento";
   i18nKey: string;
-  icon: LucideIcon;
+  icon: AreaIcon;
   emoji: string;
+  /** Imagem no lugar do emoji nos menus (o GOAT usa a cabra). */
+  image?: string;
 };
 
 export const AREA_DEFS: AreaDef[] = [
@@ -36,7 +34,14 @@ export const AREA_DEFS: AreaDef[] = [
   { key: "kaizen", to: "/kaizen", i18nKey: "nav.kaizen", icon: Sparkles, emoji: "🌱" },
   ...(AI_AGENT_ENABLED
     ? ([
-        { key: "agente", to: "/agente", i18nKey: "nav.agente", icon: Bot, emoji: "🤖" },
+        {
+          key: "agente",
+          to: "/agente",
+          i18nKey: "nav.agente",
+          icon: GoatIcon,
+          emoji: "🐐",
+          image: "/icons/goat-avatar.png",
+        },
         {
           key: "planejamento",
           to: "/planejamento",

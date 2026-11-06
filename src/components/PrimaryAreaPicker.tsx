@@ -1,4 +1,5 @@
 import { AREA_DEFS, type AreaKey } from "@/lib/areas";
+import { AreaEmoji } from "@/components/GoatIcon";
 import { useT } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
@@ -49,7 +50,7 @@ export function PrimaryAreaPicker({
                 disabled && "opacity-40 cursor-not-allowed",
               )}
             >
-              <span className="text-lg">{area.emoji}</span>
+              <AreaEmoji def={area} className="text-lg" />
               <span className="truncate">{t(area.i18nKey)}</span>
               {selected && <span className="ml-auto text-xs text-purple-400">✓</span>}
             </button>

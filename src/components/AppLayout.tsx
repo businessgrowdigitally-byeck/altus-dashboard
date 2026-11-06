@@ -21,6 +21,7 @@ import { flushSync } from "@/lib/sync";
 import { useLangStore, useT } from "@/lib/i18n";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { NotificationsBell } from "@/components/NotificationsBell";
+import { AreaEmoji } from "@/components/GoatIcon";
 import { syncPushLang } from "@/lib/push";
 import {
   Drawer,
@@ -225,7 +226,7 @@ const [moreOpen, setMoreOpen] = useState(false);
                   {t("pz.nav.primary")}
                 </div>
                 {primaryNav.map((d) => (
-                  <NavItem key={d.key} to={d.to} emoji={d.emoji} label={t(d.i18nKey)} active={pathname === d.to} />
+                  <NavItem key={d.key} to={d.to} emoji={d.emoji} image={d.image} label={t(d.i18nKey)} active={pathname === d.to} />
                 ))}
               </>
             )}
@@ -236,7 +237,7 @@ const [moreOpen, setMoreOpen] = useState(false);
                   {t("pz.nav.more")}
                 </div>
                 {moreNav.map((d) => (
-                  <NavItem key={d.key} to={d.to} emoji={d.emoji} label={t(d.i18nKey)} active={pathname === d.to} />
+                  <NavItem key={d.key} to={d.to} emoji={d.emoji} image={d.image} label={t(d.i18nKey)} active={pathname === d.to} />
                 ))}
               </>
             )}
@@ -324,11 +325,13 @@ const [moreOpen, setMoreOpen] = useState(false);
 function NavItem({
   to,
   emoji,
+  image,
   label,
   active,
 }: {
   to: RoutePath;
   emoji: string;
+  image?: string;
   label: string;
   active: boolean;
 }) {
@@ -343,7 +346,7 @@ function NavItem({
           : "text-muted-foreground hover:text-foreground",
       )}
     >
-      <span className="text-lg">{emoji}</span>
+      <AreaEmoji def={{ emoji, image }} className="text-lg" />
       <span>{label}</span>
     </Link>
   );
