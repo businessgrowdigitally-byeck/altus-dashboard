@@ -167,12 +167,24 @@ function RootComponent() {
     if (theme === "dark") root.classList.add("dark");
     else root.classList.remove("dark");
   }, [theme]);
-  // Service worker do lembrete da manhã (só notificações; não intercepta requisições).
+  // Service worker: lembrete da manhã e cópia do app para abrir sem internet.
   useEffect(() => {
     if (!("serviceWorker" in navigator)) return;
-    navigator.serviceWorker.register("/sw.js").catch(() => {
-      /* Sem service worker: o app funciona igual, só sem lembrete push. */
-    });
+    navigator.serviceWorker
+      .register("/sw.js")
+      .then(() => navigator.serviceWorker.ready)
+      .then((reg) => {
+        // Modo offline (só no build publicado): guarda as páginas e os arquivos do app.
+        if (!import.meta.env.PROD) return;
+        const urls = performance
+          .getEntriesByType("resource")
+          .map((e) => new URL(e.name).pathname)
+          .filter((p) => p.startsWith("/assets/"));
+        reg.active?.postMessage({ type: "warm", urls });
+      })
+      .catch(() => {
+        /* Sem service worker: o app funciona igual, só sem lembrete push e sem modo offline. */
+      });
   }, []);
   const lang = useLangStore((s) => s.lang);
   useEffect(() => {
