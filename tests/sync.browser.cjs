@@ -37,6 +37,8 @@ const tx = (id, description, value) => ({
     };
     let snapshot = {
       profile: { name: "Sync Test" },
+      // Campo antigo, sem uso: deve sair da nuvem no primeiro envio.
+      settings: { theme: "dark", accent: "gold", geminiKey: "chave-antiga-de-teste" },
       primaryAreas: ["financas"],
       transactions: [tx("t1", "Lançamento antigo", 10)],
     };
@@ -81,6 +83,8 @@ const tx = (id, description, value) => ({
     assert.equal(ids().length, 3, `nothing lost in the cloud: ${ids()}`);
     assert.ok(snapshot.transactions.some((t) => t.description === "Feito no celular"));
     assert.ok(snapshot.transactions.some((t) => t.id === "laptop"));
+    assert.equal("geminiKey" in snapshot.settings, false, "old geminiKey removed from the cloud");
+    assert.equal(snapshot.settings.theme, "dark");
     // E o lançamento do notebook aparece aqui, sem recarregar.
     await page.getByText("Feito no notebook").waitFor();
 

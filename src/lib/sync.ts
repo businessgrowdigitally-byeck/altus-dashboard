@@ -88,6 +88,11 @@ function sanitizeSnapshot(value: unknown): object {
     }
     if (v !== null && typeof v === "object" && !Array.isArray(v)) out[key] = v;
   }
+  // Campo antigo e sem uso: a chave do Gemini fica só no servidor, nunca nos dados do usuário.
+  if (out.settings && "geminiKey" in (out.settings as object)) {
+    const { geminiKey: _unused, ...settings } = out.settings as Record<string, unknown>;
+    out.settings = settings;
+  }
   // Planejamento ALTUS: valida em profundidade e converte o formato antigo
   // (P.G. dentro de cada plano, ideias estacionadas) sem perder conteúdo.
   return {
@@ -248,6 +253,13 @@ export async function startSync(userId: string) {
   unsubscribeStore = useStore.subscribe(scheduleSave);
   // Depois de assinar o salvamento, para os lançamentos gerados irem para a nuvem.
   useStore.getState().postDueRecurring(todayISO());
+  // A nuvem ainda tem o campo antigo `settings.geminiKey`: marca a diferença na
+  // base para o próximo envio gravar os dados sem ele.
+  const rawSettings = (data?.data as Record<string, unknown> | undefined)?.settings;
+  if (rawSettings && typeof rawSettings === "object" && "geminiKey" in rawSettings) {
+    base = { ...base, settings: rawSettings };
+    scheduleSave();
+  }
 }
 
 /** Para a sincronização. Por padrão também apaga os dados do navegador (logout). */
