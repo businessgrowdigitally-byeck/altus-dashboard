@@ -203,7 +203,17 @@ async function setup(browser, contextOptions) {
     await a.page.reload({ waitUntil: "networkidle" });
     await a.page.locator('[data-push-state="on"]').waitFor();
 
-    await box.getByRole("button", { name: "Desativar" }).tap();
+    // Trocar o idioma do app atualiza o idioma do lembrete deste aparelho.
+    await a.page.getByRole("button", { name: "Alterar idioma" }).first().tap();
+    await a.page.getByRole("button", { name: "English" }).tap();
+    await a.page.waitForFunction(() => document.querySelector("[data-push-state=on]"));
+    for (let i = 0; i < 50 && a.rows[0]?.lang !== "en"; i++) await a.page.waitForTimeout(100);
+    assert.deepEqual(
+      a.rows.map((r) => [r.endpoint, r.lang]),
+      [[ENDPOINT, "en"]],
+      "same device, language updated",
+    );
+    await box.getByRole("button", { name: "Turn off" }).tap();
     await a.page.locator('[data-push-state="off"]').waitFor();
     assert.equal(a.rows.length, 0, "row deleted");
     assert.equal((await a.page.evaluate(() => window.__fakePush())).unsubscribe, 1);

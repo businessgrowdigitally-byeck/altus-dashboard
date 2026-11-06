@@ -82,10 +82,38 @@ export async function enablePush(lang: string): Promise<"on" | "denied"> {
     endpoint: json.endpoint,
     p256dh: json.keys.p256dh,
     auth: json.keys.auth,
-    lang: lang === "en" || lang === "es" ? lang : "pt",
+    lang: normLang(lang),
   });
   if (error) throw new Error(error.message);
   return "on";
+}
+
+const normLang = (lang: string) => (lang === "en" || lang === "es" ? lang : "pt");
+
+/**
+ * Trocou o idioma do app: atualiza o idioma salvo na inscrição deste aparelho,
+ * para o lembrete chegar no idioma novo. Sem inscrição aqui, não faz nada.
+ */
+export async function syncPushLang(lang: string): Promise<boolean> {
+  if (typeof window === "undefined" || !("serviceWorker" in navigator)) return false;
+  const reg = await navigator.serviceWorker.getRegistration();
+  const sub = await reg?.pushManager.getSubscription();
+  if (!sub) return false;
+  const want = normLang(lang);
+  const { data, error } = await supabase
+    .from("push_subscriptions")
+    .select("p256dh, auth, lang")
+    .eq("endpoint", sub.endpoint)
+    .limit(1);
+  const row = data?.[0];
+  if (error || !row || row.lang === want) return false;
+  // Sem política de update: apaga e cria de novo com o idioma novo.
+  await deleteRow(sub.endpoint);
+  const { error: insertError } = await supabase
+    .from("push_subscriptions")
+    .insert({ endpoint: sub.endpoint, p256dh: row.p256dh, auth: row.auth, lang: want });
+  if (insertError) throw new Error(insertError.message);
+  return true;
 }
 
 /** Apaga a inscrição deste aparelho (na conta logada) e cancela no navegador. */
