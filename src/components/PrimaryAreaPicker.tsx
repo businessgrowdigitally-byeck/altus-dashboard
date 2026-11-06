@@ -2,7 +2,8 @@ import { AREA_DEFS, type AreaKey } from "@/lib/areas";
 import { useT } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
-const MAX_PRIMARY = 5;
+/** Todas as áreas podem ser prioritárias ("Selecionar todas" precisa caber no limite). */
+const MAX_PRIMARY = AREA_DEFS.length;
 
 /**
  * Seletor de áreas prioritárias (chips clicáveis).

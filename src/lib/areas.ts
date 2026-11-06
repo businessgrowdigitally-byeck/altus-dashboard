@@ -28,9 +28,6 @@ export type AreaDef = {
   emoji: string;
 };
 
-/** Áreas que podem ser marcadas como prioritárias hoje. O Agente entra só quando habilitado. */
-export const ALL_AREA_KEYS: AreaKey[] = ["financas", "corpo", "biblioteca", "estudos", "kaizen"];
-
 export const AREA_DEFS: AreaDef[] = [
   { key: "financas", to: "/financas", i18nKey: "nav.financas", icon: Wallet, emoji: "💰" },
   { key: "corpo", to: "/corpo", i18nKey: "nav.corpo", icon: HeartPulse, emoji: "⚖️" },
@@ -50,3 +47,10 @@ export const AREA_DEFS: AreaDef[] = [
       ] as AreaDef[])
     : []),
 ];
+
+/**
+ * Áreas que podem ser marcadas como prioritárias: exatamente as que o seletor
+ * mostra (o Mentor e o Planejamento entram quando o agente está habilitado).
+ * Antes era uma lista fixa sem o Mentor, e a escolha dele era descartada ao salvar.
+ */
+export const ALL_AREA_KEYS: AreaKey[] = AREA_DEFS.map((d) => d.key);
