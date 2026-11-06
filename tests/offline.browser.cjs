@@ -235,9 +235,25 @@ const user = {
     assert.equal(snapshot.profile.name, "Renomeado no outro", "cloud change kept");
     assert.equal(snapshot.kaizen.length, 1);
 
+    // 5) Sair da conta sem internet com mudança não enviada: avisa antes (sair apagaria).
+    await offline(cloud, true);
+    await page.reload({ waitUntil: "load" });
+    await page.locator("[data-offline-banner]").waitFor({ timeout: 5000 });
+    await page.locator("[data-action=ingles]").getByRole("checkbox").tap();
+    await page.getByText("1 de 2 feitas").waitFor();
+    await page.getByRole("button", { name: "Mais" }).tap();
+    await page.getByRole("button", { name: "Sair da conta" }).tap();
+    await page.getByText("Alterações não salvas").waitFor();
+    await page.keyboard.press("Escape");
+    await page.getByText("1 de 2 feitas").waitFor(); // continua logado, nada apagado
+    assert.ok(
+      await page.evaluate(() => localStorage.getItem("altus-sync-owner") !== null),
+      "offline copy kept",
+    );
+
     assert.deepEqual(errors, []);
     console.log(
-      "PASS: production build served locally; after one online visit the app opens with no internet (service worker copy, offline notice), records an action and opens a route never visited; back online, the offline change is sent and another device's change is kept; an offline change made before closing the app is merged (not overwritten) when reopening online; no page errors.",
+      "PASS: production build served locally; after one online visit the app opens with no internet (service worker copy, offline notice), records an action and opens a route never visited; back online, the offline change is sent and another device's change is kept; an offline change made before closing the app is merged (not overwritten) when reopening online; signing out offline with unsent changes warns first; no page errors.",
     );
   } finally {
     await browser.close();

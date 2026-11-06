@@ -133,7 +133,10 @@ const [moreOpen, setMoreOpen] = useState(false);
     } catch {
       /* queda de rede: a confirmação abaixo decide */
     }
-    if (useSyncStatus.getState().status === "error") {
+    // Sem internet ("offline") também é envio não confirmado: sair apagaria o que
+    // ainda está só neste aparelho.
+    const status = useSyncStatus.getState().status;
+    if (status === "error" || status === "offline") {
       setSignOutError(null);
       setSignOutWarn(true);
       return;
