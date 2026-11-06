@@ -27,6 +27,10 @@ export type ChatPlanState = {
   decisions?: number;
   /** A proposta salvou um plano do dia (data). */
   dayPlan?: string;
+  /** Quantos dias o plano da semana salvou. */
+  weekDays?: number;
+  /** Quantas ações da rotina fixa mudaram. */
+  routine?: number;
 };
 
 type ChatLike = { role: "user" | "assistant"; content: string; plan?: ChatPlanState };

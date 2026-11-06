@@ -165,7 +165,9 @@ export function parsePlanProposal(text: string): PlanProposal | null {
       !hasPlanPart(p) &&
       !hasGeneralPart(p) &&
       arr(p.filterDecisions).length === 0 &&
-      Object.keys(obj(p.dayPlan)).length === 0
+      Object.keys(obj(p.dayPlan)).length === 0 &&
+      arr(obj(p.weekPlan).days).length === 0 &&
+      arr(p.routineChanges).length === 0
     )
       return null;
     return p;

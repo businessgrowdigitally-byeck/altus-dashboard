@@ -5,7 +5,13 @@ import { useStore } from "@/lib/store";
 import { flushSync, useSyncStatus } from "@/lib/sync";
 import { useI18n } from "@/lib/i18n";
 import { fmtDate, todayISO } from "@/lib/format";
-import { applyDayPlanProposal } from "@/lib/day-plan";
+import {
+  applyDayPlanProposal,
+  applyWeekPlanProposal,
+  cleanRoutineChanges,
+  type DayItem,
+  type DayPlanApplyResult,
+} from "@/lib/day-plan";
 import type { MacroLink, PlanProposal } from "@/lib/ai/plan";
 import {
   defaultMacroLink,
@@ -23,6 +29,8 @@ function savedText(t: T, saved: ChatPlanState): string {
   if (saved.generalVersion) parts.push(t("agente.plan.savedGeneral", { v: saved.generalVersion }));
   if (saved.decisions) parts.push(t("agente.plan.savedFilter", { n: saved.decisions }));
   if (saved.dayPlan) parts.push(t("agente.plan.savedDay"));
+  if (saved.weekDays) parts.push(t("agente.plan.savedWeek", { n: saved.weekDays }));
+  if (saved.routine) parts.push(t("agente.plan.savedRoutine", { n: saved.routine }));
   return parts.join(" ") || t("agente.plan.saved", { v: "?" });
 }
 
@@ -60,6 +68,7 @@ export function PlanProposalCard({ index, view }: { index: number; view: Proposa
 }
 
 const LINK_CREATE = "__create__";
+const WEEKDAY_KEYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
 
 function PendingProposal({ index, proposal }: { index: number; proposal: PlanProposal }) {
   const { t } = useI18n();
@@ -106,6 +115,23 @@ function PendingProposal({ index, proposal }: { index: number; proposal: PlanPro
         : null,
     [proposal, dayPlans, goalsDaily],
   );
+  // Plano da semana: aplicado depois do de hoje, como no store.
+  const weekPreview = useMemo(() => {
+    const w = proposal.weekPlan as { days?: unknown; reason?: unknown } | undefined;
+    if (!w || typeof w !== "object") return null;
+    const r = applyWeekPlanProposal(
+      dayPreview?.plans ?? dayPlans ?? {},
+      goalsDaily,
+      w.days,
+      todayISO(),
+      typeof w.reason === "string" ? w.reason : "",
+    );
+    return r.days.length ? r : null;
+  }, [proposal, dayPreview, dayPlans, goalsDaily]);
+  const routineChanges = useMemo(
+    () => cleanRoutineChanges(goalsDaily, proposal.routineChanges),
+    [proposal, goalsDaily],
+  );
   const goalName = (id: string) => goalsMacro.find((g) => g.id === id)?.name ?? id;
 
   const confirm = async () => {
@@ -119,6 +145,8 @@ function PendingProposal({ index, proposal }: { index: number; proposal: PlanPro
       generalVersion: result.generalPlan?.version,
       decisions: result.decisions.length || undefined,
       dayPlan: result.dayPlanDate ?? undefined,
+      weekDays: result.weekPlanDates.length || undefined,
+      routine: result.routineChanged || undefined,
     };
     setChatPlan(index, saved);
     await flushSync();
@@ -150,6 +178,51 @@ function PendingProposal({ index, proposal }: { index: number; proposal: PlanPro
       {children}
     </div>
   );
+
+  const total = (items: DayItem[]) =>
+    items.reduce((sum, i) => sum + (i.kind === "action" ? i.minutes : (i.extra.minutes ?? 0)), 0);
+  const dayList = (d: DayPlanApplyResult) => (
+    <>
+      <ol className="list-decimal pl-5 space-y-0.5" data-day-preview>
+        {d.items.map((i) =>
+          i.kind === "action" ? (
+            <li key={i.key}>
+              {i.action.name} · {t("agente.plan.minutes", { n: i.minutes })}
+              {i.note && <span className="text-muted-foreground"> — {i.note}</span>}
+            </li>
+          ) : (
+            <li key={i.key}>
+              {i.extra.title}
+              {i.extra.minutes ? ` · ${t("agente.plan.minutes", { n: i.extra.minutes })}` : ""}{" "}
+              <span className="text-gold">({t("agente.plan.dayExtra")})</span>
+            </li>
+          ),
+        )}
+      </ol>
+      <div className="text-muted-foreground">
+        {t("agente.plan.dayTotal", { n: total(d.items) })}
+      </div>
+      {d.postponed.length > 0 && (
+        <div>
+          <span className="text-muted-foreground">{t("agente.plan.dayPostponed")}: </span>
+          {d.postponed
+            .map((p) => `${p.action.name} → ${fmtDate(p.to)}${p.reason ? ` (${p.reason})` : ""}`)
+            .join(" · ")}
+        </div>
+      )}
+    </>
+  );
+  const dayLabel = (iso: string) => {
+    const [y, m, d] = iso.split("-").map(Number);
+    const dow = new Date(y, m - 1, d).getDay();
+    return `${t(`goals.weekday.${WEEKDAY_KEYS[dow]}`)} ${fmtDate(iso)}`;
+  };
+  const time = (v: string | undefined) => v || t("agente.plan.noTime");
+  const days = (v: number[]) =>
+    [...v]
+      .sort()
+      .map((d) => t(`goals.weekday.${WEEKDAY_KEYS[d]}`))
+      .join(", ");
 
   return (
     <div
@@ -268,43 +341,60 @@ function PendingProposal({ index, proposal }: { index: number; proposal: PlanPro
           t("agente.plan.dayBadge"),
           <>
             {row(t("agente.plan.dayReason"), dayPreview.reason)}
-            <ol className="list-decimal pl-5 space-y-0.5" data-day-preview>
-              {dayPreview.items.map((i) =>
-                i.kind === "action" ? (
-                  <li key={i.key}>
-                    {i.action.name} · {t("agente.plan.minutes", { n: i.minutes })}
-                    {i.note && <span className="text-muted-foreground"> — {i.note}</span>}
-                  </li>
-                ) : (
-                  <li key={i.key}>
-                    {i.extra.title}
-                    {i.extra.minutes
-                      ? ` · ${t("agente.plan.minutes", { n: i.extra.minutes })}`
-                      : ""}{" "}
-                    <span className="text-gold">({t("agente.plan.dayExtra")})</span>
-                  </li>
-                ),
-              )}
-            </ol>
-            <div className="text-muted-foreground">
-              {t("agente.plan.dayTotal", {
-                n: dayPreview.items.reduce(
-                  (sum, i) => sum + (i.kind === "action" ? i.minutes : (i.extra.minutes ?? 0)),
-                  0,
-                ),
-              })}
-            </div>
-            {dayPreview.postponed.length > 0 && (
-              <div>
-                <span className="text-muted-foreground">{t("agente.plan.dayPostponed")}: </span>
-                {dayPreview.postponed
-                  .map(
-                    (p) => `${p.action.name} → ${fmtDate(p.to)}${p.reason ? ` (${p.reason})` : ""}`,
-                  )
-                  .join(" · ")}
-              </div>
-            )}
+            {dayList(dayPreview)}
           </>,
+        )}
+
+      {weekPreview &&
+        section(
+          t("agente.plan.week"),
+          t("agente.plan.weekBadge", { n: weekPreview.days.length }),
+          <div className="space-y-2">
+            {weekPreview.days.map((d) => (
+              <div key={d.date} data-week-day={d.date} className="space-y-0.5">
+                <div className="font-semibold">
+                  {dayLabel(d.date)}
+                  {d.reason && (
+                    <span className="font-normal text-muted-foreground"> — {d.reason}</span>
+                  )}
+                </div>
+                {dayList(d)}
+              </div>
+            ))}
+          </div>,
+        )}
+
+      {routineChanges.length > 0 &&
+        section(
+          t("agente.plan.routine"),
+          t("agente.plan.routineBadge"),
+          <ul className="space-y-1" data-routine-preview>
+            {routineChanges.map(({ action, patch, reason }) => (
+              <li key={action.id}>
+                <span className="font-semibold">{action.name}</span>
+                {patch.durationMinutes !== undefined && (
+                  <div>
+                    {t("agente.plan.routineDuration")}:{" "}
+                    {t("agente.plan.minutes", { n: action.durationMinutes ?? 30 })} →{" "}
+                    {t("agente.plan.minutes", { n: patch.durationMinutes })}
+                  </div>
+                )}
+                {patch.suggestedTime !== undefined && (
+                  <div>
+                    {t("agente.plan.routineTime")}: {time(action.suggestedTime)} →{" "}
+                    {time(patch.suggestedTime)}
+                  </div>
+                )}
+                {patch.daysOfWeek && (
+                  <div>
+                    {t("agente.plan.routineDays")}: {days(action.daysOfWeek)} →{" "}
+                    {days(patch.daysOfWeek)}
+                  </div>
+                )}
+                {reason && <div className="text-muted-foreground">{reason}</div>}
+              </li>
+            ))}
+          </ul>,
         )}
 
       {decisions.length > 0 &&

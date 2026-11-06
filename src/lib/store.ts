@@ -24,6 +24,10 @@ import {
 export type { CategoryBudgets, RecurringTransaction } from "./finance";
 import {
   applyDayPlanProposal,
+  applyRoutineChanges,
+  applyWeekPlanProposal,
+  cleanRoutineChanges,
+  keepDayDurations,
   moveItem,
   normalizeDayPlans,
   postponeAction,
@@ -204,7 +208,13 @@ type State = {
   saveAltusProposal: (
     proposal: PlanProposal,
     link: MacroLink | null,
-  ) => AltusApplyResult & { dayPlanDate: string | null };
+  ) => AltusApplyResult & {
+    dayPlanDate: string | null;
+    /** Datas salvas pelo plano da semana. */
+    weekPlanDates: string[];
+    /** Quantas ações da rotina fixa mudaram. */
+    routineChanged: number;
+  };
   toggleMicroGoal: (planId: string, microId: string) => void;
   removeAltusPlan: (id: string) => void;
   /**
@@ -265,6 +275,8 @@ type State = {
   toggleDayExtra: (date: string, extraId: string) => void;
   /** Volta à rotina naquele dia. */
   resetDayPlan: (date: string) => void;
+  /** "Manter na rotina": as durações ajustadas do dia viram a duração fixa. Retorna quantas mudaram. */
+  keepDayDurationsInRoutine: (date: string) => number;
   pushChat: (m: ChatMsg) => void;
   /** Registra na mensagem do chat que a proposta foi salva ou descartada. */
   setChatPlan: (index: number, plan: ChatPlanState) => void;
@@ -490,6 +502,12 @@ export const useStore = create<State>()(
       toggleDayExtra: (date, extraId) =>
         set((s) => ({ dayPlans: toggleExtra(s.dayPlans ?? {}, date, extraId) })),
       resetDayPlan: (date) => set((s) => ({ dayPlans: resetDay(s.dayPlans ?? {}, date) })),
+      keepDayDurationsInRoutine: (date) => {
+        const s = get();
+        const k = keepDayDurations(s.dayPlans ?? {}, s.goalsDaily, date);
+        set({ dayPlans: k.plans, goalsDaily: applyRoutineChanges(s.goalsDaily, k.changes) });
+        return k.changes.length;
+      },
       saveAltusProposal: (proposal, link) => {
         const s = get();
         const result = applyAltusProposal(
@@ -503,17 +521,39 @@ export const useStore = create<State>()(
           todayISO(),
           link,
         );
-        // Plano do dia (parte "dayPlan" da proposta): só para hoje.
+        // Plano do dia (hoje), da semana (hoje … hoje+6) e mudança na rotina fixa.
+        const today = todayISO();
+        let plans = s.dayPlans ?? {};
         const dayPlan =
           proposal.dayPlan && typeof proposal.dayPlan === "object"
-            ? applyDayPlanProposal(s.dayPlans ?? {}, s.goalsDaily, proposal.dayPlan, todayISO())
+            ? applyDayPlanProposal(plans, s.goalsDaily, proposal.dayPlan, today)
             : null;
+        if (dayPlan) plans = dayPlan.plans;
+        const weekRaw = proposal.weekPlan as { days?: unknown; reason?: unknown } | undefined;
+        const week =
+          weekRaw && typeof weekRaw === "object"
+            ? applyWeekPlanProposal(
+                plans,
+                s.goalsDaily,
+                weekRaw.days,
+                today,
+                typeof weekRaw.reason === "string" ? weekRaw.reason : "",
+              )
+            : null;
+        if (week) plans = week.plans;
+        const routine = cleanRoutineChanges(s.goalsDaily, proposal.routineChanges);
         set({
           ...result.state,
           ...(result.createdGoal ? { goalsMacro: [result.createdGoal, ...s.goalsMacro] } : {}),
-          ...(dayPlan ? { dayPlans: dayPlan.plans } : {}),
+          ...(dayPlan || week?.days.length ? { dayPlans: plans } : {}),
+          ...(routine.length ? { goalsDaily: applyRoutineChanges(s.goalsDaily, routine) } : {}),
         });
-        return { ...result, dayPlanDate: dayPlan?.date ?? null };
+        return {
+          ...result,
+          dayPlanDate: dayPlan?.date ?? null,
+          weekPlanDates: week?.days.map((d) => d.date) ?? [],
+          routineChanged: routine.length,
+        };
       },
       toggleMicroGoal: (planId, microId) => set((s) => ({
         altusPlans: (s.altusPlans ?? []).map((p) => p.id !== planId ? p : {
