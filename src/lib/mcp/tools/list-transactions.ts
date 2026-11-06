@@ -5,10 +5,18 @@ import { loadData } from "../data";
 export default defineTool({
   name: "list_transactions",
   title: "Listar transações",
-  description: "Lista as transações financeiras do usuário, das mais recentes para as mais antigas.",
+  description:
+    "Lista as transações financeiras do usuário, das mais recentes para as mais antigas.",
   inputSchema: {
-    type: z.enum(["entrada", "saida", "todas"]).nullable().describe("Filtrar por tipo. Use 'todas' ou null para tudo."),
-    month: z.string().regex(/^\d{4}-\d{2}$/).nullable().describe("Mês no formato AAAA-MM, ou null para todos."),
+    type: z
+      .enum(["entrada", "saida", "todas"])
+      .nullable()
+      .describe("Filtrar por tipo. Use 'todas' ou null para tudo."),
+    month: z
+      .string()
+      .regex(/^\d{4}-\d{2}$/)
+      .nullable()
+      .describe("Mês no formato AAAA-MM, ou null para todos."),
     limit: z.number().int().min(1).max(200).nullable().describe("Quantidade máxima (padrão 50)."),
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },

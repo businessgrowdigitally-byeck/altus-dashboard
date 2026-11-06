@@ -101,7 +101,6 @@ export type Profile = {
 export type Settings = {
   theme: "dark" | "light";
   accent: "gold" | "emerald" | "purple" | "blue";
-  geminiKey: string;
 };
 
 export type GoalArea = "Finanças" | "Corpo & Saúde" | "Biblioteca" | "Estudos" | "Geral";
@@ -324,7 +323,7 @@ const sampleGoalsDaily: GoalDaily[] = [
 const initial = {
   version: 2,
   profile: { name: "Visionário", goalWeight: 75, incomeTarget: 10000, maxExpenses: 6000, height: 1.75 } as Profile,
-  settings: { theme: "dark" as const, accent: "gold" as const, geminiKey: "" },
+  settings: { theme: "dark" as const, accent: "gold" as const },
   primaryAreas: [...ALL_AREA_KEYS] as AreaKey[],
   transactions: sampleTransactions,
   weights: sampleWeights,
@@ -643,6 +642,11 @@ export const useStore = create<State>()(
         }
 
         if (!encontrou) return "Nenhum dado reconhecido no arquivo.";
+        // Backups antigos podem trazer `settings.geminiKey` (sem uso): não reimporta.
+        if (patch.settings && typeof patch.settings === "object" && "geminiKey" in patch.settings) {
+          const { geminiKey: _unused, ...settings } = patch.settings as Record<string, unknown>;
+          patch.settings = settings;
+        }
 
         // Backups antigos: valida e converte o planejamento para o formato atual.
         set({

@@ -116,3 +116,17 @@ The Mentor's Markdown (bold, italics, lists, headings, separators) is rendered a
 ```sh
 node --experimental-strip-types --test tests/markdown.test.ts
 ```
+
+## Sync across devices (F7)
+
+Three-way merge (last synced × this device × cloud) and the MCP's conditional write are unit-tested:
+
+```sh
+node --experimental-strip-types --test tests/merge.test.ts tests/mcp-mutate.test.ts
+```
+
+`tests/fake-supabase.cjs` is the in-memory Supabase used by all browser tests: it versions `user_data` like the real `updated_at` trigger and can simulate another device writing (`remoteWrite`) or a failed save (`failNextWrite`). With the dev server running:
+
+```sh
+node tests/sync.browser.cjs
+```

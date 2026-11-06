@@ -1,5 +1,6 @@
 const { chromium } = require("playwright");
 const assert = require("node:assert/strict");
+const { fakeSupabase } = require("./fake-supabase.cjs");
 
 // Mobile (F4): em dois tamanhos de celular, nenhuma tela rola para o lado,
 // todos os campos têm fonte ≥ 16px (o iPhone dá zoom automático abaixo disso),
@@ -188,24 +189,12 @@ async function setup(browser, vp) {
   const page = await ctx.newPage();
   const errors = [];
   page.on("pageerror", (e) => errors.push(e.message));
-  await page.route("https://oskwtnluunvdlbjptday.supabase.co/**", (route) => {
-    const req = route.request();
-    if (req.url().includes("/rest/v1/user_data"))
-      return req.method() === "GET"
-        ? route.fulfill({
-            status: 200,
-            contentType: "application/json",
-            body: JSON.stringify({ data: snapshot }),
-          })
-        : route.fulfill({ status: 201, body: "" });
-    if (req.url().includes("/auth/v1/user"))
-      return route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify(user),
-      });
-    return route.fulfill({ status: 200, contentType: "application/json", body: "{}" });
+  const cloud = fakeSupabase(page, {
+    user,
+    get: () => snapshot,
+    set: () => {},
   });
+  await cloud.ready;
   await page.addInitScript(
     ({ user }) =>
       localStorage.setItem(
@@ -343,24 +332,12 @@ const measure = (page) =>
     // Computador: os botões continuam aparecendo só ao passar o mouse.
     const desk = await browser.newPage({ viewport: { width: 1280, height: 900 } });
     const { page } = { page: desk };
-    await page.route("https://oskwtnluunvdlbjptday.supabase.co/**", (route) => {
-      const req = route.request();
-      if (req.url().includes("/rest/v1/user_data"))
-        return req.method() === "GET"
-          ? route.fulfill({
-              status: 200,
-              contentType: "application/json",
-              body: JSON.stringify({ data: snapshot }),
-            })
-          : route.fulfill({ status: 201, body: "" });
-      if (req.url().includes("/auth/v1/user"))
-        return route.fulfill({
-          status: 200,
-          contentType: "application/json",
-          body: JSON.stringify(user),
-        });
-      return route.fulfill({ status: 200, contentType: "application/json", body: "{}" });
+    const cloud = fakeSupabase(page, {
+      user,
+      get: () => snapshot,
+      set: () => {},
     });
+    await cloud.ready;
     await page.addInitScript(
       ({ user }) =>
         localStorage.setItem(

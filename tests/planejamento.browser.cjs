@@ -1,5 +1,6 @@
 const { chromium } = require("playwright");
 const assert = require("node:assert/strict");
+const { fakeSupabase } = require("./fake-supabase.cjs");
 
 // Tela de Planejamento (F5): P.G., planejamentos com etapa ativa, Metas Micro
 // marcáveis, vínculo manual de um plano antigo, aviso de revisão vencida com
@@ -141,29 +142,15 @@ const goal = (id, name) => ({
       ],
     };
     let writes = 0;
-    await page.route("https://oskwtnluunvdlbjptday.supabase.co/**", async (route) => {
-      const req = route.request();
-      if (req.url().includes("/rest/v1/user_data")) {
-        if (req.method() === "GET")
-          return route.fulfill({
-            status: 200,
-            contentType: "application/json",
-            body: JSON.stringify({ data: snapshot }),
-          });
-        if (req.method() === "POST") {
-          snapshot = req.postDataJSON().data;
-          writes++;
-          return route.fulfill({ status: 201, body: "" });
-        }
-      }
-      if (req.url().includes("/auth/v1/user"))
-        return route.fulfill({
-          status: 200,
-          contentType: "application/json",
-          body: JSON.stringify(user),
-        });
-      return route.fulfill({ status: 200, contentType: "application/json", body: "{}" });
+    const cloud = fakeSupabase(page, {
+      user,
+      get: () => snapshot,
+      set: (data, opts) => {
+        snapshot = data;
+        if (!opts?.remote) writes++;
+      },
     });
+    await cloud.ready;
     await page.addInitScript(
       ({ user }) =>
         localStorage.setItem(
