@@ -108,3 +108,11 @@ With the dev server running, the browser test opens the screen from the menu and
 ```sh
 node tests/planejamento.browser.cjs
 ```
+
+## Mentor replies (Markdown)
+
+The Mentor's Markdown (bold, italics, lists, headings, separators) is rendered as React elements, never raw HTML. The parser is unit-tested with a real reply; `tests/mobile.browser.cjs` checks that no raw `**` or list markers are visible:
+
+```sh
+node --experimental-strip-types --test tests/markdown.test.ts
+```

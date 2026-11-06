@@ -161,7 +161,12 @@ const snapshot = {
   ],
   chat: [
     { role: "user", content: "Oi" },
-    { role: "assistant", content: "Olá! ".repeat(80) },
+    {
+      role: "assistant",
+      content:
+        "Uma **Meta Macro** é o resultado final concreto.\n\n*   **Área:** Qual setor?\n*   **Prazo:** Quando?\n    *   **Alvo:** R$ 10.000,00\n\n---\n\n" +
+        "Olá! ".repeat(60),
+    },
   ],
 };
 const user = {
@@ -277,6 +282,13 @@ const measure = (page) =>
       );
       assert.equal(chat.fab, false, `${vp.name}: + button covers the chat`);
       await page.getByPlaceholder("Pergunte ao Mentor...").tap();
+      // Markdown do Mentor formatado: sem ** nem marcadores de lista à mostra.
+      const shown = await page.locator("[data-markdown]").first().innerText();
+      assert.doesNotMatch(shown, /\*\*|^\s*\*\s|^---$/m, `${vp.name}: raw Markdown visible`);
+      assert.equal(
+        await page.locator("[data-markdown] strong", { hasText: "Meta Macro" }).count(),
+        1,
+      );
 
       // Editar/excluir visíveis sem mouse (antes só apareciam com hover).
       await page.goto(base + "/", { waitUntil: "networkidle" });

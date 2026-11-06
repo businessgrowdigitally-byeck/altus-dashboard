@@ -10,6 +10,7 @@ import { buildChatHistory } from "@/lib/ai/history";
 import { stripPlanBlocks } from "@/lib/ai/plan";
 import { proposalViews } from "@/lib/ai/proposal";
 import { PlanProposalCard } from "@/components/PlanProposalCard";
+import { MessageText } from "@/components/MessageText";
 import { useAuth } from "@/lib/auth";
 
 export const Route = createFileRoute("/agente")({
@@ -154,11 +155,14 @@ function Agente() {
               <div className="max-w-[92%] md:max-w-[80%]">
                 {text && (
                   <div
-                    className={`rounded-2xl px-4 py-3 text-sm whitespace-pre-wrap ${
-                      m.role === "user" ? "bg-secondary border border-gold/40" : "glass"
+                    className={`rounded-2xl px-4 py-3 text-sm ${
+                      m.role === "user"
+                        ? "bg-secondary border border-gold/40 whitespace-pre-wrap"
+                        : "glass"
                     }`}
                   >
-                    {text}
+                    {/* O Gemini responde em Markdown: formata em vez de mostrar ** e *. */}
+                    {m.role === "assistant" && !m.error ? <MessageText text={text} /> : text}
                   </div>
                 )}
                 <PlanProposalCard index={i} view={views[i]} />
