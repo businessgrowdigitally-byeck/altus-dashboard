@@ -94,6 +94,10 @@ export const dashboard = {
   },
   homeBooksYear: { pt: "{n} em {year}", en: "{n} in {year}", es: "{n} en {year}" },
   homeStudyHours: { pt: "{h} h no período", en: "{h} h in the period", es: "{h} h en el período" },
+  homeInsightCount: { pt: "{n} de {total}", en: "{n} of {total}", es: "{n} de {total}" },
+  homeInsightPrev: { pt: "Insight anterior", en: "Previous insight", es: "Insight anterior" },
+  homeInsightNext: { pt: "Próximo insight", en: "Next insight", es: "Siguiente insight" },
+  homeInsightGo: { pt: "Ver insight {n}", en: "Show insight {n}", es: "Ver insight {n}" },
   emptyTodayCta: { pt: "Criar uma ação", en: "Create an action", es: "Crear una acción" },
   reportTitle: { pt: "Relatório Executivo", en: "Executive Report", es: "Informe Ejecutivo" },
   reportSubtitle: {

@@ -9,7 +9,16 @@ import { GlassCard, Section } from "@/components/primitives";
 import { GoalsSection, GOALS_SECTION_ID } from "@/components/GoalsSection";
 import { PrimaryAreaPicker } from "@/components/PrimaryAreaPicker";
 import { Modal, btnGold } from "@/components/Modal";
-import { Check, ArrowRight, Brain, Sparkles, Target, CheckSquare } from "lucide-react";
+import {
+  Check,
+  ArrowRight,
+  Brain,
+  Sparkles,
+  Target,
+  CheckSquare,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { useSyncStatus } from "@/lib/sync";
 import { useT } from "@/lib/i18n";
@@ -264,7 +273,8 @@ function Dashboard() {
     }
     if (streak > 0)
       out.push(streak === 1 ? t("streakOne", { n: streak }) : t("streakMany", { n: streak }));
-    while (out.length < 3) out.push(t("insight.fallback"));
+    // Só insights reais; a frase genérica aparece apenas quando não há nenhum.
+    if (out.length === 0) out.push(t("insight.fallback"));
     return out.slice(0, 3);
   }, [transactions, sortedWeights, booksThisYear, streak, yearKey, t]);
 
@@ -274,6 +284,8 @@ function Dashboard() {
   const [showAreaPicker, setShowAreaPicker] = useState(false);
   const [showRecent, setShowRecent] = useState(false);
   const [chartArea, setChartArea] = useState<AreaKey | null>(null);
+  const [insight, setInsight] = useState(0);
+  const insightIdx = insight < insights.length ? insight : 0;
   // Foco da semana: as metas em foco no P.G.; sem P.G., a frase de sempre.
   const focusText =
     (altusGeneralPlan?.focusGoalIds ?? [])
@@ -693,15 +705,52 @@ function Dashboard() {
         </GlassCard>
       )}
 
-      {/* f) Insights */}
+      {/* f) Insights: um cartão, um insight por vez. */}
       <Section title={t("insightsWeek")} className="mt-0">
-        <div className="grid md:grid-cols-3 gap-4">
-          {insights.map((t, i) => (
-            <GlassCard key={i} className="border-l-4 border-l-purple-500">
-              <p className="text-sm leading-relaxed text-foreground/90">{t}</p>
-            </GlassCard>
-          ))}
-        </div>
+        <GlassCard className="border-l-4 border-l-purple-500">
+          <p className="text-sm leading-relaxed text-foreground/90 min-h-[2.75rem]" data-insight>
+            {insights[insightIdx]}
+          </p>
+          {insights.length > 1 && (
+            <div className="mt-3 flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setInsight((insightIdx - 1 + insights.length) % insights.length)}
+                aria-label={t("homeInsightPrev")}
+                className="size-9 flex items-center justify-center rounded-lg text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+              >
+                <ChevronLeft size={16} />
+              </button>
+              <div className="flex items-center gap-1.5">
+                {insights.map((_, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => setInsight(i)}
+                    aria-label={t("homeInsightGo", { n: i + 1 })}
+                    aria-current={i === insightIdx}
+                    className="p-1"
+                  >
+                    <span
+                      className={`block h-2 rounded-full transition-all ${i === insightIdx ? "w-4 bg-purple-500" : "w-2 bg-muted-foreground/30"}`}
+                    />
+                  </button>
+                ))}
+              </div>
+              <button
+                type="button"
+                onClick={() => setInsight((insightIdx + 1) % insights.length)}
+                aria-label={t("homeInsightNext")}
+                className="size-9 flex items-center justify-center rounded-lg text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+              >
+                <ChevronRight size={16} />
+              </button>
+              <span className="ml-auto text-xs text-muted-foreground" data-insight-count>
+                {t("homeInsightCount", { n: insightIdx + 1, total: insights.length })}
+              </span>
+            </div>
+          )}
+        </GlassCard>
       </Section>
 
       {/* g) Atalhos */}
