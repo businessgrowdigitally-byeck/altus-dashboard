@@ -204,3 +204,12 @@ VITE_VAPID_PUBLIC_KEY=$(npx web-push generate-vapid-keys --json | node -pe 'JSON
   npm run dev -- --host 127.0.0.1 --port 3000
 node tests/push-settings.browser.cjs
 ```
+
+## Offline mode
+
+The offline test runs against the **production build** (the service worker only keeps hashed `/assets/` files, which the dev server does not produce). It serves `.vercel/output` locally the way Vercel does and simulates a real outage: the server is stopped, the fake Supabase refuses every call (`cloud.setOffline(true)`) and the browser goes offline. It checks that after one online visit the app opens with no internet (with the offline notice), records an action, opens a route never visited, and that once the connection returns the offline change is sent while another device's change is kept. It also checks that a change made offline before closing the app is merged, not overwritten, when the app is reopened online.
+
+```sh
+NITRO_PRESET=vercel bun run build
+node tests/offline.browser.cjs   # starts its own server on port 3100 (OFFLINE_TEST_PORT)
+```

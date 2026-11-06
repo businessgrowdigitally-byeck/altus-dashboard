@@ -25,12 +25,14 @@ function fakeSupabase(page, { user, get, set, morning = false, briefing = null }
   const nextVersion = () => `2026-01-01T00:00:${String(++n).padStart(2, "0")}.000000+00:00`;
   let version = nextVersion();
   let failNext = false;
+  let offline = false;
   const json = (route, status, body) =>
     route.fulfill({ status, contentType: "application/json", body: JSON.stringify(body) });
 
   const ready = page.route("https://oskwtnluunvdlbjptday.supabase.co/**", (route) => {
     const req = route.request();
     const url = new URL(req.url());
+    if (offline) return route.abort("internetdisconnected");
     if (url.pathname === "/rest/v1/user_data") {
       if (req.method() === "GET") {
         const data = get();
@@ -93,6 +95,10 @@ function fakeSupabase(page, { user, get, set, morning = false, briefing = null }
       version = nextVersion();
     },
     version: () => version,
+    /** Simula estar sem internet: toda chamada ao Supabase falha como falha de rede. */
+    setOffline(value) {
+      offline = value;
+    },
     /** A próxima gravação falha (ex.: internet caiu). */
     failNextWrite() {
       failNext = true;
