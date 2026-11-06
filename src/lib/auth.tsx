@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase, supabaseConfigured } from "./supabase";
+import { forgetThisDevice } from "@/lib/push";
 
 type AuthValue = {
   user: User | null;
@@ -88,6 +89,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return !data.session;
     },
     signOut: async () => {
+      // Este aparelho para de receber o lembrete da manhã (traz o Kaizen da pessoa).
+      await forgetThisDevice();
       const { error } = await supabase.auth.signOut();
       if (error) throw new Error(traduzErro(error.message));
     },

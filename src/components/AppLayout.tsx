@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
 import {
   Home,
@@ -18,9 +18,10 @@ import { BottomNav } from "@/components/BottomNav";
 import { useAuth } from "@/lib/auth";
 import { useSyncStatus } from "@/lib/sync";
 import { flushSync } from "@/lib/sync";
-import { useT } from "@/lib/i18n";
+import { useLangStore, useT } from "@/lib/i18n";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { NotificationsBell } from "@/components/NotificationsBell";
+import { syncPushLang } from "@/lib/push";
 import {
   Drawer,
   DrawerClose,
@@ -82,6 +83,11 @@ const [moreOpen, setMoreOpen] = useState(false);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const isChat = pathname === "/agente";
   const { user, signOut } = useAuth();
+  // Lembrete da manhã: o idioma da notificação acompanha o idioma do app neste aparelho.
+  const lang = useLangStore((s) => s.lang);
+  useEffect(() => {
+    if (user) syncPushLang(lang).catch(() => {});
+  }, [lang, user]);
   const name =
     profileName ||
     user?.user_metadata?.full_name ||

@@ -90,6 +90,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
+      { name: "theme-color", content: "#190D30" },
+      // iPhone: abrir pela Tela de Início como app (necessário para o lembrete push).
+      { name: "apple-mobile-web-app-capable", content: "yes" },
+      { name: "apple-mobile-web-app-title", content: "ALTUS" },
+      { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
       { title: "ALTUS — Become your best version" },
       {
         name: "description",
@@ -120,7 +125,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         href: appCss,
       },
       { rel: "icon", type: "image/png", href: "/favicon.png" },
-      { rel: "apple-touch-icon", href: "/favicon.png" },
+      { rel: "apple-touch-icon", sizes: "180x180", href: "/icons/apple-touch-icon.png" },
+      { rel: "manifest", href: "/manifest.webmanifest" },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "" },
       {
@@ -161,6 +167,13 @@ function RootComponent() {
     if (theme === "dark") root.classList.add("dark");
     else root.classList.remove("dark");
   }, [theme]);
+  // Service worker do lembrete da manhã (só notificações; não intercepta requisições).
+  useEffect(() => {
+    if (!("serviceWorker" in navigator)) return;
+    navigator.serviceWorker.register("/sw.js").catch(() => {
+      /* Sem service worker: o app funciona igual, só sem lembrete push. */
+    });
+  }, []);
   const lang = useLangStore((s) => s.lang);
   useEffect(() => {
     const titles: Record<string, string> = {

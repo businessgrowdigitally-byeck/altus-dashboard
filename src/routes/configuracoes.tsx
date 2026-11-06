@@ -11,6 +11,7 @@ import { Moon, Sun } from "lucide-react";
 import { toast } from "sonner";
 import { useT } from "@/lib/i18n";
 import { taxLabel, PREFIX } from "@/components/TaxonomySelect";
+import { MorningReminderSettings } from "@/components/MorningReminderSettings";
 
 export const Route = createFileRoute("/configuracoes")({ component: Config });
 
@@ -204,6 +205,12 @@ function Config() {
               {t("pz.config.selectAll")}
             </button>
           </div>
+        </GlassCard>
+      </Section>
+
+      <Section title={t("push.section")}>
+        <GlassCard>
+          <MorningReminderSettings />
         </GlassCard>
       </Section>
 
