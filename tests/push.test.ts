@@ -175,3 +175,58 @@ describe("envio", () => {
     assert.equal(sameSecret("", ""), false, "an empty secret never authorizes");
   });
 });
+
+describe("suporte a push no aparelho", async () => {
+  const { detectPushSupport, vapidKeyBytes } = await import("../src/lib/push-support.ts");
+  const base = {
+    userAgent: "Mozilla/5.0 (Linux; Android 14) Chrome/130",
+    platform: "Linux armv8l",
+    maxTouchPoints: 5,
+    standalone: false,
+    hasServiceWorker: true,
+    hasPushManager: true,
+    hasNotification: true,
+    permission: "default",
+  };
+  const IPHONE = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15";
+
+  it("Android/desktop ready; blocked or missing APIs are explained", () => {
+    assert.equal(detectPushSupport(base), "ready");
+    assert.equal(detectPushSupport({ ...base, permission: "denied" }), "denied");
+    assert.equal(detectPushSupport({ ...base, hasPushManager: false }), "unsupported");
+  });
+
+  it("iPhone/iPad outside the Home Screen gets the install instruction", () => {
+    assert.equal(detectPushSupport({ ...base, userAgent: IPHONE }), "ios-install");
+    // iPad com iPadOS se apresenta como Mac com tela de toque.
+    assert.equal(
+      detectPushSupport({
+        ...base,
+        userAgent: "Macintosh",
+        platform: "MacIntel",
+        maxTouchPoints: 5,
+      }),
+      "ios-install",
+    );
+    assert.equal(detectPushSupport({ ...base, userAgent: IPHONE, standalone: true }), "ready");
+    assert.equal(
+      detectPushSupport({
+        ...base,
+        userAgent: "Macintosh",
+        platform: "MacIntel",
+        maxTouchPoints: 0,
+      }),
+      "ready",
+      "a real Mac is not an iPad",
+    );
+  });
+
+  it("VAPID public key bytes (65-byte uncompressed P-256 point)", () => {
+    const key =
+      "BEl62iUYgUivxIkv69yViEuiBIa-Ib9-SkvMeAtA3LFgDzkrxZJjSgSnfckjBJuBkr3qBUYIHBQFLXYp5Nksh8U";
+    const bytes = vapidKeyBytes(key);
+    assert.equal(bytes.length, 65);
+    assert.equal(bytes[0], 4);
+    assert.equal(Buffer.from(bytes).toString("base64url"), key);
+  });
+});
