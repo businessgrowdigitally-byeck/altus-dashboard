@@ -4,7 +4,7 @@ import { useStore } from "@/lib/store";
 import { brl, daysAgoISO, fmtDate, fmtDateLong, greeting, kg, todayISO } from "@/lib/format";
 import { balanceUntil, dailyBalanceSeries, monthTotals } from "@/lib/finance";
 import { GlassCard, KpiCard, PageHeader, Section } from "@/components/primitives";
-import { GoalsSection } from "@/components/GoalsSection";
+import { GoalsSection, GOALS_SECTION_ID } from "@/components/GoalsSection";
 import { KaizenTodayCard } from "@/components/KaizenTodayCard";
 import { PrimaryAreaPicker } from "@/components/PrimaryAreaPicker";
 import { Modal, btnGold } from "@/components/Modal";
@@ -120,8 +120,18 @@ function Dashboard() {
   const todayActions = goalsDaily.filter((a) => a.daysOfWeek.includes(todayDow));
   const doneIds = new Set(completions.filter((c) => c.date === today).map((c) => c.actionId));
   const todayDone = todayActions.filter((a) => doneIds.has(a.id)).length;
+  // Sem ações hoje não há progresso a mostrar: 0 e estado vazio, nunca um número inventado.
   const weeklyProgress =
-    todayActions.length > 0 ? Math.round((todayDone / todayActions.length) * 100) : 78;
+    todayActions.length > 0 ? Math.round((todayDone / todayActions.length) * 100) : 0;
+  const [goalsTab, setGoalsTab] = useState<{ tab: "macro" | "daily"; nonce: number }>();
+  const goToCreateAction = () => {
+    setGoalsTab({ tab: "daily", nonce: Date.now() });
+    requestAnimationFrame(() =>
+      document
+        .getElementById(GOALS_SECTION_ID)
+        ?.scrollIntoView({ behavior: "smooth", block: "start" }),
+    );
+  };
 
   // 30-day financial trend
   const finTrend = useMemo(
@@ -604,7 +614,7 @@ function Dashboard() {
             <div className="h-3 w-full rounded-full bg-muted overflow-hidden border border-border p-0.5">
               <div
                 className="h-full rounded-full bg-gradient-to-r from-purple-600 via-purple-400 to-indigo-400 shadow-[0_0_12px_rgba(168,85,247,0.8)] transition-all duration-500"
-                style={{ width: `${Math.min(100, Math.max(5, weeklyProgress))}%` }}
+                style={{ width: `${Math.min(100, Math.max(0, weeklyProgress))}%` }}
               />
             </div>
           </div>
@@ -676,7 +686,17 @@ function Dashboard() {
 
         <div className="space-y-2.5">
           {todayActions.length === 0 && (
-            <p className="text-sm text-muted-foreground py-4 text-center">{t("emptyToday")}</p>
+            <div data-empty-today className="py-4 text-center space-y-3">
+              <p className="text-sm text-muted-foreground">{t("emptyToday")}</p>
+              <button
+                type="button"
+                onClick={goToCreateAction}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-purple-500/40 bg-purple-500/10 text-sm font-medium text-purple-700 dark:text-purple-300 hover:bg-purple-500/20 transition-colors"
+              >
+                {t("emptyTodayCta")}
+                <ArrowRight size={14} />
+              </button>
+            </div>
           )}
           {todayActions.map((a) => {
             const done = doneIds.has(a.id);
@@ -772,7 +792,7 @@ function Dashboard() {
       </Section>
 
       {/* Seção Completa de Metas & Rotina */}
-      <GoalsSection />
+      <GoalsSection requestedTab={goalsTab} />
 
       <OnboardingModal
         open={showOnboarding}

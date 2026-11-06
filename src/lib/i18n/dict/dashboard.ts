@@ -53,10 +53,11 @@ export const dashboard = {
     es: "{done} de {total} completados",
   },
   emptyToday: {
-    pt: "Nenhuma ação agendada para hoje. Você pode criar novos hábitos na aba de Rotina abaixo!",
-    en: "No actions scheduled for today. You can create new habits in the Routine tab below!",
-    es: "Ninguna acción programada para hoy. ¡Puedes crear nuevos hábitos en la pestaña de Rutina abajo!",
+    pt: "Nenhuma ação agendada para hoje.",
+    en: "No actions scheduled for today.",
+    es: "Ninguna acción programada para hoy.",
   },
+  emptyTodayCta: { pt: "Criar uma ação", en: "Create an action", es: "Crear una acción" },
   reportTitle: { pt: "Relatório Executivo", en: "Executive Report", es: "Informe Ejecutivo" },
   reportSubtitle: {
     pt: "Visão panorâmica de todos os pilares da sua vida",
