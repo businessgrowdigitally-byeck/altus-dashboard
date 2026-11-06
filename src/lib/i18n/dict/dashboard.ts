@@ -82,6 +82,18 @@ export const dashboard = {
   homeCountGoals: { pt: "Metas", en: "Goals", es: "Metas" },
   homeCountActions: { pt: "Ações de hoje", en: "Today's actions", es: "Acciones de hoy" },
   homeCountDone: { pt: "Feitas", en: "Done", es: "Hechas" },
+  homeProgress: { pt: "Seu progresso", en: "Your progress", es: "Tu progreso" },
+  homeTabPeso: { pt: "Peso", en: "Weight", es: "Peso" },
+  homeTabSaldo: { pt: "Saldo", en: "Balance", es: "Saldo" },
+  homeTabEstudos: { pt: "Estudos", en: "Studies", es: "Estudios" },
+  homeTabLivros: { pt: "Livros", en: "Books", es: "Libros" },
+  homeDeltaPeriod: {
+    pt: "{delta} no período",
+    en: "{delta} in the period",
+    es: "{delta} en el período",
+  },
+  homeBooksYear: { pt: "{n} em {year}", en: "{n} in {year}", es: "{n} en {year}" },
+  homeStudyHours: { pt: "{h} h no período", en: "{h} h in the period", es: "{h} h en el período" },
   emptyTodayCta: { pt: "Criar uma ação", en: "Create an action", es: "Crear una acción" },
   reportTitle: { pt: "Relatório Executivo", en: "Executive Report", es: "Informe Ejecutivo" },
   reportSubtitle: {

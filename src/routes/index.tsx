@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Fragment, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useStore } from "@/lib/store";
 import { brl, daysAgoISO, fmtDate, fmtDateLong, greeting, kg, todayISO } from "@/lib/format";
 import { balanceUntil, dailyBalanceSeries, monthTotals } from "@/lib/finance";
@@ -273,6 +273,7 @@ function Dashboard() {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showAreaPicker, setShowAreaPicker] = useState(false);
   const [showRecent, setShowRecent] = useState(false);
+  const [chartArea, setChartArea] = useState<AreaKey | null>(null);
   // Foco da semana: as metas em foco no P.G.; sem P.G., a frase de sempre.
   const focusText =
     (altusGeneralPlan?.focusGoalIds ?? [])
@@ -300,11 +301,29 @@ function Dashboard() {
 
   const prioritySet = useMemo(() => new Set(primaryAreas), [primaryAreas]);
 
-  const miniCharts: { area: AreaKey; node: React.ReactNode }[] = [
+  // Variações exibidas acima de cada gráfico (mesmos dados dos gráficos).
+  const signed = (v: number, fmt: (n: number) => string) =>
+    `${v > 0 ? "+" : v < 0 ? "−" : ""}${fmt(Math.abs(v))}`;
+  const finDelta =
+    finTrend.length > 1 ? finTrend[finTrend.length - 1].saldo - finTrend[0].saldo : 0;
+  const weightPeriodDelta =
+    weightTrend.length > 1 ? weightTrend[weightTrend.length - 1].peso - weightTrend[0].peso : null;
+  const studyHours = +studyWeekly.reduce((a, w) => a + w.horas, 0).toFixed(1);
+
+  const miniCharts: {
+    area: AreaKey;
+    tab: string;
+    title: string;
+    summary: string;
+    node: React.ReactNode;
+  }[] = [
     {
       area: "financas",
+      tab: t("homeTabSaldo"),
+      title: t("chartSaldo"),
+      summary: `${brl(balance)} · ${t("homeDeltaPeriod", { delta: signed(finDelta, brl) })}`,
       node: (
-        <MiniChart title={t("chartSaldo")}>
+        <>
           <ResponsiveContainer width="100%" height={180}>
             <LineChart data={finTrend}>
               <CartesianGrid strokeOpacity={0.1} />
@@ -320,13 +339,20 @@ function Dashboard() {
               />
             </LineChart>
           </ResponsiveContainer>
-        </MiniChart>
+        </>
       ),
     },
     {
       area: "corpo",
+      tab: t("homeTabPeso"),
+      title: t("chartPeso"),
+      summary: lastW
+        ? weightPeriodDelta === null
+          ? kg(lastW.weight)
+          : `${kg(lastW.weight)} · ${t("homeDeltaPeriod", { delta: signed(weightPeriodDelta, kg) })}`
+        : t("deltaNoData"),
       node: (
-        <MiniChart title={t("chartPeso")}>
+        <>
           <ResponsiveContainer width="100%" height={180}>
             <LineChart data={weightTrend}>
               <CartesianGrid strokeOpacity={0.1} />
@@ -336,13 +362,16 @@ function Dashboard() {
               <Line type="monotone" dataKey="peso" stroke="#2ECC71" strokeWidth={2.5} dot />
             </LineChart>
           </ResponsiveContainer>
-        </MiniChart>
+        </>
       ),
     },
     {
       area: "biblioteca",
+      tab: t("homeTabLivros"),
+      title: t("chartLivros", { year: yearKey }),
+      summary: t("homeBooksYear", { n: booksThisYear, year: yearKey }),
       node: (
-        <MiniChart title={t("chartLivros", { year: yearKey })}>
+        <>
           <ResponsiveContainer width="100%" height={180}>
             <BarChart data={booksPerMonth}>
               <CartesianGrid strokeOpacity={0.1} />
@@ -352,13 +381,16 @@ function Dashboard() {
               <Bar dataKey="livros" fill="#F5C842" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
-        </MiniChart>
+        </>
       ),
     },
     {
       area: "estudos",
+      tab: t("homeTabEstudos"),
+      title: t("chartEstudo"),
+      summary: t("homeStudyHours", { h: studyHours }),
       node: (
-        <MiniChart title={t("chartEstudo")}>
+        <>
           <ResponsiveContainer width="100%" height={180}>
             <BarChart data={studyWeekly}>
               <CartesianGrid strokeOpacity={0.1} />
@@ -368,7 +400,7 @@ function Dashboard() {
               <Bar dataKey="horas" fill="#A855F7" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
-        </MiniChart>
+        </>
       ),
     },
   ];
@@ -376,6 +408,7 @@ function Dashboard() {
   const visibleCharts = miniCharts
     .filter((k) => prioritySet.has(k.area))
     .sort((a, b) => kpiOrder(a.area) - kpiOrder(b.area));
+  const activeChart = visibleCharts.find((c) => c.area === chartArea) ?? visibleCharts[0];
 
   useEffect(() => {
     if (mounted && syncStatus === "saved" && user) {
@@ -620,13 +653,44 @@ function Dashboard() {
         <ArrowRight size={16} className="text-purple-700 dark:text-purple-300 shrink-0" />
       </Link>
 
-      {/* e) Seu progresso */}
-      {visibleCharts.length > 0 && (
-        <div className="grid md:grid-cols-2 gap-4">
-          {visibleCharts.map((k) => (
-            <Fragment key={k.area}>{k.node}</Fragment>
-          ))}
-        </div>
+      {/* e) Seu progresso: um gráfico por vez, só das áreas prioritárias. */}
+      {activeChart && (
+        <GlassCard>
+          <div className="flex items-center justify-between gap-2 mb-3">
+            <h3 className="font-display font-semibold text-foreground">{t("homeProgress")}</h3>
+          </div>
+          {visibleCharts.length > 1 && (
+            <div
+              role="tablist"
+              aria-label={t("homeProgress")}
+              className="flex rounded-xl border border-border overflow-hidden text-sm mb-3"
+            >
+              {visibleCharts.map((c) => (
+                <button
+                  key={c.area}
+                  type="button"
+                  role="tab"
+                  aria-selected={c.area === activeChart.area}
+                  data-chart-tab={c.area}
+                  onClick={() => setChartArea(c.area)}
+                  className={`flex-1 px-2 py-2 ${c.area === activeChart.area ? "bg-gold text-[#0A0F1E] font-semibold" : "hover:bg-muted/50"}`}
+                >
+                  {c.tab}
+                </button>
+              ))}
+            </div>
+          )}
+          <div
+            className="flex items-baseline justify-between gap-2 mb-2"
+            data-chart-active={activeChart.area}
+          >
+            <div className="text-sm font-semibold text-muted-foreground">{activeChart.title}</div>
+            <div className="text-sm font-semibold text-foreground text-right" data-chart-summary>
+              {activeChart.summary}
+            </div>
+          </div>
+          {activeChart.node}
+        </GlassCard>
       )}
 
       {/* f) Insights */}
@@ -716,12 +780,3 @@ const tooltipStyle = {
   borderRadius: 8,
   fontSize: 12,
 };
-
-function MiniChart({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <GlassCard>
-      <div className="text-sm font-semibold mb-2 text-muted-foreground">{title}</div>
-      {children}
-    </GlassCard>
-  );
-}
