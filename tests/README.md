@@ -94,3 +94,25 @@ node tests/mobile.browser.cjs
 ```
 
 Chromium's mobile emulation cannot reproduce Safari's auto-zoom itself; the test checks the computed font size that triggers it.
+
+## Planning screen (F5)
+
+Overdue reviews, linkable Macro Goals (one plan per goal), Micro Goal progress and Filter decisions by verdict are unit-tested:
+
+```sh
+node --experimental-strip-types --test tests/planning-view.test.ts
+```
+
+With the dev server running, the browser test opens the screen from the menu and checks the single General Plan, a plan with its active stage, results and Micro Goal progress, toggling a Micro Goal, linking an old plan to a free Macro Goal, filtering and deleting Filter decisions, and that the overdue-review shortcut prefills the Mentor without sending; `tests/mobile.browser.cjs` covers the screen on phones too:
+
+```sh
+node tests/planejamento.browser.cjs
+```
+
+## Mentor replies (Markdown)
+
+The Mentor's Markdown (bold, italics, lists, headings, separators) is rendered as React elements, never raw HTML. The parser is unit-tested with a real reply; `tests/mobile.browser.cjs` checks that no raw `**` or list markers are visible:
+
+```sh
+node --experimental-strip-types --test tests/markdown.test.ts
+```

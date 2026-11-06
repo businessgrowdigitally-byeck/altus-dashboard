@@ -6,6 +6,7 @@ export const common = {
   "nav.biblioteca": { pt: "Biblioteca Pessoal", en: "Personal Library", es: "Biblioteca Personal" },
   "nav.estudos": { pt: "Estudos & Conhecimento", en: "Studies & Knowledge", es: "Estudios y Conocimiento" },
   "nav.agente": { pt: "Mentor ALTUS", en: "ALTUS Mentor", es: "Mentor ALTUS" },
+  "nav.planejamento": { pt: "Planejamento ALTUS", en: "ALTUS Planning", es: "Planificación ALTUS" },
   "nav.kaizen": { pt: "Kaizen Diário", en: "Daily Kaizen", es: "Kaizen Diario" },
   "nav.configuracoes": { pt: "Configurações", en: "Settings", es: "Configuración" },
   "nav.mobileNavigation": { pt: "Navegação principal", en: "Main navigation", es: "Navegación principal" },

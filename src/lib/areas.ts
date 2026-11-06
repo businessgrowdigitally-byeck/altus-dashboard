@@ -5,16 +5,24 @@ import {
   GraduationCap,
   Sparkles,
   Bot,
+  ClipboardList,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { AI_AGENT_ENABLED } from "@/lib/features";
 
 /** Módulos reais existentes no app. "dashboard" e "configuracoes" ficam fixos. */
-export type AreaKey = "financas" | "corpo" | "biblioteca" | "estudos" | "kaizen" | "agente";
+export type AreaKey =
+  | "financas"
+  | "corpo"
+  | "biblioteca"
+  | "estudos"
+  | "kaizen"
+  | "agente"
+  | "planejamento";
 
 export type AreaDef = {
   key: AreaKey;
-  to: "/financas" | "/corpo" | "/biblioteca" | "/estudos" | "/kaizen" | "/agente";
+  to: "/financas" | "/corpo" | "/biblioteca" | "/estudos" | "/kaizen" | "/agente" | "/planejamento";
   i18nKey: string;
   icon: LucideIcon;
   emoji: string;
@@ -30,6 +38,15 @@ export const AREA_DEFS: AreaDef[] = [
   { key: "estudos", to: "/estudos", i18nKey: "nav.estudos", icon: GraduationCap, emoji: "🎓" },
   { key: "kaizen", to: "/kaizen", i18nKey: "nav.kaizen", icon: Sparkles, emoji: "🌱" },
   ...(AI_AGENT_ENABLED
-    ? ([{ key: "agente", to: "/agente", i18nKey: "nav.agente", icon: Bot, emoji: "🤖" }] as AreaDef[])
+    ? ([
+        { key: "agente", to: "/agente", i18nKey: "nav.agente", icon: Bot, emoji: "🤖" },
+        {
+          key: "planejamento",
+          to: "/planejamento",
+          i18nKey: "nav.planejamento",
+          icon: ClipboardList,
+          emoji: "🧭",
+        },
+      ] as AreaDef[])
     : []),
 ];

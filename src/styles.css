@@ -7,6 +7,14 @@
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-display: "Space Grotesk", "Inter", ui-sans-serif, system-ui, sans-serif;
+  /*
+   * Cores da marca como cores do tema: sem isso, variações com transparência
+   * usadas no app (bg-gold/10, border-coral/40, ring-gold/50...) não eram
+   * geradas. Mesmos valores das classes .text-gold/.bg-gold etc. abaixo.
+   */
+  --color-gold: #f5c842;
+  --color-coral: #e74c3c;
+  --color-emerald-bgt: #2ecc71;
 }
 
 /*

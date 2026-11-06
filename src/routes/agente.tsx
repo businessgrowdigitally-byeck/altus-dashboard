@@ -10,6 +10,7 @@ import { buildChatHistory } from "@/lib/ai/history";
 import { stripPlanBlocks } from "@/lib/ai/plan";
 import { proposalViews } from "@/lib/ai/proposal";
 import { PlanProposalCard } from "@/components/PlanProposalCard";
+import { MessageText } from "@/components/MessageText";
 import { useAuth } from "@/lib/auth";
 
 export const Route = createFileRoute("/agente")({
@@ -17,6 +18,9 @@ export const Route = createFileRoute("/agente")({
   beforeLoad: () => {
     if (!AI_AGENT_ENABLED) throw redirect({ to: "/" });
   },
+  // `?q=` pré-preenche o campo (ex.: atalho de revisão na tela de Planejamento). Nunca envia sozinho.
+  validateSearch: (search: Record<string, unknown>): { q?: string } =>
+    typeof search.q === "string" && search.q.trim() ? { q: search.q.slice(0, 500) } : {},
   component: Agente,
 });
 
@@ -38,7 +42,11 @@ function Agente() {
   } = useStore();
   const { lang, t } = useI18n();
   const { session } = useAuth();
-  const [input, setInput] = useState("");
+  const { q } = Route.useSearch();
+  const [input, setInput] = useState(q ?? "");
+  useEffect(() => {
+    if (q) setInput(q);
+  }, [q]);
   const [loading, setLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const views = useMemo(() => proposalViews(chat, loading), [chat, loading]);
@@ -147,11 +155,14 @@ function Agente() {
               <div className="max-w-[92%] md:max-w-[80%]">
                 {text && (
                   <div
-                    className={`rounded-2xl px-4 py-3 text-sm whitespace-pre-wrap ${
-                      m.role === "user" ? "bg-secondary border border-gold/40" : "glass"
+                    className={`rounded-2xl px-4 py-3 text-sm ${
+                      m.role === "user"
+                        ? "bg-secondary border border-gold/40 whitespace-pre-wrap"
+                        : "glass"
                     }`}
                   >
-                    {text}
+                    {/* O Gemini responde em Markdown: formata em vez de mostrar ** e *. */}
+                    {m.role === "assistant" && !m.error ? <MessageText text={text} /> : text}
                   </div>
                 )}
                 <PlanProposalCard index={i} view={views[i]} />
