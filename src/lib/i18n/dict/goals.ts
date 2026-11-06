@@ -237,6 +237,21 @@ export const goals = {
   },
   "goals.viewRoutine": { pt: "Ver rotina de", en: "View routine for", es: "Ver rutina de" },
   "goals.routineOf": { pt: "Rotina de", en: "Routine for", es: "Rutina de" },
+  "goals.dayPlanMentor": {
+    pt: "{date} segue o plano do Mentor",
+    en: "{date} follows the Mentor's plan",
+    es: "{date} sigue el plan del Mentor",
+  },
+  "goals.dayPlanYou": {
+    pt: "{date} segue o seu ajuste do dia",
+    en: "{date} follows your adjustment for the day",
+    es: "{date} sigue tu ajuste del día",
+  },
+  "goals.dayPlanRoutineKept": {
+    pt: "a rotina fixa não muda; editar altera a rotina",
+    en: "the fixed routine is unchanged; editing changes the routine",
+    es: "la rutina fija no cambia; editar cambia la rutina",
+  },
   "goals.noActionsDay": {
     pt: "Nenhuma ação para este dia.",
     en: "No actions for this day.",

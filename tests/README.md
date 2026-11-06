@@ -158,3 +158,9 @@ With the dev server running, the browser test reorders and postpones by hand on 
 ```sh
 node tests/day-plan.browser.cjs
 ```
+
+Stage 2 (week plan and fixed-routine changes) is unit-tested in the same `tests/day-plan.test.ts`: several days at once (today … today+6, sorted, first entry per date, postponements between days), validated `routineChanges` (5-min steps, HH:MM, weekdays, no-ops skipped, midnight overflow rejected), "Manter na rotina" (`keepDayDurations`) and the Mentor context (`proximos_dias`, `ajustes_recentes`). The browser test confirms a Mentor `weekPlan` + `routineChanges` in the chat (exact per-day preview and before → after, nothing saved before confirming), uses "Manter na rotina" on the Home with undo, and checks the Rotina Diária list and Blocos de foco follow each date's plan while editing still opens the fixed routine:
+
+```sh
+node tests/week-plan.browser.cjs
+```
