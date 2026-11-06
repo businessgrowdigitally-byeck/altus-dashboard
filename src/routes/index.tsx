@@ -4,6 +4,7 @@ import { useStore } from "@/lib/store";
 import { brl, daysAgoISO, fmtDate, fmtDateLong, greeting, kg, todayISO } from "@/lib/format";
 import { balanceUntil, dailyBalanceSeries, monthTotals } from "@/lib/finance";
 import { actionStreak, weekProgress } from "@/lib/daily-stats";
+import { addDays, dayItems } from "@/lib/day-plan";
 import { toast } from "sonner";
 import { GlassCard, Section } from "@/components/primitives";
 import { GoalsSection, GOALS_SECTION_ID } from "@/components/GoalsSection";
@@ -18,6 +19,9 @@ import {
   CheckSquare,
   ChevronLeft,
   ChevronRight,
+  ChevronUp,
+  ChevronDown,
+  ArrowUpDown,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { useSyncStatus } from "@/lib/sync";
@@ -82,6 +86,11 @@ function Dashboard() {
     setProfile,
     setPrimaryAreas,
     altusGeneralPlan,
+    dayPlans,
+    moveDayItem,
+    postponeDayAction,
+    toggleDayExtra,
+    resetDayPlan,
   } = useStore();
   const t = useT();
 
@@ -119,12 +128,32 @@ function Dashboard() {
   }, [studies]);
 
   // Today actions
-  const todayActions = goalsDaily.filter((a) => a.daysOfWeek.includes(todayDow));
+  // Hoje segue o plano do dia (ordem, durações, adiadas, extras); sem plano, a rotina.
+  const dayPlan = dayPlans?.[today];
+  const items = dayItems(goalsDaily, dayPlans ?? {}, today);
+  const itemKeys = items.map((i) => i.key);
+  const todayActions = items.flatMap((i) => (i.kind === "action" ? [i.action] : []));
+  const todayExtras = items.flatMap((i) => (i.kind === "extra" ? [i.extra] : []));
   const doneIds = new Set(completions.filter((c) => c.date === today).map((c) => c.actionId));
-  const todayDone = todayActions.filter((a) => doneIds.has(a.id)).length;
+  const todayTotal = todayActions.length + todayExtras.length;
+  const todayDone =
+    todayActions.filter((a) => doneIds.has(a.id)).length + todayExtras.filter((e) => e.done).length;
+  const postponedToday = (dayPlan?.postponed ?? []).flatMap((p) => {
+    const a = goalsDaily.find((x) => x.id === p.actionId);
+    return a ? [{ ...p, name: a.name }] : [];
+  });
+  const [editingOrder, setEditingOrder] = useState(false);
+  const tomorrow = addDays(today, 1);
+  const postponeToTomorrow = (id: string, name: string) => {
+    const before = useStore.getState().dayPlans;
+    postponeDayAction(today, id, tomorrow);
+    toast(t("homePostponedToast", { name }), {
+      duration: 4000,
+      action: { label: t("homeUndo"), onClick: () => useStore.setState({ dayPlans: before }) },
+    });
+  };
   // Sem ações hoje não há progresso a mostrar: 0 e estado vazio, nunca um número inventado.
-  const weeklyProgress =
-    todayActions.length > 0 ? Math.round((todayDone / todayActions.length) * 100) : 0;
+  const weeklyProgress = todayTotal > 0 ? Math.round((todayDone / todayTotal) * 100) : 0;
   // Marca/desmarca pelo checkbox; ao marcar, o toast permite desfazer por 4 s.
   const toggleAction = (id: string, name: string, wasDone: boolean) => {
     toggleCompletion(id, today);
@@ -515,7 +544,7 @@ function Dashboard() {
                 key: "done",
                 icon: Sparkles,
                 label: t("homeCountDone"),
-                value: `${todayDone}/${todayActions.length}`,
+                value: `${todayDone}/${todayTotal}`,
                 onClick: goToToday,
               },
             ] as const
@@ -549,13 +578,48 @@ function Dashboard() {
             </h3>
             <p className="text-xs text-muted-foreground">{t("hojeSub")}</p>
           </div>
-          <span className="text-xs px-3 py-1 rounded-full bg-purple-500/15 text-purple-700 dark:text-purple-300 border border-purple-500/30">
-            {t("actionsDone", { done: todayDone, total: todayActions.length })}
-          </span>
+          <div className="flex flex-col items-end gap-1.5 shrink-0">
+            <span className="text-xs px-3 py-1 rounded-full bg-purple-500/15 text-purple-700 dark:text-purple-300 border border-purple-500/30">
+              {t("actionsDone", { done: todayDone, total: todayTotal })}
+            </span>
+            {todayTotal > 1 && (
+              <button
+                type="button"
+                data-edit-order
+                aria-pressed={editingOrder}
+                onClick={() => setEditingOrder(!editingOrder)}
+                className="inline-flex items-center gap-1 text-xs text-purple-700 dark:text-purple-300 hover:underline"
+              >
+                <ArrowUpDown size={12} />
+                {t(editingOrder ? "homeEditDone" : "homeEditOrder")}
+              </button>
+            )}
+          </div>
         </div>
 
+        {dayPlan && (
+          <div
+            data-day-plan={dayPlan.source}
+            className="flex items-center gap-2 rounded-lg border border-purple-500/30 bg-purple-500/10 px-3 py-2 text-xs"
+          >
+            <span className="min-w-0 flex-1 text-purple-700 dark:text-purple-200">
+              <span className="font-semibold">
+                {t(dayPlan.source === "mentor" ? "homePlanByMentor" : "homePlanByYou")}
+              </span>
+              {dayPlan.reason && <span>: {dayPlan.reason}</span>}
+            </span>
+            <button
+              type="button"
+              onClick={() => resetDayPlan(today)}
+              className="shrink-0 text-muted-foreground hover:text-foreground underline"
+            >
+              {t("homeResetDay")}
+            </button>
+          </div>
+        )}
+
         <div className="space-y-2.5">
-          {todayActions.length === 0 && (
+          {todayTotal === 0 && (
             <div data-empty-today className="py-4 text-center space-y-3">
               <p className="text-sm text-muted-foreground">{t("emptyToday")}</p>
               <button
@@ -568,10 +632,99 @@ function Dashboard() {
               </button>
             </div>
           )}
-          {todayActions.map((a) => {
+          {items.map((item, idx) => {
+            const reorder = editingOrder && (
+              <div className="flex items-center gap-0.5 shrink-0" data-reorder={item.key}>
+                <button
+                  type="button"
+                  disabled={idx === 0}
+                  onClick={() => moveDayItem(today, itemKeys, item.key, -1)}
+                  aria-label={t("homeMoveUp", {
+                    name: item.kind === "action" ? item.action.name : item.extra.title,
+                  })}
+                  className="size-9 flex items-center justify-center rounded-lg text-muted-foreground hover:bg-muted/60 disabled:opacity-30"
+                >
+                  <ChevronUp size={16} />
+                </button>
+                <button
+                  type="button"
+                  disabled={idx === items.length - 1}
+                  onClick={() => moveDayItem(today, itemKeys, item.key, 1)}
+                  aria-label={t("homeMoveDown", {
+                    name: item.kind === "action" ? item.action.name : item.extra.title,
+                  })}
+                  className="size-9 flex items-center justify-center rounded-lg text-muted-foreground hover:bg-muted/60 disabled:opacity-30"
+                >
+                  <ChevronDown size={16} />
+                </button>
+                {item.kind === "action" && (
+                  <button
+                    type="button"
+                    onClick={() => postponeToTomorrow(item.action.id, item.action.name)}
+                    aria-label={t("homePostponeAria", { name: item.action.name })}
+                    className="h-9 px-2 rounded-lg text-[11px] text-muted-foreground hover:bg-muted/60"
+                  >
+                    {t("homePostponeTomorrow")}
+                  </button>
+                )}
+              </div>
+            );
+            if (item.kind === "extra") {
+              const e = item.extra;
+              return (
+                <div
+                  key={e.id}
+                  data-extra={e.id}
+                  className={`group flex items-center gap-1 py-1.5 pl-1 pr-3.5 rounded-xl border transition ${
+                    e.done
+                      ? "bg-purple-950/20 border-purple-500/30 opacity-70"
+                      : "bg-muted/50 border-dashed border-purple-500/40 hover:bg-muted/80"
+                  }`}
+                >
+                  <button
+                    type="button"
+                    role="checkbox"
+                    aria-checked={e.done}
+                    aria-label={t(e.done ? "homeUncheck" : "homeCheck", { name: e.title })}
+                    onClick={() => toggleDayExtra(today, e.id)}
+                    className="size-11 shrink-0 flex items-center justify-center rounded-lg"
+                  >
+                    <span
+                      className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition ${
+                        e.done
+                          ? "bg-purple-600 border-purple-500 text-white"
+                          : "border-muted-foreground/30 group-hover:border-purple-400"
+                      }`}
+                    >
+                      {e.done && <Check size={14} className="stroke-[3]" />}
+                    </span>
+                  </button>
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate">
+                      <span
+                        className={`text-sm font-medium ${e.done ? "line-through text-muted-foreground" : "text-foreground"}`}
+                      >
+                        {e.title}
+                      </span>
+                      <span className="text-xs text-purple-400/80 ml-2">({t("homeExtra")})</span>
+                    </div>
+                    {e.note && (
+                      <div className="text-[11px] text-muted-foreground truncate">{e.note}</div>
+                    )}
+                  </div>
+                  {reorder || (
+                    <div className="text-xs text-muted-foreground font-mono shrink-0">
+                      {e.minutes ? t("homeMinutes", { n: e.minutes }) : ""}
+                    </div>
+                  )}
+                </div>
+              );
+            }
+            const a = item.action;
+            const adjusted = dayPlan?.durations[a.id] !== undefined;
             const done = doneIds.has(a.id);
-            const week = weekProgress(a, completions, today);
-            const streakDays = actionStreak(a, completions, today);
+            const week = weekProgress(a, completions, today, dayPlans);
+            const streakDays = actionStreak(a, completions, today, dayPlans);
             const weekPct = week.scheduled ? (week.done / week.scheduled) * 100 : 0;
             return (
               // A linha só mostra; quem marca é o checkbox (evita marcar sem querer ao rolar).
@@ -613,6 +766,13 @@ function Dashboard() {
                       ({t(`goals.area.${a.area}`)})
                     </span>
                   </div>
+                  {(item.note || item.from) && (
+                    <div className="text-[11px] text-muted-foreground truncate">
+                      {item.from && t("homeFromDay", { date: fmtDate(item.from) })}
+                      {item.from && item.note && " · "}
+                      {item.note}
+                    </div>
+                  )}
                   <div
                     className="mt-1 flex items-center gap-2"
                     data-week={`${week.done}/${week.scheduled}`}
@@ -629,21 +789,32 @@ function Dashboard() {
                   </div>
                 </div>
 
-                <div className="text-right shrink-0">
-                  <div className="text-xs text-muted-foreground font-mono">
-                    {a.suggestedTime || t("homeAnyTime")}
+                {reorder || (
+                  <div className="text-right shrink-0">
+                    <div className="text-xs text-muted-foreground font-mono">
+                      {adjusted
+                        ? t("homeMinutes", { n: item.minutes })
+                        : a.suggestedTime || t("homeAnyTime")}
+                    </div>
+                    <div
+                      className="text-[11px] text-purple-700 dark:text-purple-300"
+                      data-streak={streakDays}
+                      title={t("homeStreakTitle")}
+                    >
+                      🔥 {t("homeStreak", { n: streakDays })}
+                    </div>
                   </div>
-                  <div
-                    className="text-[11px] text-purple-700 dark:text-purple-300"
-                    data-streak={streakDays}
-                    title={t("homeStreakTitle")}
-                  >
-                    🔥 {t("homeStreak", { n: streakDays })}
-                  </div>
-                </div>
+                )}
               </div>
             );
           })}
+          {postponedToday.length > 0 && (
+            <p className="text-[11px] text-muted-foreground px-1" data-postponed>
+              {postponedToday
+                .map((p) => t("homePostponed", { name: p.name, date: fmtDate(p.to) }))
+                .join(" · ")}
+            </p>
+          )}
         </div>
       </div>
 
