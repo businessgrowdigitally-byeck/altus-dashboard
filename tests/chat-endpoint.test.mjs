@@ -137,13 +137,42 @@ test("authenticated chat reads context on the server and streams the reply", asy
   const payload = JSON.parse(gemini.body);
   const system = payload.messages[0];
   assert.equal(system.role, "system");
-  assert.match(system.content, /Mentor ALTUS/);
+  assert.match(system.content, /Você é o GOAT/);
   assert.match(system.content, /Chegar a 75kg/);
   assert.match(system.content, /2026-10-26/);
   assert.doesNotMatch(system.content, /IGNORE-ME/);
   assert.deepEqual(payload.messages.slice(1), [
     { role: "user", content: "Como estão minhas metas?" },
   ]);
+});
+
+test("briefing mode: no history needed, same auth/quota/context, short GOAT prompt", async () => {
+  calls.length = 0;
+  const response = await post({ mode: "briefing", lang: "en", today: "2026-10-26" });
+  assert.equal(response.status, 200);
+  assert.match(await response.text(), /Olá/);
+  assert.ok(
+    calls.some((c) => c.url.includes("/rest/v1/rpc/consume_chat_quota")),
+    "counts toward the daily limit",
+  );
+  const payload = JSON.parse(
+    calls.find((c) => c.url.includes("generativelanguage.googleapis.com")).body,
+  );
+  const [system, ...rest] = payload.messages;
+  assert.match(system.content, /RESUMO DA MANHÃ/);
+  assert.match(system.content, /Chegar a 75kg/);
+  assert.match(system.content, /English/);
+  assert.doesNotMatch(
+    system.content,
+    /altus-plan"?\s*\{/,
+    "no plan-proposal format in the briefing",
+  );
+  assert.deepEqual(rest, [{ role: "user", content: "Escreva o resumo da manhã de hoje." }]);
+});
+
+test("briefing mode needs a valid session too", async () => {
+  const response = await post({ mode: "briefing" }, "bad-token");
+  assert.equal(response.status, 401);
 });
 
 test("a network failure calling Gemini returns a JSON error, not the HTML error page", async () => {
@@ -179,7 +208,7 @@ test("over the daily limit: 429 with a clear message and no Gemini call", async 
     const response = await ask();
     assert.equal(response.status, 429);
     const body = await response.json();
-    assert.match(body.error, /limite de 60 mensagens do Mentor por hoje/);
+    assert.match(body.error, /limite de 60 mensagens do GOAT por hoje/);
     assert.equal(
       calls.some((c) => c.url.includes("generativelanguage")),
       false,
