@@ -13,6 +13,7 @@ import { terms } from "./terms";
 import { kaizen } from "./kaizen";
 import { personalization } from "./personalization";
 import { planejamento } from "./planejamento";
+import { push } from "./push";
 
 /** Dicionário unificado de todas as chaves de tradução (PT/EN/ES). */
 export const DICT = {
@@ -31,6 +32,7 @@ export const DICT = {
   ...kaizen,
   ...personalization,
   ...planejamento,
+  ...push,
 } as const;
 
 export type DictKey = keyof typeof DICT;
