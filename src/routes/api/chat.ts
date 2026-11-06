@@ -4,6 +4,7 @@ import { supabase, SUPABASE_URL, SUPABASE_ANON_KEY } from "@/lib/supabase";
 import { AI_AGENT_ENABLED } from "@/lib/features";
 import { buildMentorContext } from "@/lib/ai/context";
 import { buildMentorSystemPrompt, normalizeLang } from "@/lib/ai/system-prompt";
+import { quotaDecision, quotaLimits } from "@/lib/ai/quota";
 import {
   MAX_CHAT_MESSAGES as MAX_MESSAGES,
   MAX_CHAT_MESSAGE_CHARS as MAX_MESSAGE_CHARS,
@@ -77,6 +78,24 @@ export const Route = createFileRoute("/api/chat")({
           auth: { persistSession: false, autoRefreshToken: false },
           global: { headers: { Authorization: `Bearer ${token}` } },
         });
+
+        // Limite de uso por pessoa (dia e minuto), contado no Supabase com o token
+        // do próprio usuário. Só pedidos válidos chegam aqui e são contados.
+        const limits = quotaLimits(process.env);
+        const { data: quota, error: quotaError } = await userClient.rpc("consume_chat_quota", {
+          p_daily_limit: limits.daily,
+          p_minute_limit: limits.minute,
+        });
+        const decision = quotaDecision(quota, quotaError);
+        if (decision.kind === "blocked" || decision.kind === "error") {
+          return jsonResponse({ error: decision.message }, decision.status);
+        }
+        if (decision.kind === "not-installed") {
+          console.warn(
+            "[api/chat] limite de uso inativo: rode supabase/schema.sql (consume_chat_quota)",
+          );
+        }
+
         const { data: row, error: rowError } = await userClient
           .from("user_data")
           .select("data")

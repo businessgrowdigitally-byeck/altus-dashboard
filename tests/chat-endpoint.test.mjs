@@ -11,6 +11,8 @@ const USER_ID = "00000000-0000-4000-8000-000000000001";
 const calls = [];
 /** "ok" streams a reply; "down" makes the Gemini call throw, as a network failure would. */
 let geminiMode = "ok";
+/** Resposta de consume_chat_quota: "ok", "daily", "minute", "missing" (SQL não aplicado) ou "error". */
+let quotaMode = "ok";
 
 const json = (body, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
@@ -35,6 +37,16 @@ globalThis.fetch = async (input, init) => {
       role: "authenticated",
       email: "t@example.com",
     });
+  }
+  if (url.pathname === "/rest/v1/rpc/consume_chat_quota") {
+    if (quotaMode === "missing")
+      return json({ code: "PGRST202", message: "Could not find the function" }, 404);
+    if (quotaMode === "error") return json({ code: "XX000", message: "boom" }, 500);
+    if (quotaMode === "daily")
+      return json({ allowed: false, reason: "daily", used: 60, limit: 60 });
+    if (quotaMode === "minute")
+      return json({ allowed: false, reason: "minute", used: 3, limit: 60 });
+    return json({ allowed: true, used: 1, limit: 60 });
   }
   if (url.pathname === "/rest/v1/user_data") {
     return json({
@@ -144,5 +156,73 @@ test("a network failure calling Gemini returns a JSON error, not the HTML error 
     assert.match(body.error, /conectar ao serviço de IA/);
   } finally {
     geminiMode = "ok";
+  }
+});
+
+const ask = () => post({ messages: [{ role: "user", content: "oi" }] });
+
+test("counts the message with the user's own token and the server limits", async () => {
+  calls.length = 0;
+  const response = await ask();
+  assert.equal(response.status, 200);
+  await response.text();
+  const rpc = calls.find((c) => c.url.includes("/rest/v1/rpc/consume_chat_quota"));
+  assert.ok(rpc, "quota checked");
+  assert.equal(rpc.auth, "Bearer good-token");
+  assert.deepEqual(JSON.parse(rpc.body), { p_daily_limit: 60, p_minute_limit: 8 });
+});
+
+test("over the daily limit: 429 with a clear message and no Gemini call", async () => {
+  quotaMode = "daily";
+  calls.length = 0;
+  try {
+    const response = await ask();
+    assert.equal(response.status, 429);
+    const body = await response.json();
+    assert.match(body.error, /limite de 60 mensagens do Mentor por hoje/);
+    assert.equal(
+      calls.some((c) => c.url.includes("generativelanguage")),
+      false,
+    );
+  } finally {
+    quotaMode = "ok";
+  }
+});
+
+test("too many messages in a minute: 429", async () => {
+  quotaMode = "minute";
+  try {
+    const response = await ask();
+    assert.equal(response.status, 429);
+    assert.match((await response.json()).error, /Aguarde um minuto/);
+  } finally {
+    quotaMode = "ok";
+  }
+});
+
+test("before the SQL is applied the chat keeps working (no limit yet)", async () => {
+  quotaMode = "missing";
+  try {
+    const response = await ask();
+    assert.equal(response.status, 200);
+    assert.match(await response.text(), /Olá/);
+  } finally {
+    quotaMode = "ok";
+  }
+});
+
+test("an unexpected quota error fails closed", async () => {
+  quotaMode = "error";
+  calls.length = 0;
+  try {
+    const response = await ask();
+    assert.equal(response.status, 500);
+    assert.match((await response.json()).error, /verificar seu limite/);
+    assert.equal(
+      calls.some((c) => c.url.includes("generativelanguage")),
+      false,
+    );
+  } finally {
+    quotaMode = "ok";
   }
 });
