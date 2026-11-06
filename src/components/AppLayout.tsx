@@ -20,6 +20,7 @@ import { useSyncStatus } from "@/lib/sync";
 import { flushSync } from "@/lib/sync";
 import { useT } from "@/lib/i18n";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { NotificationsBell } from "@/components/NotificationsBell";
 import {
   Drawer,
   DrawerClose,
@@ -159,7 +160,10 @@ const [moreOpen, setMoreOpen] = useState(false);
             ALTUS
           </span>
         </div>
-        <LanguageSwitcher />
+        <div className="flex items-center gap-1">
+          <NotificationsBell />
+          <LanguageSwitcher />
+        </div>
       </header>
 
       <div className="flex">
@@ -200,6 +204,7 @@ const [moreOpen, setMoreOpen] = useState(false);
                 </div>
                 <div className="text-xs text-muted-foreground mt-0.5 truncate">{name}</div>
               </div>
+              <NotificationsBell className="ml-auto shrink-0" />
             </div>
           </div>
 

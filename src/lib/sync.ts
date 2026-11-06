@@ -4,6 +4,7 @@ import { useStore, emptyState, SYNC_KEYS } from "./store";
 import { normalizeAltusState } from "./ai/plan";
 import { normalizeBudgets, normalizeRecurring } from "./finance";
 import { normalizeDayPlans } from "./day-plan";
+import { normalizeBriefing, normalizeSeen } from "./notifications";
 import { todayISO } from "./format";
 import { mergeSnapshots, same } from "./merge";
 
@@ -102,6 +103,11 @@ function sanitizeSnapshot(value: unknown): object {
     categoryBudgets: normalizeBudgets(out.categoryBudgets),
     recurringTransactions: normalizeRecurring(out.recurringTransactions),
     dayPlans: normalizeDayPlans(out.dayPlans, todayISO()),
+    // Resumo do GOAT e notificações lidas: só quando vieram na nuvem.
+    ...("dailyBriefing" in out ? { dailyBriefing: normalizeBriefing(out.dailyBriefing) } : {}),
+    ...("notificationsSeen" in out
+      ? { notificationsSeen: normalizeSeen(out.notificationsSeen) }
+      : {}),
   };
 }
 
