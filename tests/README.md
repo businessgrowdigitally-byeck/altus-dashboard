@@ -144,3 +144,17 @@ With the dev server running, the browser test checks the acceptance criteria at 
 ```sh
 node tests/home.browser.cjs
 ```
+
+## Day plan
+
+The per-day adjustment over the routine (order, durations, postponed actions not counted as missed, extras), the Mentor's dayPlan proposal and its context are unit-tested:
+
+```sh
+node --experimental-strip-types --test tests/day-plan.test.ts
+```
+
+With the dev server running, the browser test reorders and postpones by hand on the Home (with undo and "Voltar à rotina"), then confirms a Mentor dayPlan in the chat and checks the Home follows it:
+
+```sh
+node tests/day-plan.browser.cjs
+```
