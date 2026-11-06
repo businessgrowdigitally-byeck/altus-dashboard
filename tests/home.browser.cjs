@@ -234,7 +234,28 @@ async function open(browser, data, viewport, mobile) {
 
     // Botão "Áreas" abre o seletor existente.
     await page.getByRole("button", { name: "Áreas" }).tap();
-    await page.getByRole("dialog").getByText("Áreas Prioritárias").waitFor();
+    const picker = page.getByRole("dialog");
+    await picker.getByText("Áreas Prioritárias").waitFor();
+    // O Mentor ALTUS (e o Planejamento) podem ser prioritários — antes a escolha era descartada.
+    const mentorChip = picker.getByRole("button", { name: /Mentor ALTUS/ });
+    await mentorChip.tap();
+    await mentorChip.getByText("✓").waitFor();
+    await picker.getByText(/^5 de 7$/).waitFor();
+    await page.waitForTimeout(1800);
+    assert.ok(snap().primaryAreas.includes("agente"), "Mentor saved as a priority area");
+    // "Mostrar todas" seleciona todas e cabe no limite.
+    await picker.getByRole("button", { name: "Mostrar todas" }).tap();
+    await picker.getByText(/^7 de 7$/).waitFor();
+    await page.waitForTimeout(1800);
+    assert.deepEqual([...snap().primaryAreas].sort(), [
+      "agente",
+      "biblioteca",
+      "corpo",
+      "estudos",
+      "financas",
+      "kaizen",
+      "planejamento",
+    ]);
     await page.keyboard.press("Escape");
 
     // Sem rolagem lateral no celular.
