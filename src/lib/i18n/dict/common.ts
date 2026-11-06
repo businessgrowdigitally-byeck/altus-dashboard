@@ -19,6 +19,21 @@ export const common = {
   "sync.error": { pt: "falha ao salvar", en: "save failed", es: "error al guardar" },
   "sync.saved": { pt: "salvo na nuvem", en: "saved to cloud", es: "guardado en la nube" },
   "sync.loading": { pt: "Carregando...", en: "Loading...", es: "Cargando..." },
+  "sync.offline": {
+    pt: "sem internet — salvo neste aparelho",
+    en: "offline — saved on this device",
+    es: "sin internet — guardado en este dispositivo",
+  },
+  "sync.offlineBanner": {
+    pt: "Sem internet. Tudo o que você fizer fica salvo neste aparelho e vai para a nuvem quando a conexão voltar.",
+    en: "No internet. Everything you do is saved on this device and goes to the cloud when you're back online.",
+    es: "Sin internet. Todo lo que hagas queda guardado en este dispositivo y va a la nube cuando vuelva la conexión.",
+  },
+  "sync.offlineFirstLoad": {
+    pt: "Sem internet. Conecte-se uma vez neste aparelho para carregar seus dados; depois o ALTUS também abre offline.",
+    en: "No internet. Connect once on this device to load your data; after that ALTUS also opens offline.",
+    es: "Sin internet. Conéctate una vez en este dispositivo para cargar tus datos; después ALTUS también abre sin conexión.",
+  },
   "sync.loadErrorTitle": { pt: "Não consegui carregar seus dados", en: "Failed to load your data", es: "No se pudieron cargar tus datos" },
   "sync.loadErrorDesc": { pt: "Tente novamente ou volte mais tarde.", en: "Try again or come back later.", es: "Inténtalo de nuevo o vuelve más tarde." },
   "sync.loadErrorRetry": { pt: "Tentar novamente", en: "Try again", es: "Intentar de nuevo" },

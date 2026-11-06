@@ -7,6 +7,7 @@ import { normalizeDayPlans } from "./day-plan";
 import { normalizeBriefing, normalizeSeen } from "./notifications";
 import { todayISO } from "./format";
 import { mergeSnapshots, same } from "./merge";
+import { clearSyncCache, loadSyncCache, saveSyncCache } from "./sync-cache";
 
 /**
  * Sincronização dos dados do usuário com o Supabase.
@@ -24,9 +25,48 @@ import { mergeSnapshots, same } from "./merge";
  * o outro salvou, cada envio só grava se a nuvem ainda estiver na versão que
  * este aparelho conhece (`updated_at`). Se outro gravou antes, baixamos a
  * versão nova, combinamos (base × local × nuvem, ver merge.ts) e enviamos de novo.
+ *
+ * Sem internet: a última versão sincronizada fica guardada no aparelho
+ * (sync-cache.ts). O app abre com os dados locais ("offline"), tudo o que for
+ * feito fica salvo no aparelho e, quando a conexão volta, é combinado com a
+ * nuvem pelo mesmo caminho. Ao abrir com internet, o que ficou pendente no
+ * aparelho também é combinado (antes a nuvem sobrescrevia o local).
  */
 
-export type SyncStatus = "idle" | "loading" | "saving" | "saved" | "error";
+export type SyncStatus = "idle" | "loading" | "saving" | "saved" | "error" | "offline";
+
+/** Erro da carga inicial sem internet num aparelho que nunca sincronizou (a tela traduz). */
+export const OFFLINE_FIRST_LOAD = "offline-first-load";
+
+/** De quem são os dados guardados no store local (para não misturar contas). */
+const OWNER_KEY = "altus-sync-owner";
+const readOwner = () => {
+  try {
+    return localStorage.getItem(OWNER_KEY);
+  } catch {
+    return null;
+  }
+};
+const writeOwner = (userId: string | null) => {
+  try {
+    if (userId) localStorage.setItem(OWNER_KEY, userId);
+    else localStorage.removeItem(OWNER_KEY);
+  } catch {
+    /* Storage indisponível: sem modo offline. */
+  }
+};
+
+/** Falha de rede (sem internet, servidor fora do ar) — não é um erro dos dados. */
+export function isNetworkError(e: unknown): boolean {
+  if (typeof navigator !== "undefined" && navigator.onLine === false) return true;
+  const msg =
+    e && typeof e === "object" && "message" in e
+      ? String((e as { message: unknown }).message)
+      : String(e ?? "");
+  return /failed to fetch|networkerror|network request failed|load failed|fetch failed|internet|offline/i.test(
+    msg,
+  );
+}
 
 export const useSyncStatus = create<{
   status: SyncStatus;
@@ -55,6 +95,20 @@ let base: Snapshot = {};
 /** Envios em fila, um de cada vez. */
 let chain: Promise<void> = Promise.resolve();
 const MAX_CONFLICT_RETRIES = 3;
+let onlineListener: (() => void) | null = null;
+
+/** Guarda no aparelho a versão que acabou de ficar sincronizada. */
+function remember(userId: string) {
+  if (activeUserId !== userId) return;
+  writeOwner(userId);
+  void saveSyncCache(userId, cloudVersion, base);
+}
+
+/** Erro ao falar com a nuvem: sem internet vira "offline" (fica salvo no aparelho). */
+function fail(error: { message: string }) {
+  if (isNetworkError(error)) useSyncStatus.getState().set("offline");
+  else useSyncStatus.getState().set("error", error.message);
+}
 
 type Snapshot = Record<string, unknown>;
 
@@ -144,24 +198,26 @@ async function pushNow(userId: string) {
         .eq("user_id", userId)
         .eq("updated_at", cloudVersion)
         .select("updated_at");
-      if (error) return set("error", error.message);
+      if (error) return fail(error);
       if (data && data.length === 1) {
         cloudVersion = data[0].updated_at as string;
         base = local;
+        remember(userId);
         return set("saved");
       }
     }
     // Conflito (ou versão desconhecida): baixa a nuvem e combina.
     const { data: row, error: fetchError } = await fetchCloud(userId);
-    if (fetchError) return set("error", fetchError.message);
+    if (fetchError) return fail(fetchError);
     if (!row) {
       const { data, error } = await supabase
         .from(TABLE)
         .insert({ user_id: userId, data: local })
         .select("updated_at");
-      if (error) return set("error", error.message);
+      if (error) return fail(error);
       cloudVersion = (data?.[0]?.updated_at as string) ?? null;
       base = local;
+      remember(userId);
       return set("saved");
     }
     const remote = sanitizeSnapshot(row.data) as Snapshot;
@@ -169,6 +225,7 @@ async function pushNow(userId: string) {
     applyMerged(local, merged);
     cloudVersion = row.updated_at as string;
     base = remote;
+    remember(userId);
     local = snapshot();
     if (same(local, remote)) return set("saved");
   }
@@ -179,7 +236,7 @@ function push(userId: string): Promise<void> {
   chain = chain
     .then(() => pushNow(userId))
     .catch((e: unknown) => {
-      useSyncStatus.getState().set("error", e instanceof Error ? e.message : String(e));
+      fail({ message: e instanceof Error ? e.message : String(e) });
     });
   return chain;
 }
@@ -188,20 +245,22 @@ function push(userId: string): Promise<void> {
  * Traz o que outro aparelho salvou (ex.: ao voltar para o app). Combina com o
  * que houver de local e, se sobrar mudança deste aparelho, envia em seguida.
  */
-export async function refreshFromCloud() {
-  if (!ready || !activeUserId) return;
+export async function refreshFromCloud(): Promise<boolean> {
+  if (!ready || !activeUserId) return false;
   const userId = activeUserId;
   await chain;
   const { data: row, error } = await fetchCloud(userId);
-  if (error || !row || activeUserId !== userId) return;
-  if (row.updated_at === cloudVersion) return;
+  if (error || activeUserId !== userId) return false;
+  if (!row || row.updated_at === cloudVersion) return true;
   const remote = sanitizeSnapshot(row.data) as Snapshot;
   const local = snapshot();
   const merged = mergeSnapshots(base, local, remote);
   cloudVersion = row.updated_at as string;
   base = remote;
+  remember(userId);
   applyMerged(local, merged);
   if (!same(snapshot(), remote)) scheduleSave();
+  return true;
 }
 
 function scheduleSave() {
@@ -223,15 +282,47 @@ export async function startSync(userId: string) {
   ready = false;
   useSyncStatus.getState().set("loading");
 
+  // Os dados deste aparelho são desta conta e já foram sincronizados alguma vez?
+  const cached = readOwner() === userId ? await loadSyncCache(userId) : null;
+  if (activeUserId !== userId) return;
+
+  // Sem internet: abre com o que está no aparelho; envia quando a conexão voltar.
+  const openOffline = (entry: NonNullable<typeof cached>) => {
+    base = entry.base;
+    cloudVersion = entry.version;
+    useStore.getState().recomputeLinkedGoals();
+    ready = true;
+    useSyncStatus.getState().set("offline");
+    unsubscribeStore = useStore.subscribe(scheduleSave);
+    watchOnline();
+    useStore.getState().postDueRecurring(todayISO());
+  };
+  // O aparelho já sabe que está sem rede: não espera as tentativas da biblioteca (~7 s).
+  if (cached && typeof navigator !== "undefined" && navigator.onLine === false)
+    return openOffline(cached);
+
   const { data, error } = await fetchCloud(userId);
+  if (activeUserId !== userId) return;
 
   if (error) {
+    if (cached && isNetworkError(error)) return openOffline(cached);
     activeUserId = null;
-    useSyncStatus.getState().set("error", error.message);
+    useSyncStatus
+      .getState()
+      .set("error", isNetworkError(error) ? OFFLINE_FIRST_LOAD : error.message);
     return;
   }
 
-  if (data?.data && Object.keys(data.data).length > 0) {
+  let pending = false;
+  if (data?.data && Object.keys(data.data).length > 0 && cached) {
+    // O aparelho tem mudanças que talvez não chegaram à nuvem (feitas offline ou
+    // antes de fechar): combina base × aparelho × nuvem em vez de sobrescrever.
+    const remote = sanitizeSnapshot(data.data) as Snapshot;
+    const merged = mergeSnapshots(cached.base, snapshot(), remote);
+    useStore.setState({ ...emptyState, ...sanitizeSnapshot(merged) });
+    cloudVersion = (data.updated_at as string) ?? null;
+    pending = !same(snapshot(), remote);
+  } else if (data?.data && Object.keys(data.data).length > 0) {
     // Conta existente: a nuvem é a fonte da verdade (com filtro de chaves).
     useStore.setState({ ...emptyState, ...sanitizeSnapshot(data.data) });
     cloudVersion = (data.updated_at as string) ?? null;
@@ -254,11 +345,15 @@ export async function startSync(userId: string) {
   }
 
   useStore.getState().recomputeLinkedGoals();
-  base = snapshot();
+  // Com mudanças pendentes do aparelho, a base é a nuvem (o que falta enviar fica na diferença).
+  base = pending ? (sanitizeSnapshot(data?.data) as Snapshot) : snapshot();
 
   ready = true;
   useSyncStatus.getState().set("saved");
+  remember(userId);
   unsubscribeStore = useStore.subscribe(scheduleSave);
+  watchOnline();
+  if (pending) scheduleSave();
   // Depois de assinar o salvamento, para os lançamentos gerados irem para a nuvem.
   useStore.getState().postDueRecurring(todayISO());
   // A nuvem ainda tem o campo antigo `settings.geminiKey`: marca a diferença na
@@ -278,12 +373,29 @@ export function stopSync({ clearLocal = true }: { clearLocal?: boolean } = {}) {
   }
   unsubscribeStore?.();
   unsubscribeStore = null;
+  if (onlineListener) window.removeEventListener("online", onlineListener);
+  onlineListener = null;
   activeUserId = null;
   ready = false;
   cloudVersion = null;
   base = {};
   useSyncStatus.getState().set("idle");
-  if (clearLocal) useStore.setState({ ...emptyState });
+  if (clearLocal) {
+    useStore.setState({ ...emptyState });
+    writeOwner(null);
+    void clearSyncCache();
+  }
+}
+
+/** A conexão voltou: traz o que mudou na nuvem, combina e envia o que ficou no aparelho. */
+function watchOnline() {
+  if (typeof window === "undefined" || onlineListener) return;
+  onlineListener = () => {
+    if (!ready || !activeUserId) return;
+    // Só envia se a nuvem respondeu (o evento "online" às vezes chega antes da rede).
+    void refreshFromCloud().then((ok) => (ok ? flushSync() : undefined));
+  };
+  window.addEventListener("online", onlineListener);
 }
 
 /** A carga inicial terminou? (Erros depois disso são de envio, não de carga.) */
