@@ -16,7 +16,13 @@ export type PlanStatus = "pendente" | "ativa" | "concluida";
 
 export type PlanSubaction = { id: string; title: string; done: boolean };
 export type PlanAction = { id: string; title: string; done: boolean; subactions: PlanSubaction[] };
-export type PlanStage = { id: string; title: string; status: PlanStatus; doneCriteria?: string; actions: PlanAction[] };
+export type PlanStage = {
+  id: string;
+  title: string;
+  status: PlanStatus;
+  doneCriteria?: string;
+  actions: PlanAction[];
+};
 export type MicroGoal = {
   id: string;
   title: string;
@@ -58,7 +64,8 @@ export const MAX_PLANS = 20;
 const MAX_LIST = 60;
 const MAX_TEXT = 1500;
 
-const str = (v: unknown, max = MAX_TEXT): string => (typeof v === "string" ? v.trim().slice(0, max) : "");
+const str = (v: unknown, max = MAX_TEXT): string =>
+  typeof v === "string" ? v.trim().slice(0, max) : "";
 const rid = (): string =>
   typeof crypto !== "undefined" && "randomUUID" in crypto
     ? crypto.randomUUID()
@@ -95,7 +102,9 @@ function cleanStages(v: unknown): PlanStage[] {
                 .map((rs) => {
                   const sb = obj(rs);
                   const st = str(sb.title, 200);
-                  return st ? { id: str(sb.id, 80) || rid(), title: st, done: sb.done === true } : null;
+                  return st
+                    ? { id: str(sb.id, 80) || rid(), title: st, done: sb.done === true }
+                    : null;
                 })
                 .filter((x): x is PlanSubaction => x !== null),
             };
@@ -119,7 +128,8 @@ function cleanMicro(v: unknown): MicroGoal[] {
         title,
         stageId: str(m.stageId, 80) || undefined,
         doneCriteria: str(m.doneCriteria, 300) || undefined,
-        estimateMinutes: Number.isFinite(est) && est > 0 ? Math.min(Math.round(est), 1440) : undefined,
+        estimateMinutes:
+          Number.isFinite(est) && est > 0 ? Math.min(Math.round(est), 1440) : undefined,
         status: m.status === "concluida" ? "concluida" : "pendente",
       } as MicroGoal;
     })
@@ -151,7 +161,13 @@ export function parsePlanProposal(text: string): PlanProposal | null {
   try {
     const parsed = JSON.parse(last.trim());
     const p = obj(parsed);
-    if (!hasPlanPart(p) && !hasGeneralPart(p) && arr(p.filterDecisions).length === 0) return null;
+    if (
+      !hasPlanPart(p) &&
+      !hasGeneralPart(p) &&
+      arr(p.filterDecisions).length === 0 &&
+      Object.keys(obj(p.dayPlan)).length === 0
+    )
+      return null;
     return p;
   } catch {
     return null;
@@ -186,12 +202,14 @@ export function applyPlanProposal(
   const macroGoalId = macroIdRaw && validMacroIds.includes(macroIdRaw) ? macroIdRaw : null;
   const existing = plans.find((x) => x.id === str(p.planId, 80));
 
-  const stages = "stages" in p ? cleanStages(p.stages) : existing?.stages ?? [];
+  const stages = "stages" in p ? cleanStages(p.stages) : (existing?.stages ?? []);
   const activeRaw = str(p.activeStageId, 80);
   const activeStageId =
     (activeRaw && stages.some((s) => s.id === activeRaw) ? activeRaw : null) ??
     stages.find((s) => s.status === "ativa")?.id ??
-    (existing && stages.some((s) => s.id === existing.activeStageId) ? existing.activeStageId : null);
+    (existing && stages.some((s) => s.id === existing.activeStageId)
+      ? existing.activeStageId
+      : null);
 
   const pick = (key: keyof AltusPlan, max?: number): string =>
     key in p ? str(p[key], max) : ((existing?.[key] as string | undefined) ?? "");
@@ -205,18 +223,25 @@ export function applyPlanProposal(
     strategy: pick("strategy"),
     activeStageId,
     stages,
-    microGoals: "microGoals" in p ? cleanMicro(p.microGoals) : existing?.microGoals ?? [],
+    microGoals: "microGoals" in p ? cleanMicro(p.microGoals) : (existing?.microGoals ?? []),
     decisions: [...(existing?.decisions ?? []), ...cleanLog(p.decisions, today)].slice(-MAX_LIST),
     results: [...(existing?.results ?? []), ...cleanLog(p.results, today)].slice(-MAX_LIST),
     reviews: [...(existing?.reviews ?? []), ...cleanLog(p.reviews, today)].slice(-MAX_LIST),
-    nextReview: /^\d{4}-\d{2}-\d{2}$/.test(str(p.nextReview, 10)) ? str(p.nextReview, 10) : addDays(today, 7),
+    nextReview: /^\d{4}-\d{2}-\d{2}$/.test(str(p.nextReview, 10))
+      ? str(p.nextReview, 10)
+      : addDays(today, 7),
     version: (existing?.version ?? 0) + 1,
-    history: [...(existing?.history ?? []), { version: (existing?.version ?? 0) + 1, date: today, summary }].slice(-MAX_LIST),
+    history: [
+      ...(existing?.history ?? []),
+      { version: (existing?.version ?? 0) + 1, date: today, summary },
+    ].slice(-MAX_LIST),
     createdAt: existing?.createdAt ?? now,
     updatedAt: now,
   };
 
-  const next = existing ? plans.map((x) => (x.id === existing.id ? base : x)) : [base, ...plans].slice(0, MAX_PLANS);
+  const next = existing
+    ? plans.map((x) => (x.id === existing.id ? base : x))
+    : [base, ...plans].slice(0, MAX_PLANS);
   return { plans: next, plan: base };
 }
 

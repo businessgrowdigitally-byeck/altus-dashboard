@@ -23,6 +23,7 @@ import {
 } from "./finance";
 export type { CategoryBudgets, RecurringTransaction } from "./finance";
 import {
+  applyDayPlanProposal,
   moveItem,
   normalizeDayPlans,
   postponeAction,
@@ -200,7 +201,10 @@ type State = {
    * Aplica uma proposta do Mentor já confirmada (P.G., plano e/ou Filtro).
    * `link` escolhe ou cria a Meta Macro quando a proposta não traz um vínculo válido.
    */
-  saveAltusProposal: (proposal: PlanProposal, link: MacroLink | null) => AltusApplyResult;
+  saveAltusProposal: (
+    proposal: PlanProposal,
+    link: MacroLink | null,
+  ) => AltusApplyResult & { dayPlanDate: string | null };
   toggleMicroGoal: (planId: string, microId: string) => void;
   removeAltusPlan: (id: string) => void;
   /**
@@ -499,11 +503,17 @@ export const useStore = create<State>()(
           todayISO(),
           link,
         );
+        // Plano do dia (parte "dayPlan" da proposta): só para hoje.
+        const dayPlan =
+          proposal.dayPlan && typeof proposal.dayPlan === "object"
+            ? applyDayPlanProposal(s.dayPlans ?? {}, s.goalsDaily, proposal.dayPlan, todayISO())
+            : null;
         set({
           ...result.state,
           ...(result.createdGoal ? { goalsMacro: [result.createdGoal, ...s.goalsMacro] } : {}),
+          ...(dayPlan ? { dayPlans: dayPlan.plans } : {}),
         });
-        return result;
+        return { ...result, dayPlanDate: dayPlan?.date ?? null };
       },
       toggleMicroGoal: (planId, microId) => set((s) => ({
         altusPlans: (s.altusPlans ?? []).map((p) => p.id !== planId ? p : {

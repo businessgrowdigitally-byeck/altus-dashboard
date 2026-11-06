@@ -25,6 +25,8 @@ export type ChatPlanState = {
   generalVersion?: number;
   /** Quantas decisões do Filtro ALTUS foram registradas. */
   decisions?: number;
+  /** A proposta salvou um plano do dia (data). */
+  dayPlan?: string;
 };
 
 type ChatLike = { role: "user" | "assistant"; content: string; plan?: ChatPlanState };

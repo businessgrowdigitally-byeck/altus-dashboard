@@ -269,4 +269,44 @@ export const agente = {
     en: "DISCARD FOR NOW",
     es: "DESCARTAR POR AHORA",
   },
+  "agente.plan.day": {
+    pt: "Plano de hoje",
+    en: "Today's plan",
+    es: "Plan de hoy",
+  },
+  "agente.plan.dayBadge": {
+    pt: "só hoje — amanhã volta a rotina",
+    en: "today only — the routine is back tomorrow",
+    es: "solo hoy — mañana vuelve la rutina",
+  },
+  "agente.plan.dayReason": {
+    pt: "Motivo",
+    en: "Reason",
+    es: "Motivo",
+  },
+  "agente.plan.minutes": {
+    pt: "{n} min",
+    en: "{n} min",
+    es: "{n} min",
+  },
+  "agente.plan.dayExtra": {
+    pt: "extra",
+    en: "extra",
+    es: "extra",
+  },
+  "agente.plan.dayTotal": {
+    pt: "Total previsto: {n} min",
+    en: "Planned total: {n} min",
+    es: "Total previsto: {n} min",
+  },
+  "agente.plan.dayPostponed": {
+    pt: "Adiadas (não contam como falta)",
+    en: "Postponed (not counted as missed)",
+    es: "Pospuestas (no cuentan como falta)",
+  },
+  "agente.plan.savedDay": {
+    pt: "Plano de hoje salvo.",
+    en: "Today's plan saved.",
+    es: "Plan de hoy guardado.",
+  },
 } as const;

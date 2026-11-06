@@ -4,7 +4,8 @@ import { Check, ClipboardList, X } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { flushSync, useSyncStatus } from "@/lib/sync";
 import { useI18n } from "@/lib/i18n";
-import { todayISO } from "@/lib/format";
+import { fmtDate, todayISO } from "@/lib/format";
+import { applyDayPlanProposal } from "@/lib/day-plan";
 import type { MacroLink, PlanProposal } from "@/lib/ai/plan";
 import {
   defaultMacroLink,
@@ -21,6 +22,7 @@ function savedText(t: T, saved: ChatPlanState): string {
   if (saved.version) parts.push(t("agente.plan.saved", { v: saved.version }));
   if (saved.generalVersion) parts.push(t("agente.plan.savedGeneral", { v: saved.generalVersion }));
   if (saved.decisions) parts.push(t("agente.plan.savedFilter", { n: saved.decisions }));
+  if (saved.dayPlan) parts.push(t("agente.plan.savedDay"));
   return parts.join(" ") || t("agente.plan.saved", { v: "?" });
 }
 
@@ -65,6 +67,8 @@ function PendingProposal({ index, proposal }: { index: number; proposal: PlanPro
   const altusGeneralPlan = useStore((s) => s.altusGeneralPlan);
   const altusFilter = useStore((s) => s.altusFilter);
   const goalsMacro = useStore((s) => s.goalsMacro);
+  const goalsDaily = useStore((s) => s.goalsDaily);
+  const dayPlans = useStore((s) => s.dayPlans);
   const saveAltusProposal = useStore((s) => s.saveAltusProposal);
   const setChatPlan = useStore((s) => s.setChatPlan);
   const [chosen, setLink] = useState<MacroLink>(() => defaultMacroLink(proposal, goalsMacro));
@@ -94,6 +98,14 @@ function PendingProposal({ index, proposal }: { index: number; proposal: PlanPro
     [proposal, altusPlans, altusGeneralPlan, altusFilter, goalsMacro, link],
   );
   const { plan, generalPlan, decisions, createdGoal } = preview.result;
+  // Prévia do plano do dia, exatamente como ficará na Home.
+  const dayPreview = useMemo(
+    () =>
+      proposal.dayPlan && typeof proposal.dayPlan === "object"
+        ? applyDayPlanProposal(dayPlans ?? {}, goalsDaily, proposal.dayPlan, todayISO())
+        : null,
+    [proposal, dayPlans, goalsDaily],
+  );
   const goalName = (id: string) => goalsMacro.find((g) => g.id === id)?.name ?? id;
 
   const confirm = async () => {
@@ -106,6 +118,7 @@ function PendingProposal({ index, proposal }: { index: number; proposal: PlanPro
       version: result.plan?.version,
       generalVersion: result.generalPlan?.version,
       decisions: result.decisions.length || undefined,
+      dayPlan: result.dayPlanDate ?? undefined,
     };
     setChatPlan(index, saved);
     await flushSync();
@@ -246,6 +259,51 @@ function PendingProposal({ index, proposal }: { index: number; proposal: PlanPro
               </div>
             )}
             {row(t("agente.plan.nextReview"), plan.nextReview)}
+          </>,
+        )}
+
+      {dayPreview &&
+        section(
+          t("agente.plan.day"),
+          t("agente.plan.dayBadge"),
+          <>
+            {row(t("agente.plan.dayReason"), dayPreview.reason)}
+            <ol className="list-decimal pl-5 space-y-0.5" data-day-preview>
+              {dayPreview.items.map((i) =>
+                i.kind === "action" ? (
+                  <li key={i.key}>
+                    {i.action.name} · {t("agente.plan.minutes", { n: i.minutes })}
+                    {i.note && <span className="text-muted-foreground"> — {i.note}</span>}
+                  </li>
+                ) : (
+                  <li key={i.key}>
+                    {i.extra.title}
+                    {i.extra.minutes
+                      ? ` · ${t("agente.plan.minutes", { n: i.extra.minutes })}`
+                      : ""}{" "}
+                    <span className="text-gold">({t("agente.plan.dayExtra")})</span>
+                  </li>
+                ),
+              )}
+            </ol>
+            <div className="text-muted-foreground">
+              {t("agente.plan.dayTotal", {
+                n: dayPreview.items.reduce(
+                  (sum, i) => sum + (i.kind === "action" ? i.minutes : (i.extra.minutes ?? 0)),
+                  0,
+                ),
+              })}
+            </div>
+            {dayPreview.postponed.length > 0 && (
+              <div>
+                <span className="text-muted-foreground">{t("agente.plan.dayPostponed")}: </span>
+                {dayPreview.postponed
+                  .map(
+                    (p) => `${p.action.name} → ${fmtDate(p.to)}${p.reason ? ` (${p.reason})` : ""}`,
+                  )
+                  .join(" · ")}
+              </div>
+            )}
           </>,
         )}
 

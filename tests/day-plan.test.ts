@@ -157,3 +157,40 @@ describe("proposta do Mentor para hoje", () => {
     assert.equal(toggleExtra(r.plans, TODAY, id)[TODAY].extras[0].done, true);
   });
 });
+
+describe("Mentor: contexto e proposta do plano do dia", async () => {
+  const { buildMentorContext } = await import("../src/lib/ai/context.ts");
+  const { parsePlanProposal } = await import("../src/lib/ai/plan.ts");
+
+  it("the context lists today's items with ids, minutes, week and streak, and the current plan", () => {
+    const plans = postponeAction({}, TODAY, "leitura", TOMORROW, "prova");
+    const ctx = buildMentorContext(
+      {
+        goalsDaily: routine,
+        completions: [{ date: "2026-11-05", actionId: "treino" }],
+        dayPlans: plans,
+      },
+      TODAY,
+    );
+    assert.equal(ctx.hoje.data, TODAY);
+    assert.equal(ctx.hoje.dia_da_semana, "sexta");
+    assert.deepEqual(
+      ctx.hoje.itens.map((i) => ("id" in i ? i.id : i.extra)),
+      ["treino", "ingles"],
+    );
+    const ingles = ctx.hoje.itens.find((i) => "id" in i && i.id === "ingles");
+    assert.ok(ingles && "minutos" in ingles && ingles.minutos === 45);
+    const treino = ctx.hoje.itens.find((i) => "id" in i && i.id === "treino");
+    assert.ok(treino && "sequencia_dias" in treino && treino.sequencia_dias === 1);
+    assert.deepEqual(ctx.hoje.plano_do_dia?.adiadas, [
+      { id: "leitura", para: TOMORROW, motivo: "prova" },
+    ]);
+    assert.equal(ctx.rotina.acoes[0].id, "ingles");
+  });
+
+  it("a proposal with only a dayPlan is accepted", () => {
+    const block =
+      "```altus-plan\n" + JSON.stringify({ dayPlan: { order: ["ingles"], reason: "x" } }) + "\n```";
+    assert.ok(parsePlanProposal(block));
+  });
+});
