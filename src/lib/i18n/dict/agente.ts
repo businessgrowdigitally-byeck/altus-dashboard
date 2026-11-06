@@ -309,4 +309,54 @@ export const agente = {
     en: "Today's plan saved.",
     es: "Plan de hoy guardado.",
   },
+  "agente.plan.week": {
+    pt: "Plano da semana",
+    en: "Week plan",
+    es: "Plan de la semana",
+  },
+  "agente.plan.weekBadge": {
+    pt: "{n} dia(s) ajustado(s) — os outros seguem a rotina",
+    en: "{n} day(s) adjusted — the others follow the routine",
+    es: "{n} día(s) ajustado(s) — los demás siguen la rutina",
+  },
+  "agente.plan.savedWeek": {
+    pt: "Plano da semana salvo ({n} dia(s)).",
+    en: "Week plan saved ({n} day(s)).",
+    es: "Plan de la semana guardado ({n} día(s)).",
+  },
+  "agente.plan.routine": {
+    pt: "Mudança na rotina fixa",
+    en: "Change to the fixed routine",
+    es: "Cambio en la rutina fija",
+  },
+  "agente.plan.routineBadge": {
+    pt: "vale para todos os próximos dias",
+    en: "applies to every day from now on",
+    es: "vale para todos los próximos días",
+  },
+  "agente.plan.routineDuration": {
+    pt: "Duração",
+    en: "Duration",
+    es: "Duración",
+  },
+  "agente.plan.routineTime": {
+    pt: "Horário",
+    en: "Time",
+    es: "Horario",
+  },
+  "agente.plan.routineDays": {
+    pt: "Dias",
+    en: "Days",
+    es: "Días",
+  },
+  "agente.plan.noTime": {
+    pt: "sem horário",
+    en: "no time",
+    es: "sin horario",
+  },
+  "agente.plan.savedRoutine": {
+    pt: "Rotina atualizada ({n} ação/ões).",
+    en: "Routine updated ({n} action(s)).",
+    es: "Rutina actualizada ({n} acción/es).",
+  },
 } as const;

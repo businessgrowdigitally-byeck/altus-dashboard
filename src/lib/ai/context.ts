@@ -7,7 +7,7 @@
 // Extensão explícita para os testes rodarem direto no Node (--experimental-strip-types).
 import { normalizeAltusState } from "./plan.ts";
 import { balanceUntil, normalizeBudgets, normalizeRecurring, type FinTx } from "../finance.ts";
-import { dayItems, normalizeDayPlans } from "../day-plan.ts";
+import { addDays, dayItems, normalizeDayPlans, WEEK_PLAN_DAYS } from "../day-plan.ts";
 import { actionStreak, weekProgress } from "../daily-stats.ts";
 import type { GoalDaily } from "../store";
 
@@ -131,7 +131,7 @@ export function buildMentorContext(data: unknown, today: string) {
       prazo: s(g.deadline, 20) || null,
       motivacao: s(g.motivation, 200) || null,
     })),
-    hoje: buildToday(daily, list(d.completions), d.dayPlans, today),
+    ...buildDays(daily, list(d.completions), d.dayPlans, today),
     rotina: {
       acoes: daily.slice(0, 30).map((a) => {
         const id = s(a.id, 80);
@@ -184,28 +184,24 @@ export function buildMentorContext(data: unknown, today: string) {
       treinos_30d: w30.length,
       minutos_treino_30d: w30.reduce((a, w) => a + n(w.duration), 0),
       sequencia_atual_dias: streak,
-      treinos_recentes: workouts
-        .slice(0, 10)
-        .map((w) => ({
-          data: s(w.date),
-          tipo: s(w.type, 60),
-          minutos: n(w.duration),
-          notas: s(w.notes, 120) || undefined,
-        })),
+      treinos_recentes: workouts.slice(0, 10).map((w) => ({
+        data: s(w.date),
+        tipo: s(w.type, 60),
+        minutos: n(w.duration),
+        notas: s(w.notes, 120) || undefined,
+      })),
     },
     estudos: {
       horas_30d_por_area: horasArea,
       sessoes_30d: st30.length,
-      sessoes_recentes: studies
-        .slice(0, 10)
-        .map((x) => ({
-          data: s(x.date),
-          topico: s(x.topic, 120),
-          area: s(x.area, 60),
-          minutos: n(x.duration),
-          status: s(x.status, 20),
-          aprendizado: s(x.learned, 250) || undefined,
-        })),
+      sessoes_recentes: studies.slice(0, 10).map((x) => ({
+        data: s(x.date),
+        topico: s(x.topic, 120),
+        area: s(x.area, 60),
+        minutos: n(x.duration),
+        status: s(x.status, 20),
+        aprendizado: s(x.learned, 250) || undefined,
+      })),
     },
     biblioteca: {
       total_livros: list(d.books).length,
@@ -298,9 +294,11 @@ const WEEKDAYS = ["domingo", "segunda", "terça", "quarta", "quinta", "sexta", "
 
 /**
  * Ações de hoje como o usuário as vê na Home (rotina + plano do dia), com os
- * ids que o Mentor usa para propor um `dayPlan`.
+ * ids que o Mentor usa para propor um `dayPlan`; os próximos 6 dias (para o
+ * `weekPlan`) e os ajustes que se repetem nos últimos 14 dias (para sugerir
+ * `routineChanges`).
  */
-function buildToday(rawDaily: Row[], rawCompletions: Row[], rawPlans: unknown, today: string) {
+function buildDays(rawDaily: Row[], rawCompletions: Row[], rawPlans: unknown, today: string) {
   const daily: GoalDaily[] = rawDaily.slice(0, 60).map((a) => ({
     id: s(a.id, 80),
     name: s(a.name, 120),
@@ -318,10 +316,13 @@ function buildToday(rawDaily: Row[], rawCompletions: Row[], rawPlans: unknown, t
   const plans = normalizeDayPlans(rawPlans, today);
   const plan = plans[today];
   const doneToday = new Set(completions.filter((c) => c.date === today).map((c) => c.actionId));
-  const [y, m, dd] = today.split("-").map(Number);
-  return {
+  const weekday = (iso: string) => {
+    const [y, m, dd] = iso.split("-").map(Number);
+    return WEEKDAYS[new Date(y, m - 1, dd).getDay()];
+  };
+  const hoje = {
     data: today,
-    dia_da_semana: WEEKDAYS[new Date(y, m - 1, dd).getDay()],
+    dia_da_semana: weekday(today),
     plano_do_dia: plan
       ? {
           origem: plan.source === "mentor" ? "Mentor" : "usuário",
@@ -357,4 +358,59 @@ function buildToday(rawDaily: Row[], rawCompletions: Row[], rawPlans: unknown, t
           },
     ),
   };
+  const proximos_dias = Array.from({ length: WEEK_PLAN_DAYS - 1 }, (_, k) => {
+    const date = addDays(today, k + 1);
+    const p = plans[date];
+    return {
+      data: date,
+      dia_da_semana: weekday(date),
+      ajustado: p ? (p.source === "mentor" ? "Mentor" : "usuário") : null,
+      motivo: p?.reason || null,
+      itens: dayItems(daily, plans, date).map((i) =>
+        i.kind === "action"
+          ? {
+              id: i.action.id,
+              minutos: i.minutes,
+              ...(i.note ? { nota: i.note } : {}),
+              ...(i.from ? { adiada_de: i.from } : {}),
+            }
+          : { extra: i.extra.title, minutos: i.extra.minutes ?? null },
+      ),
+    };
+  });
+  // Ajustes que se repetem: mesma ação com duração ajustada ou adiada em 2+ dias.
+  const since = addDays(today, -13);
+  const stats = new Map<string, { durations: number[]; postponed: number }>();
+  for (const [date, p] of Object.entries(plans)) {
+    if (date < since || date > today) continue;
+    for (const [id, min] of Object.entries(p.durations)) {
+      const e = stats.get(id) ?? { durations: [], postponed: 0 };
+      e.durations.push(min);
+      stats.set(id, e);
+    }
+    for (const x of p.postponed) {
+      const e = stats.get(x.actionId) ?? { durations: [], postponed: 0 };
+      e.postponed += 1;
+      stats.set(x.actionId, e);
+    }
+  }
+  const ajustes_recentes = daily
+    .map((a) => {
+      const e = stats.get(a.id);
+      if (!e || (e.durations.length < 2 && e.postponed < 2)) return null;
+      const freq = new Map<number, number>();
+      for (const d of e.durations) freq.set(d, (freq.get(d) ?? 0) + 1);
+      const common = [...freq.entries()].sort((x, y) => y[1] - x[1] || x[0] - y[0])[0];
+      return {
+        id: a.id,
+        nome: a.name,
+        minutos_rotina: a.durationMinutes ?? 30,
+        dias_com_duracao_ajustada: e.durations.length,
+        duracao_mais_usada: common ? common[0] : null,
+        vezes_adiada: e.postponed,
+      };
+    })
+    .filter((x) => x !== null)
+    .slice(0, 15);
+  return { hoje, proximos_dias, ajustes_recentes };
 }

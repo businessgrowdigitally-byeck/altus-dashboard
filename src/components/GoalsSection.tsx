@@ -4,7 +4,8 @@ import { useStore, type GoalArea, type GoalMacro, type GoalDaily } from "@/lib/s
 import { GlassCard } from "@/components/primitives";
 import { Modal, ConfirmButton, inpCls, btnGold } from "@/components/Modal";
 import { toast } from "sonner";
-import { brl, toISODate, todayISO } from "@/lib/format";
+import { brl, fmtDate, toISODate, todayISO } from "@/lib/format";
+import { dayItems, plannedOn, weekdayDate } from "@/lib/day-plan";
 import { useT } from "@/lib/i18n";
 
 import { DailyActionsList, DailyFocusCalendar } from "./DailyFocusCalendar";
@@ -375,6 +376,7 @@ function DailyTab() {
     updateGoalDaily,
     removeGoalDaily,
     toggleCompletion,
+    dayPlans,
   } = useStore();
   const [editing, setEditing] = useState<GoalDaily | null>(null);
   const [creating, setCreating] = useState(false);
@@ -407,20 +409,42 @@ function DailyTab() {
     previousDow.current = todayDow;
   }, [todayDow]);
 
-  const todayActions = goalsDaily.filter((a) => a.daysOfWeek.includes(todayDow));
+  // Hoje (e os próximos dias) seguem o plano do dia: adiadas saem, trazidas entram.
+  const todayActions = goalsDaily.filter((a) => plannedOn(a, today, dayPlans ?? {}));
   const doneIds = useMemo(
     () => new Set(completions.filter((c) => c.date === today).map((c) => c.actionId)),
     [completions, today],
   );
   const completed = todayActions.filter((a) => doneIds.has(a.id)).length;
 
-  // A1: só visual — seletor mostra rotina do dia selecionado, sem afetar marcação de hoje
+  // A1: só visual — seletor mostra o dia selecionado (a próxima data com esse dia
+  // da semana), sem afetar marcação de hoje. Com plano do dia, segue o plano:
+  // ordem, duração ajustada, adiadas fora e trazidas de outro dia dentro.
+  const selectedDate = weekdayDate(today, selectedDow);
+  const selectedPlan = dayPlans?.[selectedDate];
   const displayedActions = useMemo(
-    () => goalsDaily.filter((a) => a.daysOfWeek.includes(selectedDow)),
-    [goalsDaily, selectedDow],
+    () =>
+      dayItems(goalsDaily, dayPlans ?? {}, selectedDate).flatMap((i) =>
+        i.kind !== "action"
+          ? []
+          : [
+              i.minutes === (i.action.durationMinutes ?? DEFAULT_DURATION)
+                ? i.action
+                : // A grade usa passos de 5 min: arredonda só a exibição.
+                  { ...i.action, durationMinutes: Math.max(5, Math.round(i.minutes / 5) * 5) },
+            ],
+      ),
+    [goalsDaily, dayPlans, selectedDate],
   );
+  // Editar sempre abre a ação da rotina fixa, não a duração ajustada do dia.
+  const editRoutine = (a: GoalDaily) => setEditing(goalsDaily.find((x) => x.id === a.id) ?? a);
   const sorted = useMemo(() => {
     const base = displayedActions;
+    // Com plano do dia, a ordem do plano vale (concluídas de hoje vão para o fim).
+    if (selectedPlan) {
+      if (selectedDow !== todayDow) return base;
+      return [...base].sort((a, b) => (doneIds.has(a.id) ? 1 : 0) - (doneIds.has(b.id) ? 1 : 0));
+    }
     // quando vê hoje, ordena por concluído + horário; quando vê outro dia, só por horário
     if (selectedDow === todayDow) {
       return [...base].sort((a, b) => {
@@ -431,7 +455,7 @@ function DailyTab() {
       });
     }
     return [...base].sort((a, b) => (a.suggestedTime || "").localeCompare(b.suggestedTime || ""));
-  }, [displayedActions, doneIds, selectedDow, todayDow]);
+  }, [displayedActions, doneIds, selectedDow, todayDow, selectedPlan]);
 
   const isViewingToday = selectedDow === todayDow;
   const weekdayNames = [
@@ -497,6 +521,15 @@ function DailyTab() {
           {displayedActions.length} {displayedActions.length === 1 ? "ação" : "ações"}
         </p>
       )}
+      {selectedPlan && (
+        <p data-routine-day-plan className="text-xs text-purple-700 dark:text-purple-300">
+          {t(selectedPlan.source === "mentor" ? "goals.dayPlanMentor" : "goals.dayPlanYou", {
+            date: fmtDate(selectedDate),
+          })}
+          {selectedPlan.reason && `: ${selectedPlan.reason}`}
+          <span className="text-muted-foreground"> · {t("goals.dayPlanRoutineKept")}</span>
+        </p>
+      )}
 
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div
@@ -527,7 +560,7 @@ function DailyTab() {
           isToday={isViewingToday}
           now={now}
           onToggle={(id) => toggleCompletion(id, today)}
-          onEdit={setEditing}
+          onEdit={editRoutine}
           onRemove={removeGoalDaily}
         />
       ) : (
@@ -536,7 +569,7 @@ function DailyTab() {
           doneIds={doneIds}
           isToday={isViewingToday}
           onToggle={(id) => toggleCompletion(id, today)}
-          onEdit={setEditing}
+          onEdit={editRoutine}
           onRemove={removeGoalDaily}
         />
       )}

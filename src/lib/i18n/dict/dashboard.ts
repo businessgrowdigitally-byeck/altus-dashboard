@@ -125,6 +125,22 @@ export const dashboard = {
   },
   homePlanByYou: { pt: "Ajustado por você", en: "Adjusted by you", es: "Ajustado por ti" },
   homeResetDay: { pt: "Voltar à rotina", en: "Back to routine", es: "Volver a la rutina" },
+  homeKeepInRoutine: { pt: "Manter na rotina", en: "Keep in routine", es: "Mantener en la rutina" },
+  homeKeepInRoutineHint: {
+    pt: "As durações de hoje viram a duração fixa da rotina",
+    en: "Today's durations become the routine's fixed duration",
+    es: "Las duraciones de hoy pasan a ser la duración fija de la rutina",
+  },
+  homeKeptInRoutine: {
+    pt: "Rotina atualizada ({n} ação/ões).",
+    en: "Routine updated ({n} action(s)).",
+    es: "Rutina actualizada ({n} acción/es).",
+  },
+  homeUpcomingPlans: {
+    pt: "Próximos dias ajustados: {dates}",
+    en: "Upcoming adjusted days: {dates}",
+    es: "Próximos días ajustados: {dates}",
+  },
   homeExtra: { pt: "extra", en: "extra", es: "extra" },
   homeFromDay: { pt: "adiada de {date}", en: "moved from {date}", es: "pospuesta del {date}" },
   homeMinutes: { pt: "{n} min", en: "{n} min", es: "{n} min" },

@@ -4,7 +4,7 @@ import { useStore } from "@/lib/store";
 import { brl, daysAgoISO, fmtDate, fmtDateLong, greeting, kg, todayISO } from "@/lib/format";
 import { balanceUntil, dailyBalanceSeries, monthTotals } from "@/lib/finance";
 import { actionStreak, weekProgress } from "@/lib/daily-stats";
-import { addDays, dayItems } from "@/lib/day-plan";
+import { addDays, dayItems, keepDayDurations, WEEK_PLAN_DAYS } from "@/lib/day-plan";
 import { toast } from "sonner";
 import { GlassCard, Section } from "@/components/primitives";
 import { GoalsSection, GOALS_SECTION_ID } from "@/components/GoalsSection";
@@ -91,6 +91,7 @@ function Dashboard() {
     postponeDayAction,
     toggleDayExtra,
     resetDayPlan,
+    keepDayDurationsInRoutine,
   } = useStore();
   const t = useT();
 
@@ -152,6 +153,21 @@ function Dashboard() {
       action: { label: t("homeUndo"), onClick: () => useStore.setState({ dayPlans: before }) },
     });
   };
+  // "Manter na rotina": só aparece quando a duração ajustada hoje difere da rotina.
+  const keepable = keepDayDurations(dayPlans ?? {}, goalsDaily, today).changes.length;
+  const keepInRoutine = () => {
+    const before = useStore.getState();
+    const prev = { dayPlans: before.dayPlans, goalsDaily: before.goalsDaily };
+    const n = keepDayDurationsInRoutine(today);
+    toast(t("homeKeptInRoutine", { n }), {
+      duration: 5000,
+      action: { label: t("homeUndo"), onClick: () => useStore.setState(prev) },
+    });
+  };
+  // Próximos dias com plano (ex.: plano da semana do Mentor).
+  const upcomingPlans = Array.from({ length: WEEK_PLAN_DAYS - 1 }, (_, k) =>
+    addDays(today, k + 1),
+  ).filter((d) => dayPlans?.[d]);
   // Sem ações hoje não há progresso a mostrar: 0 e estado vazio, nunca um número inventado.
   const weeklyProgress = todayTotal > 0 ? Math.round((todayDone / todayTotal) * 100) : 0;
   // Marca/desmarca pelo checkbox; ao marcar, o toast permite desfazer por 4 s.
@@ -608,6 +624,17 @@ function Dashboard() {
               </span>
               {dayPlan.reason && <span>: {dayPlan.reason}</span>}
             </span>
+            {keepable > 0 && (
+              <button
+                type="button"
+                data-keep-routine
+                onClick={keepInRoutine}
+                title={t("homeKeepInRoutineHint")}
+                className="shrink-0 text-purple-700 dark:text-purple-300 hover:underline"
+              >
+                {t("homeKeepInRoutine")}
+              </button>
+            )}
             <button
               type="button"
               onClick={() => resetDayPlan(today)}
@@ -813,6 +840,11 @@ function Dashboard() {
               {postponedToday
                 .map((p) => t("homePostponed", { name: p.name, date: fmtDate(p.to) }))
                 .join(" · ")}
+            </p>
+          )}
+          {mounted && upcomingPlans.length > 0 && (
+            <p className="text-[11px] text-muted-foreground px-1" data-upcoming-plans>
+              {t("homeUpcomingPlans", { dates: upcomingPlans.map((d) => fmtDate(d)).join(", ") })}
             </p>
           )}
         </div>
