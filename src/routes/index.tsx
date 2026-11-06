@@ -3,6 +3,8 @@ import { Fragment, useEffect, useMemo, useState } from "react";
 import { useStore } from "@/lib/store";
 import { brl, daysAgoISO, fmtDate, fmtDateLong, greeting, kg, todayISO } from "@/lib/format";
 import { balanceUntil, dailyBalanceSeries, monthTotals } from "@/lib/finance";
+import { actionStreak, weekProgress } from "@/lib/daily-stats";
+import { toast } from "sonner";
 import { GlassCard, Section } from "@/components/primitives";
 import { GoalsSection, GOALS_SECTION_ID } from "@/components/GoalsSection";
 import { PrimaryAreaPicker } from "@/components/PrimaryAreaPicker";
@@ -114,6 +116,24 @@ function Dashboard() {
   // Sem ações hoje não há progresso a mostrar: 0 e estado vazio, nunca um número inventado.
   const weeklyProgress =
     todayActions.length > 0 ? Math.round((todayDone / todayActions.length) * 100) : 0;
+  // Marca/desmarca pelo checkbox; ao marcar, o toast permite desfazer por 4 s.
+  const toggleAction = (id: string, name: string, wasDone: boolean) => {
+    toggleCompletion(id, today);
+    if (wasDone) return;
+    toast.success(t("homeMarked", { name }), {
+      duration: 4000,
+      action: {
+        label: t("homeUndo"),
+        onClick: () => {
+          // Só desfaz se ainda estiver marcada (o usuário pode ter desmarcado antes).
+          const still = useStore
+            .getState()
+            .completions.some((c) => c.actionId === id && c.date === today);
+          if (still) toggleCompletion(id, today);
+        },
+      },
+    });
+  };
   const [goalsTab, setGoalsTab] = useState<{ tab: "macro" | "daily"; nonce: number }>();
   const goToCreateAction = () => {
     setGoalsTab({ tab: "daily", nonce: Date.now() });
@@ -483,18 +503,29 @@ function Dashboard() {
           )}
           {todayActions.map((a) => {
             const done = doneIds.has(a.id);
+            const week = weekProgress(a, completions, today);
+            const streakDays = actionStreak(a, completions, today);
+            const weekPct = week.scheduled ? (week.done / week.scheduled) * 100 : 0;
             return (
+              // A linha só mostra; quem marca é o checkbox (evita marcar sem querer ao rolar).
               <div
                 key={a.id}
-                onClick={() => toggleCompletion(a.id, today)}
-                className={`group flex items-center justify-between p-3.5 rounded-xl border transition cursor-pointer select-none ${
+                data-action={a.id}
+                className={`group flex items-center gap-1 py-1.5 pl-1 pr-3.5 rounded-xl border transition ${
                   done
                     ? "bg-purple-950/20 border-purple-500/30 opacity-70"
                     : "bg-muted/50 border-border hover:border-purple-500/40 hover:bg-muted/80"
                 }`}
               >
-                <div className="flex items-center gap-3">
-                  <div
+                <button
+                  type="button"
+                  role="checkbox"
+                  aria-checked={done}
+                  aria-label={t(done ? "homeUncheck" : "homeCheck", { name: a.name })}
+                  onClick={() => toggleAction(a.id, a.name, done)}
+                  className="size-11 shrink-0 flex items-center justify-center rounded-lg"
+                >
+                  <span
                     className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition ${
                       done
                         ? "bg-purple-600 border-purple-500 text-white"
@@ -502,19 +533,46 @@ function Dashboard() {
                     }`}
                   >
                     {done && <Check size={14} className="stroke-[3]" />}
-                  </div>
-                  <div>
+                  </span>
+                </button>
+                <div className="min-w-0 flex-1">
+                  <div className="truncate">
                     <span
                       className={`text-sm font-medium ${done ? "line-through text-muted-foreground" : "text-foreground"}`}
                     >
                       {a.name}
                     </span>
-                    <span className="text-xs text-purple-400/80 ml-2">({a.area})</span>
+                    <span className="text-xs text-purple-400/80 ml-2">
+                      ({t(`goals.area.${a.area}`)})
+                    </span>
+                  </div>
+                  <div
+                    className="mt-1 flex items-center gap-2"
+                    data-week={`${week.done}/${week.scheduled}`}
+                  >
+                    <div className="h-1.5 w-12 sm:w-20 shrink-0 rounded-full bg-muted overflow-hidden">
+                      <div
+                        className="h-full rounded-full bg-gradient-to-r from-purple-600 via-purple-400 to-indigo-400"
+                        style={{ width: `${weekPct}%` }}
+                      />
+                    </div>
+                    <span className="text-[11px] text-muted-foreground whitespace-nowrap">
+                      {t("homeWeekCount", { done: week.done, total: week.scheduled })}
+                    </span>
                   </div>
                 </div>
 
-                <div className="text-xs text-muted-foreground font-mono">
-                  {a.suggestedTime || "Qualquer hora"}
+                <div className="text-right shrink-0">
+                  <div className="text-xs text-muted-foreground font-mono">
+                    {a.suggestedTime || t("homeAnyTime")}
+                  </div>
+                  <div
+                    className="text-[11px] text-purple-700 dark:text-purple-300"
+                    data-streak={streakDays}
+                    title={t("homeStreakTitle")}
+                  >
+                    🔥 {t("homeStreak", { n: streakDays })}
+                  </div>
                 </div>
               </div>
             );

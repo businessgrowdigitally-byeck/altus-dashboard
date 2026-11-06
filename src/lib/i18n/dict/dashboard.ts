@@ -59,6 +59,26 @@ export const dashboard = {
   },
   homeAreas: { pt: "Áreas", en: "Areas", es: "Áreas" },
   homeKaizenToday: { pt: "Kaizen de hoje", en: "Today's Kaizen", es: "Kaizen de hoy" },
+  homeCheck: {
+    pt: "Marcar {name} como feita",
+    en: "Mark {name} as done",
+    es: "Marcar {name} como hecha",
+  },
+  homeUncheck: { pt: "Desmarcar {name}", en: "Unmark {name}", es: "Desmarcar {name}" },
+  homeMarked: { pt: "{name} feita ✓", en: "{name} done ✓", es: "{name} hecha ✓" },
+  homeUndo: { pt: "Desfazer", en: "Undo", es: "Deshacer" },
+  homeWeekCount: {
+    pt: "{done}/{total} na semana",
+    en: "{done}/{total} this week",
+    es: "{done}/{total} en la semana",
+  },
+  homeAnyTime: { pt: "Qualquer hora", en: "Any time", es: "Cualquier hora" },
+  homeStreak: { pt: "{n} d", en: "{n} d", es: "{n} d" },
+  homeStreakTitle: {
+    pt: "Dias agendados seguidos cumpridos",
+    en: "Consecutive scheduled days done",
+    es: "Días programados seguidos cumplidos",
+  },
   emptyTodayCta: { pt: "Criar uma ação", en: "Create an action", es: "Crear una acción" },
   reportTitle: { pt: "Relatório Executivo", en: "Executive Report", es: "Informe Ejecutivo" },
   reportSubtitle: {
