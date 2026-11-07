@@ -50,6 +50,23 @@ type RoutePath =
   | "/planejamento"
   | "/configuracoes";
 
+/** Sem internet: avisa que o que for feito fica salvo no aparelho. */
+function OfflineBanner() {
+  const status = useSyncStatus((s) => s.status);
+  const t = useT();
+  if (status !== "offline") return null;
+  return (
+    <div
+      role="status"
+      data-offline-banner
+      className="mb-4 flex items-start gap-2 rounded-xl border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-200"
+    >
+      <CloudOff size={14} className="mt-0.5 shrink-0" />
+      <span>{t("sync.offlineBanner")}</span>
+    </div>
+  );
+}
+
 /** Mostra se as alterações já foram para a nuvem. */
 function SyncBadge() {
   const status = useSyncStatus((s) => s.status);
@@ -64,6 +81,12 @@ function SyncBadge() {
     return (
       <span className="flex items-center gap-1 text-[10px] text-destructive">
         <CloudOff size={11} /> {t("sync.error")}
+      </span>
+    );
+  if (status === "offline")
+    return (
+      <span className="flex items-center gap-1 text-[10px] text-amber-500" data-sync-offline>
+        <CloudOff size={11} /> {t("sync.offline")}
       </span>
     );
   return (
@@ -110,7 +133,10 @@ const [moreOpen, setMoreOpen] = useState(false);
     } catch {
       /* queda de rede: a confirmação abaixo decide */
     }
-    if (useSyncStatus.getState().status === "error") {
+    // Sem internet ("offline") também é envio não confirmado: sair apagaria o que
+    // ainda está só neste aparelho.
+    const status = useSyncStatus.getState().status;
+    if (status === "error" || status === "offline") {
       setSignOutError(null);
       setSignOutWarn(true);
       return;
@@ -279,6 +305,7 @@ const [moreOpen, setMoreOpen] = useState(false);
             isChat ? "pb-[calc(4.5rem+env(safe-area-inset-bottom))]" : "pb-28",
           )}
         >
+          <OfflineBanner />
           {children}
         </main>
       </div>

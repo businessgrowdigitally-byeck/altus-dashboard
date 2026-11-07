@@ -229,6 +229,20 @@ async function setup(browser, contextOptions) {
     await d.page.getByTitle("Sair da conta").first().click();
     await d.page.waitForFunction(() => window.__fakePush().unsubscribe === 1);
     assert.equal(d.rows.length, 0, "logout removed this device");
+    // Sair também apaga a cópia offline dos dados guardada neste aparelho.
+    await d.page.waitForFunction(() => localStorage.getItem("altus-sync-owner") === null);
+    const cachedKeys = await d.page.evaluate(
+      () =>
+        new Promise((res) => {
+          const r = indexedDB.open("altus-sync", 1);
+          r.onupgradeneeded = () => r.result.createObjectStore("base");
+          r.onsuccess = () => {
+            const g = r.result.transaction("base").objectStore("base").getAllKeys();
+            g.onsuccess = () => res(g.result);
+          };
+        }),
+    );
+    assert.deepEqual(cachedKeys, [], "offline copy erased on logout");
     assert.deepEqual(d.errors, []);
     await d.ctx.close();
 

@@ -9,6 +9,7 @@ import {
   flushSync,
   isSyncReady,
   refreshFromCloud,
+  OFFLINE_FIRST_LOAD,
 } from "@/lib/sync";
 import { useT } from "@/lib/i18n";
 
@@ -31,9 +32,12 @@ export function AuthGate({ children }: { children: ReactNode }) {
       stopSync();
       return;
     }
+    // Enquanto o login é verificado, não mexe em nada: limpar aqui apagaria os
+    // dados guardados no aparelho, que o modo offline usa para abrir sem internet.
+    if (loading) return;
     if (userId) void startSync(userId);
     else stopSync();
-  }, [userId, isRecovery]);
+  }, [userId, isRecovery, loading]);
 
   // Garante que alterações recentes sejam enviadas se a aba for fechada.
   useEffect(() => {
@@ -65,7 +69,9 @@ export function AuthGate({ children }: { children: ReactNode }) {
       <div className="flex min-h-screen items-center justify-center bg-background px-4">
         <div className="max-w-md text-center">
           <h1 className="text-xl font-semibold text-foreground">{t("sync.loadErrorTitle")}</h1>
-          <p className="mt-2 text-sm text-muted-foreground">{syncError}</p>
+          <p className="mt-2 text-sm text-muted-foreground">
+            {syncError === OFFLINE_FIRST_LOAD ? t("sync.offlineFirstLoad") : syncError}
+          </p>
           <button
             onClick={() => window.location.reload()}
             className="mt-6 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
